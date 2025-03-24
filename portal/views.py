@@ -90,7 +90,9 @@ def verify_email(request, token):
     
     # Verify the user's email
     user = verification_token.user
-    profile = user.profile
+    
+    # Create profile if it doesn't exist
+    profile, created = UserProfile.objects.get_or_create(user=user)
     profile.is_email_verified = True
     profile.save()
     
@@ -99,7 +101,7 @@ def verify_email(request, token):
     
     messages.success(request, 'Email verified successfully! You can now log in to your account.')
     return redirect('login')
-
+    
 def resend_verification(request):
     """View to resend verification email."""
     if request.method == 'POST':

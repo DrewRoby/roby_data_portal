@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'portal',
+    'portal.apps.PortalConfig',
 ]
 
 MIDDLEWARE = [
@@ -137,13 +137,13 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 
 # Email Configuration - Using console backend for development
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND_DEV')
+# EMAIL_BACKEND = os.getenv('EMAIL_BACKEND_DEV')
 DEFAULT_FROM_EMAIL = 'noreply@robydataservices.com'
 
 # For production, uncomment and configure these settings:
-# EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
-# EMAIL_HOST = os.getenv('EMAIL_HOST')
-# EMAIL_PORT = os.getenv('EMAIL_PORT')
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
