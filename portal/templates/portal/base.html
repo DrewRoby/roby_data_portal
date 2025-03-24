@@ -6,16 +6,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Roby Data Services{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        /* Include our header styles */
+        {% include 'portal/header_styles.html' %}
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header>
         <div class="container">
-            <a href="{% url 'home' %}">
-                <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
-            </a>
+            <div class="header-content">
+                <div>
+                    <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
+                </div>
+                
+                {% if user.is_authenticated %}
+                <div class="user-actions">
+                    <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </header>
+    
+    <!-- Sidebar Navigation -->
+    <div class="mobile-nav">
+        <div class="mobile-nav-header">
+            <h3>Menu</h3>
+            <button class="close-btn">&times;</button>
+        </div>
+        <ul class="mobile-nav-menu">
+            <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li><a href="#">Forum</a></li>
+            <li><a href="#">Data Marketplace</a></li>
+            <li><a href="#">My Account</a></li>
+        </ul>
+    </div>
     
     {% block content %}{% endblock %}
     
@@ -64,6 +90,10 @@
         </div>
     </footer>
     
+    <!-- Include our header animation script -->
+    <script>
+        {% include 'portal/header_script.html' %}
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

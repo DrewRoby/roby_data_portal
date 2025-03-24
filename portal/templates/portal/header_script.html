@@ -1,0 +1,37 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const header = document.querySelector('header');
+    const logo = document.querySelector('.logo');
+    const mobileNav = document.querySelector('.mobile-nav');
+    const closeBtn = document.querySelector('.close-btn');
+    
+    // Function to toggle the side menu and change header colors
+    function toggleMenu(e) {
+        // Prevent navigation to home page
+        e.preventDefault();
+        
+        // Toggle the sidebar menu
+        mobileNav.classList.toggle('active');
+        
+        // Toggle header gradient
+        header.classList.toggle('menu-active');
+    }
+    
+    // Toggle sidebar when logo is clicked
+    logo.addEventListener('click', toggleMenu);
+    
+    // Close mobile navigation when close button is clicked
+    closeBtn.addEventListener('click', function() {
+        mobileNav.classList.remove('active');
+        header.classList.remove('menu-active');
+    });
+    
+    // Close mobile navigation when clicking outside
+    document.addEventListener('click', function(e) {
+        if (mobileNav.classList.contains('active') && 
+            !mobileNav.contains(e.target) && 
+            !logo.contains(e.target)) {
+            mobileNav.classList.remove('active');
+            header.classList.remove('menu-active');
+        }
+    });
+});
