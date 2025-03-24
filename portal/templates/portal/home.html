@@ -1,0 +1,114 @@
+{% extends 'portal/base.html' %}
+{% load static %}
+
+{% block title %}Roby Data Services - Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Your Data, Unleashed</h1>
+            <p class="lead">Access all your powerful data applications in one central location. Roby Data Services provides enterprise-grade solutions with a user-friendly experience.</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="cta-button">Go to Dashboard</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="cta-button">Log In</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="container">
+    <div class="apps-grid">
+        <!-- Data Analytics App -->
+        <div class="app-card">
+            <div class="card-color-bar red-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-red);">
+                    📊
+                </div>
+                <h3 class="app-title">Data Analytics</h3>
+                <p class="app-description">Transform your raw data into actionable insights with our powerful analytics platform.</p>
+                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+            </div>
+        </div>
+        
+        <!-- Data Visualization App -->
+        <div class="app-card">
+            <div class="card-color-bar orange-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-orange);">
+                    📈
+                </div>
+                <h3 class="app-title">Data Visualization</h3>
+                <p class="app-description">Create stunning visualizations that communicate your data story effectively.</p>
+                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+            </div>
+        </div>
+        
+        <!-- ETL Manager App -->
+        <div class="app-card">
+            <div class="card-color-bar blue-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-blue);">
+                    🔄
+                </div>
+                <h3 class="app-title">ETL Manager</h3>
+                <p class="app-description">Streamline your Extract, Transform, Load processes with our intuitive workflow manager.</p>
+                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+            </div>
+        </div>
+        
+        <!-- Data Warehouse App -->
+        <div class="app-card">
+            <div class="card-color-bar yellow-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-yellow);">
+                    🏢
+                </div>
+                <h3 class="app-title">Data Warehouse</h3>
+                <p class="app-description">Centralize your data assets in our secure, scalable cloud data warehouse.</p>
+                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+            </div>
+        </div>
+        
+        <!-- ML Workbench App -->
+        <div class="app-card">
+            <div class="card-color-bar red-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-red);">
+                    🧠
+                </div>
+                <h3 class="app-title">ML Workbench</h3>
+                <p class="app-description">Build, train, and deploy machine learning models without complex infrastructure.</p>
+                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+            </div>
+        </div>
+        
+        <!-- Data Governance App -->
+        <div class="app-card">
+            <div class="card-color-bar blue-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-blue);">
+                    🔒
+                </div>
+                <h3 class="app-title">Data Governance</h3>
+                <p class="app-description">Ensure compliance and maintain data quality with our governance tools.</p>
+                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container">
+    <div class="cta-section">
+        <h2 class="cta-title">Ready to unlock your data potential?</h2>
+        <p>Discover how Roby Data Services can transform your business operations</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="cta-button">Go to Dashboard</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="cta-button">Get Started</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
