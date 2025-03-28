@@ -1,7 +1,8 @@
-"""roby_data_portal URL Configuration
+"""
+URL configuration for schemanavigator project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.0/topics/http/urls/
+    https://docs.djangoproject.com/en/5.1/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -19,14 +20,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('portal.urls')),
-    path('tracker', include('tracker.urls')),
-    # path('dasher/', include('dasher.urls')),
-    # path('api/', include('api.urls')),
-    # path('auth/', include('auth_detector.urls')),
-    # path('todo/', include('todo.urls')),
-]
+                  path('admin/', admin.site.urls),
+                  path('', include('tracker.urls')),
+              ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

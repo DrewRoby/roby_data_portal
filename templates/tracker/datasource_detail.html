@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+{% load tracker_filters %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ datasource.original_filename }}</h1>
+            <p class="text-muted">Uploaded on {{ datasource.upload_date|date:"F d, Y, H:i" }}</p>
+            <div class="badge bg-primary">{{ datasource.get_source_type_display }}</div>
+            <div class="badge bg-secondary">{{ datasource.canonical_name }} v{{ datasource.schema_version }}</div>
+
+
+    {% if not schema %}
+    <div class="alert alert-warning">
+        No schema information found for this data source.
+    </div>
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Retry Schema Detection</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'retry_detection' datasource.pk %}">
+                {% csrf_token %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="file_type" class="form-label">File Type</label>
+                        <select name="file_type" id="file_type" class="form-select" onchange="toggleDelimiterOptions(this.value)">
+                            <option value="csv" selected>CSV</option>
+                            <option value="excel">Excel</option>
+                            <option value="json">JSON</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6" id="delimiter_options">
+                        <label for="delimiter_preset" class="form-label">CSV Delimiter</label>
+                        <div class="input-group">
+                            <select name="delimiter_preset" id="delimiter_preset" class="form-select" onchange="updateCustomDelimiter(this.value)">
+                                <option value="comma">Comma (,)</option>
+                                <option value="tab">Tab</option>
+                                <option value="semicolon">Semicolon (;)</option>
+                                <option value="pipe">Pipe (|)</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                            <input type="text" name="delimiter_custom" id="delimiter_custom" class="form-control"
+                                   placeholder="Custom delimiter" style="display: none;" maxlength="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="encoding_options">
+                    <label for="encoding" class="form-label">File Encoding</label>
+                    <select name="encoding" id="encoding" class="form-select">
+                        <option value="utf-8">UTF-8</option>
+                        <option value="latin-1">Latin-1</option>
+                        <option value="iso-8859-1">ISO-8859-1</option>
+                        <option value="cp1252">Windows-1252</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="excel_options" style="display: none;">
+                    <label for="sheet_name" class="form-label">Excel Sheet Name/Index</label>
+                    <input type="text" name="sheet_name" id="sheet_name" class="form-control"
+                           placeholder="Leave blank for first sheet or specify sheet name/index">
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Retry Detection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+            <div class="badge bg-info text-dark">{{ schema.row_count }} rows</div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        // Run this when the page loads to ensure proper initial state
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileTypeSelect = document.getElementById('file_type');
+            if (fileTypeSelect) {
+                toggleDelimiterOptions(fileTypeSelect.value);
+            }
+        });
+
+        function toggleDelimiterOptions(fileType) {
+            const delimiterDiv = document.getElementById('delimiter_options');
+            const excelDiv = document.getElementById('excel_options');
+
+            if (fileType === 'csv') {
+                delimiterDiv.style.display = 'block';
+                excelDiv.style.display = 'none';
+            } else if (fileType === 'excel') {
+                delimiterDiv.style.display = 'none';
+                excelDiv.style.display = 'block';
+            } else {
+                delimiterDiv.style.display = 'none';
+                excelDiv.style.display = 'none';
+            }
+        }
+
+        function updateCustomDelimiter(value) {
+            const customInput = document.getElementById('delimiter_custom');
+            if (value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+            }
+        }
+    </script>
+
+<!--    <div class="mb-4">-->
+<!--        <form method="post" action="{% url 'reprocess_file' datasource.pk %}">-->
+<!--            {% csrf_token %}-->
+<!--            <button type="submit" class="btn btn-warning">-->
+<!--                {% if schema %}Re-analyze and Create New Version{% else %}Re-attempt Analysis{% endif %}-->
+<!--            </button>-->
+<!--        </form>-->
+<!--    </div>-->
+
+    <!-- File Action Options -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">File Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'reanalyze_file' datasource.pk %}" class="btn btn-warning">
+                            <i class="bi bi-arrow-repeat"></i> {% if schema %}Re-analyze File{% else %}Analyze File{% endif %}
+                        </a>
+
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="downloadDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="downloadDropdown">
+                                <li><a class="dropdown-item" href="{{ datasource.file.url }}" download>Original File</a></li>
+                                {% if schema %}
+                                <li><a class="dropdown-item" href="#" onclick="downloadSchemaJson()">Schema Definition (JSON)</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+
+                    <!-- Delete Confirmation Modal -->
+                    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete <strong>{{ datasource.original_filename }}</strong>?</p>
+                                    <p class="text-danger"><small>This action cannot be undone.</small></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form method="post" action="{% url 'delete_datasource' datasource.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function downloadSchemaJson() {
+        // Create a JSON blob and download it
+        const schemaData = {{ schema.column_definitions|safe }};
+        const fileName = "{{ datasource.canonical_name }}_v{{ datasource.schema_version }}_schema.json";
+
+        const blob = new Blob([JSON.stringify(schemaData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+    <!-- Schema Details -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Schema Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                            <tr>
+                                <th>Column Name</th>
+                                <th>Data Type</th>
+                                <th>Sample Values</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for column, details in schema.column_definitions.items %}
+                            <tr>
+                                <td>{{ column }}</td>
+                                <td><code>{{ details.type }}</code></td>
+                                <td>
+                                    {% if details.sample_values %}
+                                    <small>{{ details.sample_values|join:", " }}</small>
+                                    {% else %}
+                                    <small class="text-muted">No samples</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Primary Key Candidates -->
+    {% if primary_keys %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Primary Key Candidates</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Uniqueness</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for key in primary_keys %}
+                            <tr>
+                                <td>{{ key.column_name }}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar"
+                                             style="width: {{ key.uniqueness_ratio|floatformat:2|mul:100 }}%">
+                                            {{ key.uniqueness_ratio|floatformat:2|mul:100 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if key.is_confirmed %}
+                                    <span class="badge bg-success">Confirmed</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Candidate</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Schema Changes -->
+    {% if changes %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">Schema Changes</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Details</th>
+                                <th>Previous Version</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for change in changes %}
+                            <tr>
+                                <td>{{ change.get_change_type_display }}</td>
+                                <td>{{ change.change_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if change.details.columns %}
+                                    <small>{{ change.details.columns|join:", " }}</small>
+                                    {% else %}
+                                    <small class="text-muted">No details</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if change.previous_version %}
+                                    <a href="{% url 'datasource_detail' change.previous_version.pk %}">
+                                        {{ change.previous_version.original_filename }}
+                                    </a>
+                                    {% else %}
+                                    <small class="text-muted">None</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Related Schemas -->
+    {% if relationships %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">Related Schemas</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Related File</th>
+                                <th>Relationship</th>
+                                <th>Similarity</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for rel in relationships %}
+                            <tr>
+                                <td>
+                                    {% if rel.source_schema.data_source.pk == datasource.pk %}
+                                    <a href="{% url 'datasource_detail' rel.target_schema.data_source.pk %}">
+                                        {{ rel.target_schema.data_source.original_filename }}
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'datasource_detail' rel.source_schema.data_source.pk %}">
+                                        {{ rel.source_schema.data_source.original_filename }}
+                                    </a>
+                                    {% endif %}
+                                </td>
+                                <td>{{ rel.get_relationship_type_display }}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-warning" role="progressbar"
+                                             style="width: {{ rel.similarity_score|floatformat:2|mul:100 }}%">
+                                            {{ rel.similarity_score|floatformat:2|mul:100 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if rel.source_schema.data_source.pk == datasource.pk %}
+                                    <a href="{% url 'compare_schemas' schema.pk rel.target_schema.pk %}" class="btn btn-sm btn-outline-primary">
+                                        Compare
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'compare_schemas' schema.pk rel.source_schema.pk %}" class="btn btn-sm btn-outline-primary">
+                                        Compare
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
