@@ -1,33 +1,110 @@
+{% load static %}
+{% load plotly_dash %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Schema Navigator{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %}Roby Data Services{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        /* Include our header styles */
+        {% include 'components/header_styles.html' %}
+    </style>
+    {% block extra_css %}{% endblock %}
+    {% plotly_header %}
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="{% url 'home' %}">Schema Navigator</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'schema_list' %}" >Schemas</a>
-                </li>
-            </ul>
+    <header>
+        <!-- Color scroll animation container -->
+        <div class="color-scroll-container">
+            <div class="color-bar color-red"></div>
+            <div class="color-bar color-orange"></div>
+            <div class="color-bar color-blue"></div>
+            <div class="color-bar color-yellow"></div>
         </div>
+        
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
+                </div>
+                
+                {% if user.is_authenticated %}
+                <div class="user-actions">
+                    <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    
+    <!-- Sidebar Navigation -->
+    <div class="mobile-nav">
+        <div class="mobile-nav-header">
+            <h3>Menu</h3>
+            <button class="close-btn">&times;</button>
+        </div>
+        <ul class="mobile-nav-menu">
+            <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li><a href="{% url 'schema_list' %}">Schema Navigator</a></li>
+            <li><a href="#">Data Marketplace</a></li>
+            <li><a href="#">My Account</a></li>
+        </ul>
     </div>
-</nav>
-
-{% block content %}{% endblock %}
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block content %}{% endblock %}
+    
+    <footer>
+        {% plotly_footer %}
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <img src="{% static 'images/RDSLogoCropOutlineWhite.png' %}" alt="Roby Data Services Logo" class="footer-logo">
+                    <p>Roby Data Services provides powerful data solutions for modern businesses. Transform your data operations with our suite of integrated applications.</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Products</h3>
+                    <ul>
+                        <li><a href="#">Data Analytics</a></li>
+                        <li><a href="#">Data Visualization</a></li>
+                        <li><a href="#">ETL Manager</a></li>
+                        <li><a href="#">Data Warehouse</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Community</a></li>
+                        <li><a href="#">Learning Center</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Company</h3>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                &copy; {% now "Y" %} Roby Data Services. All rights reserved.
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Include our header animation script -->
+    <script>
+        {% include 'components/header_script.html' %}
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

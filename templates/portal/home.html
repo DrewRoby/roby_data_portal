@@ -1,4 +1,4 @@
-{% extends 'portal/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Roby Data Services - Home{% endblock %}
@@ -20,16 +20,16 @@
 
 <section class="container">
     <div class="apps-grid">
-        <!-- Data Analytics App -->
+        <!-- Schema Navigator App -->
         <div class="app-card">
-            <div class="card-color-bar red-bar"></div>
+            <div class="card-color-bar blue-bar"></div>
             <div class="card-content">
-                <div class="app-icon" style="background-color: var(--roby-red);">
+                <div class="app-icon" style="background-color: var(--roby-blue);">
                     📊
                 </div>
                 <h3 class="app-title">SchemaNavigator</h3>
                 <p class="app-description">Parse and understand the schema of a CSV, Excel, or JSON file.</p>
-                <a href="{% url 'login' %}" class="app-link">Launch App</a>
+                <a href="{% url 'home' %}" class="app-link">Launch App</a>
             </div>
         </div>
         
@@ -111,4 +111,3 @@
         {% endif %}
     </div>
 </section>
-{% endblock %}
