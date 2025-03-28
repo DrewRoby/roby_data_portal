@@ -8,7 +8,9 @@
 
 .logo:hover {
     transform: scale(1.05);
-}/* Header Animation */
+}
+
+/* Header Animation */
 header {
     position: relative;
     overflow: hidden;
@@ -42,6 +44,38 @@ header::after {
 
 header.menu-active::after {
     opacity: 1;
+}
+
+/* Color scroll animation container */
+.color-scroll-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    display: flex;
+    z-index: 5;
+}
+
+.color-bar {
+    height: 100%;
+    flex: 1;
+}
+
+.color-red {
+    background-color: var(--roby-red);
+}
+
+.color-orange {
+    background-color: var(--roby-orange);
+}
+
+.color-blue {
+    background-color: var(--roby-blue);
+}
+
+.color-yellow {
+    background-color: var(--roby-yellow);
 }
 
 /* Header Content */
@@ -115,6 +149,7 @@ header.menu-active::after {
 
 .mobile-nav-menu {
     list-style: none;
+    padding: 0;
 }
 
 .mobile-nav-menu li {

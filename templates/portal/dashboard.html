@@ -1,4 +1,4 @@
-{% extends 'portal/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Roby Data Services - Dashboard{% endblock %}
@@ -16,6 +16,19 @@
     </div>
     
     <div class="dashboard-cards">
+        <!-- Schema Navigator App -->
+        <div class="app-card">
+            <div class="card-color-bar blue-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-blue);">
+                    📊
+                </div>
+                <h3 class="app-title">Schema Navigator</h3>
+                <p class="app-description">Parse and understand the schema of CSV, Excel, or JSON files.</p>
+                <a href="{% url 'home' %}" class="app-link">Open Schema Navigator</a>
+            </div>
+        </div>
+        
         <!-- Data Analytics App -->
         <div class="app-card">
             <div class="card-color-bar red-bar"></div>
