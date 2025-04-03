@@ -33,9 +33,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -43,24 +40,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'portal.apps.PortalConfig',
-    'django_plotly_dash',
-    'channels',
-    # 'channels_redis',
-    # 'dasher',
 
-#<brought from='schemanavigator/settings.py'>
-    # 'corsheaders',
 
     # Third-party apps
+    'django_plotly_dash',
     'rest_framework',
+    # 'channels',
+    # 'corsheaders',
 
     # Project apps
+    'portal.apps.PortalConfig',
     'tracker',
     'api',
     'auth_detector',
     'todo',
-#</brought>
 ]
 
 MIDDLEWARE = [

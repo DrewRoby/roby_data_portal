@@ -64,17 +64,7 @@
                 
                 <button type="submit" class="login-button">Login</button>
             </form>
-            
-            <div class="resend-verification">
-                <p>Didn't receive verification email?</p>
-                <form method="post" action="{% url 'resend_verification' %}">
-                    {% csrf_token %}
-                    <input type="email" name="email" placeholder="Your email address" required>
-                    <button type="submit">Resend</button>
-                </form>
-            </div>
-        </div>
-        
+        </div>        
         <!-- Register Form -->
         <div id="register-form" class="auth-form">
             <form method="post" action="{% url 'register' %}">
@@ -124,6 +114,15 @@
                 
                 <button type="submit" class="login-button">Register</button>
             </form>
+                
+            <div class="resend-verification">
+                <p>Didn't receive verification email?</p>
+                <form method="post" action="{% url 'resend_verification' %}">
+                    {% csrf_token %}
+                    <input type="email" name="email" placeholder="Your email address" required>
+                    <button type="submit">Resend</button>
+                </form>
+            </div>
         </div>
         
         <div class="login-footer">

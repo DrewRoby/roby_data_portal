@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load tracker_filters %}
+
+{% block title %}Roby Data Services - All Schemas{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -7,6 +10,12 @@
         <div class="col">
             <h1>All Schemas</h1>
             <p class="lead">Browse all detected schemas in the system.</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <a href="{% url 'upload' %}" class="cta-button">Upload New Data Source</a>
         </div>
     </div>
 

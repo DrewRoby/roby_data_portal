@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import json
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.urls import reverse
@@ -12,7 +13,7 @@ from .forms import DataSourceUploadForm
 from fuzzywuzzy import fuzz
 from django.core.serializers.json import DjangoJSONEncoder
 
-
+@login_required
 def home(request):
     recent_sources = DataSource.objects.all().order_by('-upload_date')[:5]
     return render(request, 'tracker/home.html', {
@@ -20,6 +21,7 @@ def home(request):
         'recent_sources': recent_sources
     })
 
+@login_required
 def upload(request):
     if request.method == 'POST':
         form = DataSourceUploadForm(request.POST, request.FILES)
@@ -103,6 +105,8 @@ def upload(request):
         'form': form,
         'title': 'Upload Data Source'
     })
+
+@login_required
 def process_file(datasource):
     """
     Process the uploaded file, detect schema, and identify primary keys
@@ -126,6 +130,7 @@ def process_file(datasource):
         print(f"Error processing file: {e}")
         return False
 
+@login_required
 def find_related_sources(datasource):
     """
     Find potentially related sources based on filename similarity and schema
@@ -194,6 +199,7 @@ def find_related_sources(datasource):
         except SchemaDefinition.DoesNotExist:
             continue
 
+@login_required
 def datasource_detail(request, pk):
     datasource = get_object_or_404(DataSource, pk=pk)
 
@@ -222,6 +228,7 @@ def datasource_detail(request, pk):
         'title': f'Data Source: {datasource.original_filename}'
     })
 
+@login_required
 def schema_list(request):
     schemas = SchemaDefinition.objects.all().order_by('-detected_date')
     return render(request, 'tracker/schema_list.html', {
@@ -229,6 +236,7 @@ def schema_list(request):
         'title': 'All Schemas'
     })
 
+@login_required
 def compare_schemas(request, pk1, pk2):
     schema1 = get_object_or_404(SchemaDefinition, pk=pk1)
     schema2 = get_object_or_404(SchemaDefinition, pk=pk2)

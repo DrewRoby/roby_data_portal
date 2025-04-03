@@ -4,9 +4,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileNav = document.querySelector('.mobile-nav');
     const closeBtn = document.querySelector('.close-btn');
     
+    // Get authentication status from a data attribute we'll add to the body tag
+    const isAuthenticated = document.body.dataset.authenticated === 'true';
+    
     // Function to toggle the side menu and change header colors
     function toggleMenu(e) {
-        // Prevent navigation to home page
+        // If user is not authenticated, redirect to login page
+        if (!isAuthenticated) {
+            // Don't prevent default - let the link navigate normally
+            return;
+        }
+        
+        // For authenticated users, toggle the menu
         e.preventDefault();
         
         // Toggle the sidebar menu

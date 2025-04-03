@@ -10,7 +10,6 @@
             <div class="badge bg-primary">{{ datasource.get_source_type_display }}</div>
             <div class="badge bg-secondary">{{ datasource.canonical_name }} v{{ datasource.schema_version }}</div>
 
-
     {% if not schema %}
     <div class="alert alert-warning">
         No schema information found for this data source.
@@ -130,7 +129,7 @@
                     <h3 class="mb-0">File Actions</h3>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex gap-2">
+                    <div class="file-actions">
                         <a href="{% url 'reanalyze_file' datasource.pk %}" class="btn btn-warning">
                             <i class="bi bi-arrow-repeat"></i> {% if schema %}Re-analyze File{% else %}Analyze File{% endif %}
                         </a>
@@ -152,7 +151,15 @@
                         </button>
                     </div>
 
-                    <!-- Delete Confirmation Modal -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <!-- Delete Confirmation Modal - This will only appear when triggered -->
                     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">
