@@ -16,8 +16,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 @login_required
 def home(request):
     recent_sources = DataSource.objects.all().order_by('-upload_date')[:5]
-    return render(request, 'tracker/home.html', {
-        'title': 'Schema Navigator',
+    return render(request, 'schemascope/home.html', {
+        'title': 'SchemaScope',
         'recent_sources': recent_sources
     })
 
@@ -101,7 +101,7 @@ def upload(request):
     else:
         form = DataSourceUploadForm()
 
-    return render(request, 'tracker/upload.html', {
+    return render(request, 'schemascope/upload.html', {
         'form': form,
         'title': 'Upload Data Source'
     })
@@ -219,7 +219,7 @@ def datasource_detail(request, pk):
         changes = []
         relationships = []
 
-    return render(request, 'tracker/datasource_detail.html', {
+    return render(request, 'schemascope/datasource_detail.html', {
         'datasource': datasource,
         'schema': schema,
         'primary_keys': primary_keys,
@@ -231,7 +231,7 @@ def datasource_detail(request, pk):
 @login_required
 def schema_list(request):
     schemas = SchemaDefinition.objects.all().order_by('-detected_date')
-    return render(request, 'tracker/schema_list.html', {
+    return render(request, 'schemascope/schema_list.html', {
         'schemas': schemas,
         'title': 'All Schemas'
     })
@@ -261,7 +261,7 @@ def compare_schemas(request, pk1, pk2):
                 'schema2_type': type2
             }
 
-    return render(request, 'tracker/compare_schemas.html', {
+    return render(request, 'schemascope/compare_schemas.html', {
         'schema1': schema1,
         'schema2': schema2,
         'common_columns': common_columns,
@@ -571,7 +571,7 @@ def reanalyze_file(request, pk):
     """Show file preview and options for re-analyzing a file"""
     datasource = get_object_or_404(DataSource, pk=pk)
 
-    return render(request, 'tracker/file_preview.html', {
+    return render(request, 'schemascope/file_preview.html', {
         'datasource': datasource,
         'title': f'Re-analyze: {datasource.original_filename}'
     })

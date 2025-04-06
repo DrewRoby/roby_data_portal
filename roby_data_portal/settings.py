@@ -158,8 +158,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Login URLs
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'portal/home'
+LOGOUT_REDIRECT_URL = 'guestpage'
 
 # Email Configuration - Using console backend for development
 # EMAIL_BACKEND = os.getenv('EMAIL_BACKEND_DEV')

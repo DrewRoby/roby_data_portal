@@ -14,7 +14,7 @@ import uuid
 
 def home(request):
     """View for the home page."""
-    return render(request, 'portal/home.html')
+    return render(request, 'portal/guestpage.html')
 
 def login_view(request):
     """View for user login."""
@@ -28,7 +28,7 @@ def login_view(request):
                 # Check if email is verified
                 if hasattr(user, 'profile') and user.profile.is_email_verified:
                     login(request, user)
-                    return redirect('dashboard')
+                    return redirect('portal/home')  # Changed from 'dashboard' to 'home'
                 else:
                     messages.error(request, 'Please verify your email address before logging in.')
             else:
@@ -163,6 +163,6 @@ def send_verification_email(request, user, token):
     )
 
 @login_required
-def dashboard(request):
-    """View for the user dashboard. Requires login."""
-    return render(request, 'portal/dashboard.html')
+def get_homepage(request):
+    """View for the user home page. Requires login."""
+    return render(request, 'portal/home.html')

@@ -11,6 +11,61 @@
     <style>
         /* Include our header styles */
         {% include 'components/header_styles.html' %}
+
+        /* User profile section styling */
+        .user-profile-section {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-right: 12px;
+            background-color: #e0e0e0;
+        }
+        
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            margin: 0;
+            font-weight: 500;
+            color: var(--dark-gray);
+        }
+        
+        .logout-link-sidebar {
+            font-size: 0.85rem;
+            color: var(--roby-red);
+            text-decoration: none;
+        }
+        
+        .logout-link-sidebar:hover {
+            text-decoration: underline;
+        }
+
+        /* Updated mobile nav to use flexbox layout */
+        .mobile-nav {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .mobile-nav-menu {
+            flex-grow: 1;
+        }
     </style>
     {% block extra_css %}{% endblock %}
     {% plotly_header %}
@@ -53,11 +108,24 @@
             <button class="close-btn">&times;</button>
         </div>
         <ul class="mobile-nav-menu">
-            <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li><a href="{% url 'portal/home' %}">Home</a></li>
             <li><a href="{% url 'schema_list' %}">Schema Navigator</a></li>
             <li><a href="#">Data Marketplace</a></li>
             <li><a href="#">My Account</a></li>
         </ul>
+        
+        <!-- User profile section at the bottom of the sidebar -->
+        {% if user.is_authenticated %}
+        <div class="user-profile-section">
+            <div class="user-avatar">
+                <img src="{% static 'images/default-avatar.png' %}" alt="Profile" class="avatar-img">
+            </div>
+            <div class="user-info">
+                <p class="user-name">{{ user.get_full_name|default:user.username }}</p>
+                <a href="{% url 'logout' %}" class="logout-link-sidebar">Logout</a>
+            </div>
+        </div>
+        {% endif %}
     </div>
     
     {% block content %}{% endblock %}

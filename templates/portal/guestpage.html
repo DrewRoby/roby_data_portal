@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Roby Data Services - Data Tools for Small Business{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        padding: 6rem 0;
+        background-color: var(--white);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 40%;
+        height: 100%;
+        background: linear-gradient(135deg, var(--roby-blue) 0%, var(--roby-yellow) 100%);
+        clip-path: polygon(100% 0, 0 0, 100% 100%);
+        opacity: 0.8;
+        z-index: 0;
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        width: 60%;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(to right, var(--roby-red), var(--roby-orange));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        color: var(--dark-gray);
+    }
+    
+    .features-section {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+    }
+    
+    .section-title {
+        text-align: center;
+        margin-bottom: 3rem;
+        font-size: 2.5rem;
+        color: var(--dark-gray);
+    }
+    
+    .feature-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+        padding: 2rem;
+        height: 100%;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+    }
+    
+    .feature-title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--dark-gray);
+    }
+    
+    .tools-section {
+        padding: 5rem 0;
+    }
+    
+    .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+    
+    .community-section {
+        padding: 5rem 0;
+        background: linear-gradient(135deg, var(--roby-blue) 0%, var(--roby-yellow) 100%);
+        color: white;
+        text-align: center;
+    }
+    
+    .community-icons {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        margin: 3rem 0;
+    }
+    
+    .community-icon {
+        font-size: 3rem;
+        background: rgba(255, 255, 255, 0.2);
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s ease, background 0.3s ease;
+    }
+    
+    .community-icon:hover {
+        transform: scale(1.1);
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .testimonials-section {
+        padding: 5rem 0;
+        background-color: #f8f9fa;
+    }
+    
+    .testimonial-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+        padding: 2rem;
+        text-align: center;
+        height: 100%;
+    }
+    
+    .testimonial-text {
+        font-style: italic;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        line-height: 1.7;
+    }
+    
+    .testimonial-author {
+        font-weight: 600;
+        color: var(--dark-gray);
+    }
+    
+    .cta-button-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .secondary-button {
+        display: inline-block;
+        padding: 1rem 2rem;
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+    
+    .secondary-button:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-5px);
+    }
+    
+    @media (max-width: 768px) {
+        .hero-content {
+            width: 100%;
+            padding: 0 1rem;
+        }
+        
+        .hero::before {
+            width: 100%;
+            opacity: 0.2;
+        }
+        
+        .hero-title {
+            font-size: 2.5rem;
+        }
+        
+        .feature-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .community-icons {
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">Big Data Tools<br>Small Business Focus</h1>
+            <p class="hero-subtitle">Roby Data Services empowers small businesses with enterprise-grade data tools that were previously only available to large corporations.</p>
+            <div class="cta-button-group">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'portal/home' %}" class="cta-button">Go to Homepage</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="cta-button">Get Started</a>
+                    <a href="#tools" class="secondary-button">Explore Tools</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="container">
+        <h2 class="section-title">Why Choose Roby Data Services?</h2>
+        
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-red);">💼</div>
+                    <h3 class="feature-title">Small Business Focused</h3>
+                    <p>Designed specifically for the unique challenges and budget constraints of small businesses.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-blue);">🔍</div>
+                    <h3 class="feature-title">Data Clarity</h3>
+                    <p>Easily understand and visualize your data with powerful but intuitive tools.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-orange);">⚡</div>
+                    <h3 class="feature-title">Quick Implementation</h3>
+                    <p>Get up and running in minutes, not months. No complex setup or specialized IT knowledge required.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-yellow);">🤝</div>
+                    <h3 class="feature-title">Community Support</h3>
+                    <p>Join a community of like-minded professionals to share ideas, strategies, and solutions.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-blue);">🔒</div>
+                    <h3 class="feature-title">Data Security</h3>
+                    <p>Enterprise-grade security protocols to keep your sensitive business data safe and compliant.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-red);">📈</div>
+                    <h3 class="feature-title">Growth Ready</h3>
+                    <p>Scale your data capabilities as your business grows, without having to switch platforms.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Tools Section -->
+<section id="tools" class="tools-section">
+    <div class="container">
+        <h2 class="section-title">Our Data Tools</h2>
+        
+        <div class="tool-grid">
+            <!-- Schema Navigator Tool -->
+            <div class="app-card">
+                <div class="card-color-bar blue-bar"></div>
+                <div class="card-content">
+                    <div class="app-icon" style="background-color: var(--roby-blue);">
+                        📊
+                    </div>
+                    <h3 class="app-title">SchemaNavigator</h3>
+                    <p class="app-description">Parse and understand the schema of CSV, Excel, or JSON files. Track changes between versions and document your data structure.</p>
+                    <a href="{% url 'home' %}" class="app-link">Launch Tool</a>
+                </div>
+            </div>
+            
+            <!-- Visualization Tool -->
+            <div class="app-card">
+                <div class="card-color-bar orange-bar"></div>
+                <div class="card-content">
+                    <div class="app-icon" style="background-color: var(--roby-orange);">
+                        📈
+                    </div>
+                    <h3 class="app-title">Dasher</h3>
+                    <p class="app-description">Create stunning visualizations and dashboards that communicate your data story effectively to stakeholders.</p>
+                    <a href="#" class="app-link">Coming Soon</a>
+                </div>
+            </div>
+            
+            <!-- Task Manager Tool -->
+            <div class="app-card">
+                <div class="card-color-bar red-bar"></div>
+                <div class="card-content">
+                    <div class="app-icon" style="background-color: var(--roby-red);">
+                        ✅
+                    </div>
+                    <h3 class="app-title">RobyTODO</h3>
+                    <p class="app-description">Basic Kanban-style board for tracking tasks and managing data projects efficiently.</p>
+                    <a href="#" class="app-link">Coming Soon</a>
+                </div>
+            </div>
+            
+            <!-- Community Tool -->
+            <div class="app-card">
+                <div class="card-color-bar yellow-bar"></div>
+                <div class="card-content">
+                    <div class="app-icon" style="background-color: var(--roby-yellow);">
+                        💬
+                    </div>
+                    <h3 class="app-title">Comm Center</h3>
+                    <p class="app-description">Connect with other data professionals through forums, Discord, and community events.</p>
+                    <a href="#" class="app-link">Coming Soon</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Community Section -->
+<section class="community-section">
+    <div class="container">
+        <h2 class="section-title" style="color: white;">Join Our Data Community</h2>
+        <p class="lead">Connect with other data professionals, share insights, and collaborate on solutions.</p>
+        
+        <div class="community-icons">
+            <div class="community-icon">
+                <span>📊</span>
+            </div>
+            <div class="community-icon">
+                <span>👥</span>
+            </div>
+            <div class="community-icon">
+                <span>💡</span>
+            </div>
+        </div>
+        
+        <p>Our forums and community spaces are launching soon! Join our waitlist to get early access.</p>
+        
+        <a href="#" class="cta-button">Join Waitlist</a>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials-section">
+    <div class="container">
+        <h2 class="section-title">What Our Users Say</h2>
+        
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"SchemaNavigator has been a game-changer for our small marketing team. We finally understand our data structure without needing to hire a database expert."</p>
+                    <p class="testimonial-author">Sarah J., Marketing Director</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"As a small business owner, I never thought enterprise-level data tools would be accessible to us. Roby Data Services proved me wrong."</p>
+                    <p class="testimonial-author">Michael T., Small Business Owner</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"The community aspect is what really sets RDS apart. I've learned so much from other users and the support is fantastic."</p>
+                    <p class="testimonial-author">Elena R., Data Analyst</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Final CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <h2 class="cta-title">Ready to unlock your data potential?</h2>
+        <p>Start your data journey today with Roby Data Services</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'portal/home' %}" class="cta-button">Go to Homepage</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="cta-button">Get Started Free</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
