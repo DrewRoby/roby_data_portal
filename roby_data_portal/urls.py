@@ -9,7 +9,7 @@ urlpatterns = [
     path('schemascope/', include('schemascope.urls')),
     # path('api/', include('api.urls')),
     # path('auth/', include('auth_detector.urls')),
-    # path('todo/', include('todo.urls')),
+    path('todo/', include('todo.urls')),
     # path('dasher/', include('dasher.urls')),
 ]
 
