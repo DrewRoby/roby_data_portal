@@ -28,7 +28,7 @@ def login_view(request):
                 # Check if email is verified
                 if hasattr(user, 'profile') and user.profile.is_email_verified:
                     login(request, user)
-                    return redirect('portal/home')  # Changed from 'dashboard' to 'home'
+                    return redirect('home')  # Changed from 'dashboard' to 'home'
                 else:
                     messages.error(request, 'Please verify your email address before logging in.')
             else:

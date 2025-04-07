@@ -11,7 +11,7 @@
           <h3 class="mb-0">File Analysis Options</h3>
         </div>
         <div class="card-body">
-          <form method="post" action="{% url 'reprocess_file' datasource.pk %}">
+          <form method="post" action="{% url 'schemascope:reprocess_file' datasource.pk %}">
             {% csrf_token %}
             <div class="row mb-3">
               <div class="col-md-6">
@@ -197,7 +197,7 @@
         previewLoading.style.display = 'block';
 
         // Make AJAX request to get preview
-        fetch(`{% url 'file_preview' datasource.pk %}?file_type=${fileType}&encoding=${encoding}&delimiter=${delimiter}&sheet_name=${sheetName}`)
+        fetch(`{% url 'schemascope:file_preview' datasource.pk %}?file_type=${fileType}&encoding=${encoding}&delimiter=${delimiter}&sheet_name=${sheetName}`)
             .then(response => response.json())
             .then(data => {
                 // Update raw view

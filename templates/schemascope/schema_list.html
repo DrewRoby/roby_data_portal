@@ -15,7 +15,7 @@
 
     <div class="row mb-4">
         <div class="col">
-            <a href="{% url 'upload' %}" class="cta-button">Upload New Data Source</a>
+            <a href="{% url 'schemascope:upload' %}" class="cta-button">Upload New Data Source</a>
         </div>
     </div>
 
@@ -38,7 +38,7 @@
                     {% for schema in schemas %}
                     <tr>
                         <td>
-                            <a href="{% url 'datasource_detail' schema.data_source.pk %}">
+                            <a href="{% url 'schemascope:datasource_detail' schema.data_source.pk %}">
                                 {{ schema.data_source.original_filename }}
                             </a>
                         </td>
@@ -48,7 +48,7 @@
                         <td>{{ schema.row_count }}</td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{% url 'datasource_detail' schema.data_source.pk %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'schemascope:datasource_detail' schema.data_source.pk %}" class="btn btn-sm btn-outline-primary">
                                     View
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger"
@@ -71,7 +71,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <form method="post" action="{% url 'delete_datasource' schema.data_source.pk %}">
+                                            <form method="post" action="{% url 'schemascope:delete_datasource' schema.data_source.pk %}">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-danger">Delete</button>
                                             </form>
@@ -89,7 +89,7 @@
     </div>
     {% else %}
     <div class="alert alert-info">
-        No schemas have been detected yet. <a href="{% url 'upload' %}" class="alert-link">Upload a file</a> to get started.
+        No schemas have been detected yet. <a href="{% url 'schemascope:upload' %}" class="alert-link">Upload a file</a> to get started.
     </div>
     {% endif %}
 </div>

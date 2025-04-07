@@ -11,8 +11,8 @@
             <h1>Schema Navigator</h1>
             <p class="lead">Track and visualize schema evolution over time.</p>
             <div class="d-grid gap-2 d-md-flex">
-                <a href="{% url 'upload' %}" class="btn btn-primary btn-lg">Upload New Data Source</a>
-                <a href="{% url 'schema_list' %}" class="btn btn-outline-secondary btn-lg">View All Schemas</a>
+                <a href="{% url 'schemascope:upload' %}" class="btn btn-primary btn-lg">Upload New Data Source</a>
+                <a href="{% url 'schemascope:schema_list' %}" class="btn btn-outline-secondary btn-lg">View All Schemas</a>
             </div>
         </div>
     </div>
@@ -32,7 +32,7 @@
                             <br>
                             <small>{{ source.upload_date|date:"M d, Y" }}</small>
                         </p>
-                        <a href="{% url 'datasource_detail' source.pk %}" class="app-link">View Details</a>
+                        <a href="{% url 'schemascope:datasource_detail' source.pk %}" class="app-link">View Details</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -43,7 +43,7 @@
     <div class="row mt-4">
         <div class="col">
             <div class="alert alert-info">
-                No data sources available. <a href="{% url 'upload' %}" class="alert-link">Upload a file</a> to get started.
+                No data sources available. <a href="{% url 'schemascope:upload' %}" class="alert-link">Upload a file</a> to get started.
             </div>
         </div>
     </div>

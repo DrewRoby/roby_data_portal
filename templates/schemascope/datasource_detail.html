@@ -19,7 +19,7 @@
             <h3 class="mb-0">Retry Schema Detection</h3>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'retry_detection' datasource.pk %}">
+            <form method="post" action="{% url 'schemascope:retry_detection' datasource.pk %}">
                 {% csrf_token %}
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -113,7 +113,7 @@
     </script>
 
 <!--    <div class="mb-4">-->
-<!--        <form method="post" action="{% url 'reprocess_file' datasource.pk %}">-->
+<!--        <form method="post" action="{% url 'schemascope:reprocess_file' datasource.pk %}">-->
 <!--            {% csrf_token %}-->
 <!--            <button type="submit" class="btn btn-warning">-->
 <!--                {% if schema %}Re-analyze and Create New Version{% else %}Re-attempt Analysis{% endif %}-->
@@ -130,7 +130,7 @@
                 </div>
                 <div class="card-body">
                     <div class="file-actions">
-                        <a href="{% url 'reanalyze_file' datasource.pk %}" class="btn btn-warning">
+                        <a href="{% url 'schemascope:reanalyze_file' datasource.pk %}" class="btn btn-warning">
                             <i class="bi bi-arrow-repeat"></i> {% if schema %}Re-analyze File{% else %}Analyze File{% endif %}
                         </a>
 
@@ -173,7 +173,7 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <form method="post" action="{% url 'delete_datasource' datasource.pk %}">
+                                    <form method="post" action="{% url 'schemascope:delete_datasource' datasource.pk %}">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-danger">Delete</button>
                                     </form>
@@ -326,7 +326,7 @@
                                 </td>
                                 <td>
                                     {% if change.previous_version %}
-                                    <a href="{% url 'datasource_detail' change.previous_version.pk %}">
+                                    <a href="{% url 'schemascope:datasource_detail' change.previous_version.pk %}">
                                         {{ change.previous_version.original_filename }}
                                     </a>
                                     {% else %}
@@ -368,11 +368,11 @@
                             <tr>
                                 <td>
                                     {% if rel.source_schema.data_source.pk == datasource.pk %}
-                                    <a href="{% url 'datasource_detail' rel.target_schema.data_source.pk %}">
+                                    <a href="{% url 'schemascope:datasource_detail' rel.target_schema.data_source.pk %}">
                                         {{ rel.target_schema.data_source.original_filename }}
                                     </a>
                                     {% else %}
-                                    <a href="{% url 'datasource_detail' rel.source_schema.data_source.pk %}">
+                                    <a href="{% url 'schemascope:datasource_detail' rel.source_schema.data_source.pk %}">
                                         {{ rel.source_schema.data_source.original_filename }}
                                     </a>
                                     {% endif %}
@@ -388,11 +388,11 @@
                                 </td>
                                 <td>
                                     {% if rel.source_schema.data_source.pk == datasource.pk %}
-                                    <a href="{% url 'compare_schemas' schema.pk rel.target_schema.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{% url 'schemascope:compare_schemas' schema.pk rel.target_schema.pk %}" class="btn btn-sm btn-outline-primary">
                                         Compare
                                     </a>
                                     {% else %}
-                                    <a href="{% url 'compare_schemas' schema.pk rel.source_schema.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{% url 'schemascope:compare_schemas' schema.pk rel.source_schema.pk %}" class="btn btn-sm btn-outline-primary">
                                         Compare
                                     </a>
                                     {% endif %}

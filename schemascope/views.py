@@ -693,7 +693,7 @@ def reprocess_file(request, pk):
                 messages.error(request, f'Failed to re-analyze {datasource.original_filename}')
 
     # Redirect back to the datasource detail
-    return redirect('datasource_detail', pk=datasource.pk)
+    return redirect('schemascope:datasource_detail', pk=datasource.pk)
 
 def delete_datasource(request, pk):
     """Delete a datasource and its associated schema"""
@@ -707,7 +707,7 @@ def delete_datasource(request, pk):
 
         messages.success(request, f'Successfully deleted "{original_filename}"')
 
-    return redirect('schema_list')
+    return redirect('schemascope:schema_list')
 
 
 class CustomJSONEncoder(DjangoJSONEncoder):
