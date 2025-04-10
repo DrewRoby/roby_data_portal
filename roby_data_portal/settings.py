@@ -50,7 +50,7 @@ INSTALLED_APPS = [
 
     # Project apps
     'portal.apps.PortalConfig',
-    'schemascope',
+    'schemascope.apps.SchemascopeConfig',
     'api',
     'auth_detector',
     'todo',
