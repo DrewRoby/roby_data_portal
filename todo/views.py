@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+# from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 from .models import Board, Task, Project
 from .forms import BoardForm, TaskForm, ProjectForm
 
-@login_required
+
 def board_list(request):
     boards = Board.objects.filter(user=request.user)
 
@@ -24,7 +24,7 @@ def board_list(request):
 
     return render(request, 'todo/board_list.html', context)
 
-@login_required
+
 def board_detail(request, board_id):
     board = get_object_or_404(Board, id=board_id, user=request.user)
     boards = Board.objects.filter(user=request.user)
@@ -50,7 +50,7 @@ def board_detail(request, board_id):
 
     return render(request, 'todo/board_detail.html', context)
 
-@login_required
+
 def create_board(request):
     if request.method == 'POST':
         form = BoardForm(request.POST)
@@ -64,7 +64,7 @@ def create_board(request):
 
     return render(request, 'todo/create_board.html', {'form': form})
 
-@login_required
+
 def create_task(request, board_id):
     board = get_object_or_404(Board, id=board_id, user=request.user)
 
@@ -81,7 +81,7 @@ def create_task(request, board_id):
 
     return render(request, 'todo/create_task.html', {'form': form, 'board': board})
 
-@login_required
+
 def edit_task(request, task_id):
     task = get_object_or_404(Task, id=task_id, user=request.user)
     board_id = task.board.id
@@ -96,7 +96,7 @@ def edit_task(request, task_id):
 
     return render(request, 'todo/edit_task.html', {'form': form, 'task': task})
 
-@login_required
+
 @require_POST
 def update_task_status(request, task_id):
     task = get_object_or_404(Task, id=task_id, user=request.user)
@@ -109,7 +109,7 @@ def update_task_status(request, task_id):
 
     return JsonResponse({'success': False, 'error': 'Invalid status'})
 
-@login_required
+
 def create_project(request):
     if request.method == 'POST':
         form = ProjectForm(request.POST)
@@ -123,7 +123,7 @@ def create_project(request):
 
     return render(request, 'todo/create_project.html', {'form': form})
 
-@login_required
+
 def project_list(request):
     projects = Project.objects.filter(user=request.user)
 
