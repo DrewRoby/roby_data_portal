@@ -6,6 +6,17 @@ from django.urls import reverse
 from .models import Board, Task, Project
 from .forms import BoardForm, TaskForm, ProjectForm
 
+def get_todo_nav_context(active_tab='boards'):
+    """Return navigation context for Todo templates"""
+    nav_tabs = [
+        {'name': 'Boards', 'url': 'todo:board_list', 'icon': 'fa-clipboard-list'},
+        {'name': 'Projects', 'url': 'todo:project_list', 'icon': 'fa-project-diagram'},
+    ]
+    
+    return {
+        'nav_tabs': nav_tabs,
+        'active_tab': active_tab
+    }
 
 def board_list(request):
     boards = Board.objects.filter(user=request.user)
@@ -17,10 +28,14 @@ def board_list(request):
             user=request.user
         )
         boards = [default_board]
-
-    context = {
+    
+    # Get navigation context
+    context = get_todo_nav_context(active_tab='Boards')
+    
+    # Add view-specific context
+    context.update({
         'boards': boards,
-    }
+    })
 
     return render(request, 'todo/board_list.html', context)
 
@@ -37,8 +52,17 @@ def board_detail(request, board_id):
 
     # Forms
     task_form = TaskForm(user=request.user)
-
-    context = {
+    
+    # Get navigation context
+    context = get_todo_nav_context(active_tab='Boards')
+    
+    # Add board-specific actions
+    board_actions = [
+        {'name': 'Add Task', 'url': 'todo:create_task', 'url_params': [board.id], 'icon': 'fa-plus'}
+    ]
+    
+    # Add view-specific context
+    context.update({
         'board': board,
         'boards': boards,
         'projects': projects,
@@ -46,7 +70,8 @@ def board_detail(request, board_id):
         'in_progress_tasks': in_progress_tasks,
         'done_tasks': done_tasks,
         'task_form': task_form,
-    }
+        'board_actions': board_actions,
+    })
 
     return render(request, 'todo/board_detail.html', context)
 
@@ -126,9 +151,13 @@ def create_project(request):
 
 def project_list(request):
     projects = Project.objects.filter(user=request.user)
-
-    context = {
+    
+    # Get navigation context
+    context = get_todo_nav_context(active_tab='Projects')
+    
+    # Add view-specific context
+    context.update({
         'projects': projects,
-    }
+    })
 
     return render(request, 'todo/project_list.html', context)

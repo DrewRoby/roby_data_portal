@@ -8,18 +8,15 @@
 
 {% block content %}
 <div class="container">
-    <div class="app-header">
-        <h1>{% block todo_title %}Todo App{% endblock %}</h1>
-        <div class="app-nav">
-            <a href="{% url 'todo:board_list' %}" class="nav-link{% if request.resolver_match.url_name == 'board_list' %} active{% endif %}">
-                <i class="fas fa-clipboard-list"></i> Boards
-            </a>
-            <a href="{% url 'todo:project_list' %}" class="nav-link{% if request.resolver_match.url_name == 'project_list' %} active{% endif %}">
-                <i class="fas fa-project-diagram"></i> Projects
-            </a>
-        </div>
-    </div>
-
+    <!-- Include the app header component -->
+    {% include 'components/app_header.html' with 
+        app_name="Task Manager" 
+        app_home_url="todo:board_list" 
+        app_icon="fa-tasks" 
+        tabs=nav_tabs 
+        active_tab=active_tab 
+    %}
+    
     <div class="app-content">
         {% block todo_content %}{% endblock %}
     </div>

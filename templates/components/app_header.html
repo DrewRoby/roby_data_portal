@@ -1,0 +1,171 @@
+{% comment %}
+This is a reusable app header component with:
+- App title and icon
+- Home button for the app
+- Sub-navigation tabs
+
+To use it, include it in your template with parameters:
+{% include 'components/app_header.html' with 
+    app_name="SchemaScope" 
+    app_home_url="schemascope:index" 
+    app_icon="fa-project-diagram" 
+    tabs=nav_tabs 
+    active_tab=active_tab 
+%}
+
+Where nav_tabs is a list of dictionaries with 'name', 'url', and 'icon' keys.
+{% endcomment %}
+
+<div class="app-header-container">
+    <div class="app-header-top">
+        <div class="app-title">
+            <i class="fas {{ app_icon|default:'fa-cube' }}"></i>
+            <h2>{{ app_name }}</h2>
+        </div>
+        <div class="app-actions">
+            <a href="{% url app_home_url %}" class="app-home-btn" title="Go to {{ app_name }} Home">
+                <i class="fas fa-home"></i>
+            </a>
+            <a href="{% url 'portal:home' %}" class="app-dashboard-btn" title="Back to Dashboard">
+                <i class="fas fa-th-large"></i>
+            </a>
+        </div>
+    </div>
+    
+    {% if tabs %}
+    <div class="app-nav-tabs">
+        <ul class="nav-tab-list">
+            {% for tab in tabs %}
+            <li class="nav-tab-item {% if tab.name == active_tab %}active{% endif %}">
+                <a href="{% url tab.url %}" class="nav-tab-link">
+                    {% if tab.icon %}<i class="fas {{ tab.icon }}"></i>{% endif %}
+                    {{ tab.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .app-header-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    
+    .app-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .app-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .app-title i {
+        font-size: 1.5rem;
+        color: var(--roby-blue);
+    }
+    
+    .app-title h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dark-gray);
+    }
+    
+    .app-actions {
+        display: flex;
+        gap: 12px;
+    }
+    
+    .app-home-btn, .app-dashboard-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: var(--dark-gray);
+        background-color: #fff;
+        border: 1px solid #ddd;
+        transition: all 0.2s ease;
+    }
+    
+    .app-home-btn:hover {
+        background-color: var(--roby-blue);
+        color: white;
+        border-color: var(--roby-blue);
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+    }
+    
+    .app-dashboard-btn:hover {
+        background-color: var(--roby-orange);
+        color: white;
+        border-color: var(--roby-orange);
+        box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
+    }
+    
+    .app-nav-tabs {
+        padding: 0 20px;
+        background-color: #fff;
+    }
+    
+    .nav-tab-list {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        overflow-x: auto;
+    }
+    
+    .nav-tab-item {
+        margin-right: 5px;
+    }
+    
+    .nav-tab-link {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 16px;
+        color: var(--dark-gray);
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-tab-link i {
+        font-size: 0.9rem;
+    }
+    
+    .nav-tab-item.active .nav-tab-link {
+        color: var(--roby-blue);
+        border-bottom-color: var(--roby-blue);
+        font-weight: 500;
+    }
+    
+    .nav-tab-link:hover {
+        background-color: #f8f9fa;
+        color: var(--roby-blue);
+    }
+    
+    @media (max-width: 768px) {
+        .app-title h2 {
+            font-size: 1.3rem;
+        }
+        
+        .nav-tab-link {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+    }
+</style>

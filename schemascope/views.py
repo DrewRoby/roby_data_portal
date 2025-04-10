@@ -116,7 +116,7 @@ def upload(request):
         'title': 'Upload Data Source'
     })
     
-    return render(request, 'schemascope/upload.html', context)    })
+    return render(request, 'schemascope/upload.html', context) 
 
 
 
