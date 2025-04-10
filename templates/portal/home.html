@@ -10,13 +10,13 @@
             <h2>Tools</h2>
         </div>
         <div class="user-actions">
-            <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+            <a href="{% url 'portal:logout' %}" class="logout-link">Logout</a>
         </div>
     </div>
     
     <div class="dashboard-cards">
         <!-- Schema Navigator App -->
-               <a href="{% url 'schemascope' %}" class="app-link">
+               <a href="{% url 'schemascope:index' %}" class="app-link">
         <div class="app-card">
             <div class="card-color-bar blue-bar"></div>
             <div class="card-content">

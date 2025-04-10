@@ -86,7 +86,7 @@
                     {% if user.is_authenticated %}
                         <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
                     {% else %}
-                        <a href="{% url 'login' %}">
+                        <a href="{% url 'portal:login' %}">
                             <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
                         </a>
                     {% endif %}
@@ -94,7 +94,7 @@
                 
                 {% if user.is_authenticated %}
                 <div class="user-actions">
-                    <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+                    <a href="{% url 'portal:logout' %}" class="logout-link">Logout</a>
                 </div>
                 {% endif %}
             </div>
@@ -108,7 +108,7 @@
             <button class="close-btn">&times;</button>
         </div>
         <ul class="mobile-nav-menu">
-            <li><a href="{% url 'home' %}">Home</a></li>
+            <li><a href="{% url 'portal:home' %}">Home</a></li>
             <li><a href="{% url 'schemascope:schema_list' %}">Schema Navigator</a></li>
             <li><a href="#">Data Marketplace</a></li>
             <li><a href="#">My Account</a></li>
@@ -122,7 +122,7 @@
             </div>
             <div class="user-info">
                 <p class="user-name">{{ user.get_full_name|default:user.username }}</p>
-                <a href="{% url 'logout' %}" class="logout-link-sidebar">Logout</a>
+                <a href="{% url 'portal:logout' %}" class="logout-link-sidebar">Logout</a>
             </div>
         </div>
         {% endif %}

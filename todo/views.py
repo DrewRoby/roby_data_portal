@@ -58,7 +58,7 @@ def create_board(request):
             board = form.save(commit=False)
             board.user = request.user
             board.save()
-            return redirect('board_detail', board_id=board.id)
+            return redirect('todo:board_detail', board_id=board.id)
     else:
         form = BoardForm()
 
@@ -75,7 +75,7 @@ def create_task(request, board_id):
             task.user = request.user
             task.board = board
             task.save()
-            return redirect('board_detail', board_id=board.id)
+            return redirect('todo:board_detail', board_id=board.id)
     else:
         form = TaskForm(user=request.user)
 
@@ -90,7 +90,7 @@ def edit_task(request, task_id):
         form = TaskForm(request.POST, instance=task, user=request.user)
         if form.is_valid():
             form.save()
-            return redirect('board_detail', board_id=board_id)
+            return redirect('todo:board_detail', board_id=board_id)
     else:
         form = TaskForm(instance=task, user=request.user)
 
@@ -117,7 +117,7 @@ def create_project(request):
             project = form.save(commit=False)
             project.user = request.user
             project.save()
-            return redirect('board_list')
+            return redirect('todo:board_list')
     else:
         form = ProjectForm()
 

@@ -19,7 +19,7 @@
             {% endfor %}
         {% endif %}
         
-        <form method="post" action="{% url 'register' %}">
+        <form method="post" action="{% url 'portal:register' %}">
             {% csrf_token %}
             
             <div class="form-group">
@@ -72,7 +72,7 @@
             
             <div style="text-align: center;">
                 <p>Already have an account?</p>
-                <a href="{% url 'login' %}" class="app-link">Go to Login</a>
+                <a href="{% url 'portal:login' %}" class="app-link">Go to Login</a>
             </div>
         </form>
         

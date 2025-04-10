@@ -28,7 +28,7 @@ def login_view(request):
                 # Check if email is verified
                 if hasattr(user, 'profile') and user.profile.is_email_verified:
                     login(request, user)
-                    return redirect('home')  # Changed from 'dashboard' to 'home'
+                    return redirect('portal:home')  # Changed from 'dashboard' to 'home'
                 else:
                     messages.error(request, 'Please verify your email address before logging in.')
             else:
@@ -72,7 +72,7 @@ def register(request):
             send_verification_email(request, user, token)
             
             messages.success(request, 'Registration successful! Please check your email to verify your account.')
-            return redirect('login')
+            return redirect('portal:login')
     else:
         form = RegistrationForm()
     
@@ -86,7 +86,7 @@ def verify_email(request, token):
     # Check if token is expired
     if verification_token.is_expired:
         messages.error(request, 'Verification link has expired. Please request a new one.')
-        return redirect('login')
+        return redirect('portal:login')
     
     # Verify the user's email
     user = verification_token.user
@@ -100,7 +100,7 @@ def verify_email(request, token):
     verification_token.delete()
     
     messages.success(request, 'Email verified successfully! You can now log in to your account.')
-    return redirect('login')
+    return redirect('portal:login')
     
 def resend_verification(request):
     """View to resend verification email."""
@@ -124,7 +124,7 @@ def resend_verification(request):
         except User.DoesNotExist:
             messages.error(request, 'No account found with that email address.')
     
-    return redirect('login')
+    return redirect('portal:login')
 
 def send_verification_email(request, user, token):
     """Helper function to send verification email."""

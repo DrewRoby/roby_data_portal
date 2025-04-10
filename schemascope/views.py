@@ -46,7 +46,7 @@ def upload(request):
 
                 # Delete the new datasource since we're using an existing one
                 datasource.delete()
-                return redirect('datasource_detail', pk=similar_source.pk)
+                return redirect('schemascope:datasource_detail', pk=similar_source.pk)
 
             # Get additional processing options
             file_type = datasource.source_type
@@ -93,7 +93,7 @@ def upload(request):
 
             if success:
                 messages.success(request, f'File "{datasource.original_filename}" successfully uploaded and schema detected!')
-                return redirect('datasource_detail', pk=datasource.pk)
+                return redirect('schemascope:datasource_detail', pk=datasource.pk)
             else:
                 messages.error(request, f'Error processing file "{datasource.original_filename}"')
                 # Clean up the datasource since we couldn't process it
@@ -271,6 +271,7 @@ def compare_schemas(request, pk1, pk2):
         'title': 'Compare Schemas'
     })
 
+@login_required
 def retry_detection(request, pk):
     datasource = get_object_or_404(DataSource, pk=pk)
 
@@ -327,8 +328,9 @@ def retry_detection(request, pk):
         else:
             messages.error(request, f'Failed to detect schema for {datasource.original_filename}')
 
-    return redirect('datasource_detail', pk=datasource.pk)
+    return redirect('schemascope:datasource_detail', pk=datasource.pk)
 
+@login_required
 def process_csv_file(datasource, delimiter=',', encoding='utf-8'):
     """Process a CSV file with specific delimiter and encoding"""
     try:
@@ -353,6 +355,7 @@ def process_csv_file(datasource, delimiter=',', encoding='utf-8'):
             print(f"Second attempt failed: {e2}")
             return False
 
+@login_required
 def process_excel_file(datasource, sheet_name=0):
     """Process an Excel file with specific sheet"""
     try:
@@ -363,6 +366,7 @@ def process_excel_file(datasource, sheet_name=0):
         print(f"Error processing Excel file: {e}")
         return False
 
+@login_required
 def process_json_file(datasource, encoding='utf-8'):
     """Process a JSON file"""
     try:
@@ -398,6 +402,7 @@ def process_json_file(datasource, encoding='utf-8'):
         print(f"Error processing JSON file: {e}")
         return False
 
+@login_required
 def create_schema_from_dataframe(df, datasource):
     """Create schema definition from a pandas DataFrame"""
     try:
@@ -467,6 +472,7 @@ def create_schema_from_dataframe(df, datasource):
         print(f"Error creating schema from DataFrame: {e}")
         return False
 
+@login_required
 def file_preview(request, pk):
     """Get a preview of the file content with specified encoding and options"""
     datasource = get_object_or_404(DataSource, pk=pk)
@@ -567,6 +573,7 @@ def file_preview(request, pk):
 
     return JsonResponse(response_data)
 
+@login_required
 def reanalyze_file(request, pk):
     """Show file preview and options for re-analyzing a file"""
     datasource = get_object_or_404(DataSource, pk=pk)
@@ -576,6 +583,7 @@ def reanalyze_file(request, pk):
         'title': f'Re-analyze: {datasource.original_filename}'
     })
 
+@login_required
 def reprocess_file(request, pk):
     """Re-process a file with specified options"""
     datasource = get_object_or_404(DataSource, pk=pk)
@@ -683,7 +691,7 @@ def reprocess_file(request, pk):
                                           f'for {target_datasource.original_filename}')
             else:
                 messages.success(request, f'Successfully re-analyzed {target_datasource.original_filename}')
-            return redirect('datasource_detail', pk=target_datasource.pk)
+            return redirect('schemascope:datasource_detail', pk=target_datasource.pk)
         else:
             if target_datasource.pk != datasource.pk:
                 # If processing failed and we created a new datasource, delete it
@@ -695,6 +703,7 @@ def reprocess_file(request, pk):
     # Redirect back to the datasource detail
     return redirect('schemascope:datasource_detail', pk=datasource.pk)
 
+@login_required
 def delete_datasource(request, pk):
     """Delete a datasource and its associated schema"""
     datasource = get_object_or_404(DataSource, pk=pk)
@@ -708,7 +717,6 @@ def delete_datasource(request, pk):
         messages.success(request, f'Successfully deleted "{original_filename}"')
 
     return redirect('schemascope:schema_list')
-
 
 class CustomJSONEncoder(DjangoJSONEncoder):
     def default(self, obj):
