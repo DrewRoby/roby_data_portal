@@ -17,6 +17,7 @@ class DataSource(models.Model):
         ('json', 'JSON'),
         ('other', 'Other')
     ], default='csv')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='data_sources', null=True)
 
     def __str__(self):
         return f"{self.canonical_name} v{self.schema_version} ({self.original_filename})"

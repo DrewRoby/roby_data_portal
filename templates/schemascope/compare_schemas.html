@@ -3,6 +3,15 @@
 
 {% block content %}
 <div class="container mt-5">
+    <!-- Include the app header component -->
+    {% include 'components/app_header.html' with 
+        app_name="Schema Navigator" 
+        app_home_url="schemascope:index" 
+        app_icon="fa-project-diagram" 
+        tabs=nav_tabs 
+        active_tab=active_tab 
+    %}
+
     <div class="row mb-4">
         <div class="col">
             <h1>Compare Schemas</h1>

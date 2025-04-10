@@ -6,10 +6,17 @@
 
 {% block content %}
 <div class="container mt-5">
+    <!-- Include the app header component -->
+    {% include 'components/app_header.html' with 
+        app_name="Schema Navigator" 
+        app_home_url="schemascope:index" 
+        app_icon="fa-project-diagram" 
+        tabs=nav_tabs 
+        active_tab=active_tab 
+    %}
+    
     <div class="row mb-4">
         <div class="col">
-            <h1>Schema Navigator</h1>
-            <p class="lead">Track and visualize schema evolution over time.</p>
             <div class="d-grid gap-2 d-md-flex">
                 <a href="{% url 'schemascope:upload' %}" class="btn btn-primary btn-lg">Upload New Data Source</a>
                 <a href="{% url 'schemascope:schema_list' %}" class="btn btn-outline-secondary btn-lg">View All Schemas</a>
@@ -50,3 +57,6 @@
     {% endif %}
 </div>
 {% endblock %}
+
+<!-- Similarly update templates/schemascope/schema_list.html and other pages -->
+<!-- Just add the app_header component below the container and remove redundant headings -->
