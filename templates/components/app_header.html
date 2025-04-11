@@ -1,21 +1,3 @@
-{% comment %}
-This is a reusable app header component with:
-- App title and icon
-- Home button for the app
-- Sub-navigation tabs
-
-To use it, include it in your template with parameters:
-{% include 'components/app_header.html' with 
-    app_name="SchemaScope" 
-    app_home_url="schemascope:index" 
-    app_icon="fa-project-diagram" 
-    tabs=nav_tabs 
-    active_tab=active_tab 
-%}
-
-Where nav_tabs is a list of dictionaries with 'name', 'url', and 'icon' keys.
-{% endcomment %}
-
 <div class="app-header-container">
     <div class="app-header-top">
         <div class="app-title">

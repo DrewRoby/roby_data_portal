@@ -619,10 +619,14 @@ def reanalyze_file(request, pk):
     """Show file preview and options for re-analyzing a file"""
     datasource = get_object_or_404(DataSource, pk=pk)
 
-    return render(request, 'schemascope/file_preview.html', context, {
+    context = get_schemascope_nav_context(active_tab='Upload')
+
+    context.update({
         'datasource': datasource,
         'title': f'Re-analyze: {datasource.original_filename}'
     })
+
+    return render(request, 'schemascope/file_preview.html', context)
 
 
 def reprocess_file(request, pk):
