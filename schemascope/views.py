@@ -13,6 +13,18 @@ from .forms import DataSourceUploadForm
 from fuzzywuzzy import fuzz
 from django.core.serializers.json import DjangoJSONEncoder
 
+def get_schemascope_nav_context(active_tab='Home'):
+    """Return navigation context for SchemaScope templates"""
+    nav_tabs = [
+        {'name': 'Home', 'url': 'schemascope:index', 'icon': 'fa-home'},
+        {'name': 'All Schemas', 'url': 'schemascope:schema_list', 'icon': 'fa-list'},
+        {'name': 'Upload', 'url': 'schemascope:upload', 'icon': 'fa-upload'},
+    ]
+    
+    return {
+        'nav_tabs': nav_tabs,
+        'active_tab': active_tab
+    }
 
 def home(request):
     recent_sources = DataSource.objects.all().order_by('-upload_date')[:5]
@@ -233,7 +245,10 @@ def datasource_detail(request, pk):
         changes = []
         relationships = []
 
-    return render(request, 'schemascope/datasource_detail.html', {
+    context = get_schemascope_nav_context(active_tab='All Schemas')  # or appropriate tab
+    
+    # Add view-specific context
+    context.update({
         'datasource': datasource,
         'schema': schema,
         'primary_keys': primary_keys,
@@ -241,6 +256,8 @@ def datasource_detail(request, pk):
         'relationships': relationships,
         'title': f'Data Source: {datasource.original_filename}'
     })
+
+    return render(request, 'schemascope/datasource_detail.html', context)
 
 
 def schema_list(request):
@@ -281,7 +298,9 @@ def compare_schemas(request, pk1, pk2):
                 'schema2_type': type2
             }
 
-    return render(request, 'schemascope/compare_schemas.html', {
+    context = get_schemascope_nav_context(active_tab='Compare Schemas')
+
+    context.update({
         'schema1': schema1,
         'schema2': schema2,
         'common_columns': common_columns,
@@ -290,6 +309,8 @@ def compare_schemas(request, pk1, pk2):
         'type_differences': type_differences,
         'title': 'Compare Schemas'
     })
+
+    return render(request, 'schemascope/compare_schemas.html', context)
 
 
 def retry_detection(request, pk):
@@ -598,7 +619,7 @@ def reanalyze_file(request, pk):
     """Show file preview and options for re-analyzing a file"""
     datasource = get_object_or_404(DataSource, pk=pk)
 
-    return render(request, 'schemascope/file_preview.html', {
+    return render(request, 'schemascope/file_preview.html', context, {
         'datasource': datasource,
         'title': f'Re-analyze: {datasource.original_filename}'
     })
@@ -751,15 +772,3 @@ class CustomJSONEncoder(DjangoJSONEncoder):
             return obj.strftime('%Y-%m-%d')
         return super().default(obj)
 
-def get_schemascope_nav_context(active_tab='home'):
-    """Return navigation context for SchemaScope templates"""
-    nav_tabs = [
-        {'name': 'Home', 'url': 'schemascope:index', 'icon': 'fa-home'},
-        {'name': 'All Schemas', 'url': 'schemascope:schema_list', 'icon': 'fa-list'},
-        {'name': 'Upload', 'url': 'schemascope:upload', 'icon': 'fa-upload'},
-    ]
-    
-    return {
-        'nav_tabs': nav_tabs,
-        'active_tab': active_tab
-    }
