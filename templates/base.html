@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Roby Data Services{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/schemascope-styles.css' %}">
     <style>
         /* Include our header styles */
         {% include 'components/header_styles.html' %}
@@ -118,7 +117,7 @@
         {% if user.is_authenticated %}
         <div class="user-profile-section">
             <div class="user-avatar">
-                <img src="{% static 'images/default-avatar.png' %}" alt="Profile" class="avatar-img">
+                <img src="{% static 'images/robydata_profile_pic.png' %}" alt="Profile" class="avatar-img">
             </div>
             <div class="user-info">
                 <p class="user-name">{{ user.get_full_name|default:user.username }}</p>
@@ -138,7 +137,7 @@
                     <a href="/">
                         <img src="{% static 'images/RDSLogoCropOutlineWhite.png' %}" alt="Roby Data Services Logo" class="footer-logo">
                     </a>
-                    <p>Roby Data Services provides powerful data solutions for modern businesses. Transform your data operations with our suite of integrated applications.</p>
+                    <p>Roby Data Services brings big business tools to small business problems. Whether customers, sales, inventory, or operations, we will help you craft the right data solutions for your business.</p>
                 </div>
                 
                 <div class="footer-links">

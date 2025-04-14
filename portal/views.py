@@ -129,7 +129,7 @@ def resend_verification(request):
 def send_verification_email(request, user, token):
     """Helper function to send verification email."""
     verification_url = request.build_absolute_uri(
-        reverse('verify_email', kwargs={'token': token.token})
+        reverse('portal:verify_email', kwargs={'token': token.token})
     )
     
     subject = 'Verify your email for Roby Data Services'

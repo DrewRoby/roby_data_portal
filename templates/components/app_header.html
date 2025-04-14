@@ -1,35 +1,4 @@
-<div class="app-header-container">
-    <div class="app-header-top">
-        <div class="app-title">
-            <i class="fas {{ app_icon|default:'fa-cube' }}"></i>
-            <h2>{{ app_name }}</h2>
-        </div>
-        <div class="app-actions">
-            <a href="{% url app_home_url %}" class="app-home-btn" title="Go to {{ app_name }} Home">
-                <i class="fas fa-home"></i>
-            </a>
-            <a href="{% url 'portal:home' %}" class="app-dashboard-btn" title="Back to Dashboard">
-                <i class="fas fa-th-large"></i>
-            </a>
-        </div>
-    </div>
-    
-    {% if tabs %}
-    <div class="app-nav-tabs">
-        <ul class="nav-tab-list">
-            {% for tab in tabs %}
-            <li class="nav-tab-item {% if tab.name == active_tab %}active{% endif %}">
-                <a href="{% url tab.url %}" class="nav-tab-link">
-                    {% if tab.icon %}<i class="fas {{ tab.icon }}"></i>{% endif %}
-                    {{ tab.name }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-</div>
-
+<link rel="stylesheet" href="{% static 'css/schemascope-styles.css' %}">
 <style>
     .app-header-container {
         background-color: #f8f9fa;
@@ -151,3 +120,35 @@
         }
     }
 </style>
+<h1>Hey the app_header template is rendering now</h1>
+<div class="app-header-container">
+    <div class="app-header-top">
+        <div class="app-title">
+            <i class="fas {{ app_icon|default:'fa-cube' }}"></i>
+            <h2>{{ app_name }}</h2>
+        </div>
+        <div class="app-actions">
+            <a href="{% url app_home_url %}" class="app-home-btn" title="Go to {{ app_name }} Home">
+                <i class="fas fa-home"></i>
+            </a>
+            <a href="{% url 'portal:home' %}" class="app-dashboard-btn" title="Back to Dashboard">
+                <i class="fas fa-th-large"></i>
+            </a>
+        </div>
+    </div>
+    
+    {% if tabs %}
+    <div class="app-nav-tabs">
+        <ul class="nav-tab-list">
+            {% for tab in tabs %}
+            <li class="nav-tab-item {% if tab.name == active_tab %}active{% endif %}">
+                <a href="{% url tab.url %}" class="nav-tab-link">
+                    {% if tab.icon %}<i class="fas {{ tab.icon }}"></i>{% endif %}
+                    {{ tab.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>

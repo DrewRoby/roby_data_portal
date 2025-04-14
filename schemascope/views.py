@@ -27,10 +27,10 @@ def get_schemascope_nav_context(active_tab='Home'):
     }
 
 def home(request):
-    recent_sources = DataSource.objects.all().order_by('-upload_date')[:5]
-    
     # Get navigation context
     context = get_schemascope_nav_context(active_tab='Home')
+    
+    recent_sources = DataSource.objects.all().order_by('-upload_date')[:5]
     
     # Add view-specific context
     context.update({
