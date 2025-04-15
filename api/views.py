@@ -514,9 +514,6 @@ def setting_delete_api(request, setting_id):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Similar patterns for other entity types (Plot, Scene, Relationship)
-# Implementing just one more as an example
-
 @api_view(['GET'])
 def plot_list_api(request, story_id):
     """API endpoint that returns all plots for a specific story."""
@@ -628,3 +625,307 @@ def plot_update_api(request, plot_id):
         return Response({
             'status': 'success',
             'message': 'Plot updated successfully'
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def plot_delete_api(request, setting_id):
+    """API endpoint to delete a plot."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        setting = get_object_or_404(Plot, id=plot_id, story__user=user)
+        setting.delete()
+        
+        return Response({
+            'status': 'success',
+            'message': 'Setting deleted successfully'
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#Scene views
+def scene_list_api(request, story_id):
+    """API endpoint that returns all scenes for a specific story."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        story = get_object_or_404(Story, id=story_id, user=user)
+        scenes = Scene.objects.filter(story=story)
+        
+        data = list(scenes.values(
+            'id', 'name', 'description', 'content', 'story', 'plot', 'setting', 'created_at', 'updated_at'
+        ))
+        
+        return Response({
+            'status': 'success',
+            'count': len(data),
+            'scenes': data
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def scene_detail_api(request, scene_id):
+    """API endpoint that returns details for a specific scene."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        scene = get_object_or_404(Scene, id=scene_id, story__user=user)
+        
+        data = {
+            'id': scene.id,
+            'name': scene.name,
+            'description': scene.description,
+            'content': scene.content,
+            'story': scene.story,
+            'plot': scene.plot,
+            'setting': scene.setting,
+            'created_at': scene.created_at,
+            'updated_at': scene.updated_at,
+        }
+        
+        return Response({
+            'status': 'success',
+            'scene': data
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def scene_create_api(request):
+    """API endpoint to create a new scene."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        # Get the story
+        story_id = request.data.get('story_id')
+        if not story_id:
+            return Response({"error": "Story ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        story = get_object_or_404(Story, id=story_id, user=user)
+        
+        # Create the scene
+        scene = scene.objects.create(
+            name=request.data.get('name'),
+            description=request.data.get('description'),
+            content=request.data.get('content'),
+            story=request.data.get('story'),
+            plot=request.data.get('plot'),
+            setting=request.data.get('setting'),
+        )
+        
+        return Response({
+            'status': 'success',
+            'message': 'scene created successfully',
+            'scene': {
+                'id': scene.id,
+                'name': scene.name,
+                'story_id': scene.story_id
+            }
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT', 'PATCH'])
+def scene_update_api(request, scene_id):
+    """API endpoint to update a scene."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        scene = get_object_or_404(scene, id=scene_id, story__user=user)
+        
+        # Update fields
+        if 'name' in request.data:
+            scene.name = request.data['name']
+        if 'description' in request.data:
+            scene.description = request.data['description']
+        if 'content' in request.data:
+            scene.content = request.data['content']
+        if 'story' in request.data:
+            scene.story = request.data['story']
+        if 'plot' in request.data:
+            scene.plot = request.data['plot']
+        if 'setting' in request.data:
+            scene.setting = request.data['setting']
+            
+        scene.save()
+        
+        return Response({
+            'status': 'success',
+            'message': 'scene updated successfully'
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def scene_delete_api(request, scene_id):
+    """API endpoint to delete a scene."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        scene = get_object_or_404(scene, id=scene_id, story__user=user)
+        scene.delete()
+        
+        return Response({
+            'status': 'success',
+            'message': 'Setting deleted successfully'
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#Relationship views
+@api_view(['GET'])
+def relationship_list_api(request, story_id):
+    """API endpoint that returns all relationships for a specific story."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        story = get_object_or_404(Story, id=story_id, user=user)
+        relationships = Relationship.objects.filter(story=story)
+        
+        data = list(relationships.values(
+            'id', 'source', 'target', 'relationship', 'description'
+        ))
+        
+        return Response({
+            'status': 'success',
+            'count': len(data),
+            'relationships': data
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def relationship_detail_api(request, relationship_id):
+    """API endpoint that returns details for a specific relationship."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        relationship = get_object_or_404(Relationship, id=relationship_id, story__user=user)
+        
+        data = {
+            'id': relationship.id,
+            'source': relationship.source,
+            'target': relationship.target,
+            'relationship': relationship.relationship,
+            'description': relationship.description,
+        }
+        
+        return Response({
+            'status': 'success',
+            'relationship': data
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def relationship_create_api(request):
+    """API endpoint to create a new relationship."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        # Get the story
+        story_id = request.data.get('story_id')
+        if not story_id:
+            return Response({"error": "Story ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        story = get_object_or_404(Story, id=story_id, user=user)
+        
+        # Create the relationship
+        relationship = relationship.objects.create(
+            source=request.data.get('source'),
+            target=request.data.get('target'),
+            relationship=request.data.get('relationship'),
+            description=request.data.get('description')
+        )
+        
+        return Response({
+            'status': 'success',
+            'message': 'relationship created successfully',
+            'relationship': {
+                'id': relationship.id,
+                'name': relationship.name,
+                'story_id': relationship.story_id
+            }
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT', 'PATCH'])
+def relationship_update_api(request, relationship_id):
+    """API endpoint to update a relationship."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        relationship = get_object_or_404(relationship, id=relationship_id, story__user=user)
+        
+        # Update fields
+        if 'source' in request.data:
+            relationship.source = request.data['source']
+        if 'target' in request.data:
+            relationship.target = request.data['target']
+        if 'relationship' in request.data:
+            relationship.relationship = request.data['relationship']
+        if 'description' in request.data:
+            relationship.description = request.data['description']
+            
+        relationship.save()
+        
+        return Response({
+            'status': 'success',
+            'message': 'relationship updated successfully'
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def relationship_delete_api(request, relationship_id):
+    """API endpoint to delete a relationship."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        relationship = get_object_or_404(relationship, id=relationship_id, story__user=user)
+        relationship.delete()
+        
+        return Response({
+            'status': 'success',
+            'message': 'Setting deleted successfully'
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

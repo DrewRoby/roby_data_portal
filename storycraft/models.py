@@ -37,12 +37,12 @@ class Character(models.Model):
 
 
 class CharacterRelationship(models.Model):
-"""Relationship between two characters."""
+	"""Relationship between two characters."""
 	source = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='outgoing_relationships')
 	target = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='incoming_relationships')
 	relationship = models.CharField(max_length=100)
 	description = models.TextField(blank=True, null=True)
-
+ 
 	def __str__(self):
 	    return f"{self.source.name} -> {self.relationship} -> {self.target.name}"
 
@@ -62,7 +62,7 @@ class Setting(models.Model):
 
 
 class Plot(models.Model):
-"""A narrative arc within a story."""
+	"""A narrative arc within a story."""
 	name = models.CharField(max_length=100)
 	description = models.TextField(blank=True, null=True)
 	story = models.ForeignKey(Story, on_delete=models.CASCADE, related_name='plots')
@@ -81,7 +81,7 @@ class Plot(models.Model):
 
 
 class Scene(models.Model):
-"""An individual segment of a story."""
+	"""An individual segment of a story."""
 	name = models.CharField(max_length=100)
 	description = models.TextField(blank=True, null=True)
 	content = models.TextField(blank=True, null=True)  # The actual scene text

@@ -7,10 +7,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('portal.urls')),
     path('schemascope/', include('schemascope.urls')),
-    # path('api/', include('api.urls')),
+    path('api/', include('api.urls')),
     # path('auth/', include('auth_detector.urls')),
     path('todo/', include('todo.urls')),
     # path('dasher/', include('dasher.urls')),
+    path('storycraft/',include('storycraft.urls')),
 ]
 
 if settings.DEBUG:

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # Project apps
     'portal.apps.PortalConfig',
     'schemascope.apps.SchemascopeConfig',
+    'storycraft.apps.StorycraftConfig',
     'api',
     'auth_detector',
     'todo',
