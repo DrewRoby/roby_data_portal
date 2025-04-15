@@ -1,1 +1,32 @@
-base.html
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% block storycraft_title %}Storycraft{% endblock %} - Roby Data Services{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/storycraft-styles.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Include the app header component -->
+    {% include 'components/app_header.html' with 
+        app_name="Storycraft" 
+        app_home_url="storycraft:story_list" 
+        app_icon="fa-book" 
+        tabs=nav_tabs 
+        active_tab=active_tab 
+    %}
+    
+    <div class="app-content">
+        {% block storycraft_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Add any common JavaScript needed for all Storycraft pages here -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+{% endblock %}

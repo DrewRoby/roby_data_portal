@@ -1,1 +1,91 @@
-story_list.html
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}My Stories{% endblock %}
+
+{% block storycraft_content %}
+<div class="stories-container">
+    <div class="stories-header">
+        <h2>My Stories</h2>
+        <a href="{% url 'storycraft:create_story' %}" class="add-story-btn">
+            <i class="fas fa-plus"></i> New Story
+        </a>
+    </div>
+
+    {% if stories %}
+    <div class="stories-grid">
+        {% for story in stories %}
+        <div class="story-card">
+            <div class="story-card-inner">
+                <h3 class="story-name">{{ story.title }}</h3>
+                {% if story.description %}
+                <p class="story-description">{{ story.description }}</p>
+                {% endif %}
+
+                <div class="story-meta">
+                    <span class="story-created">Created: {{ story.created_at|date:"M d, Y" }}</span>
+                    <span class="story-updated">Updated: {{ story.updated_at|date:"M d, Y" }}</span>
+                </div>
+
+                <div class="story-stats">
+                    <span class="story-stat"><i class="fas fa-user"></i> {{ story.characters.count }}</span>
+                    <span class="story-stat"><i class="fas fa-map-marker-alt"></i> {{ story.settings.count }}</span>
+                    <span class="story-stat"><i class="fas fa-file-alt"></i> {{ story.scenes.count }}</span>
+                </div>
+
+                <div class="story-actions">
+                    <a href="{% url 'storycraft:story_detail' story.id %}" class="view-story-btn">Open Story</a>
+                    <div class="dropdown">
+                        <button class="dropdown-toggle">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="{% url 'storycraft:edit_story' story.id %}">Edit</a>
+                            <a href="{% url 'storycraft:story_network' story.id %}">View Network</a>
+                            <a href="{% url 'storycraft:story_timeline' story.id %}">View Timeline</a>
+                            <a href="{% url 'storycraft:delete_story' story.id %}" class="text-danger">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-book"></i>
+        </div>
+        <h3>No stories yet</h3>
+        <p>Create your first story to get started with Storycraft.</p>
+        <a href="{% url 'storycraft:create_story' %}" class="cta-button">Create New Story</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Dropdown functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdowns = document.querySelectorAll('.dropdown-toggle');
+        
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const menu = this.nextElementSibling;
+                menu.classList.toggle('show');
+            });
+        });
+        
+        // Close dropdowns when clicking elsewhere
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        });
+    });
+</script>
+{% endblock %}

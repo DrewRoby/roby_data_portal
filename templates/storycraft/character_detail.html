@@ -1,0 +1,37 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}{{ character.name }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="character-detail-container">
+    <div class="story-header">
+        <div class="character-title-section">
+            <h1>{{ character.name }}</h1>
+            <p class="character-archetype">{{ character.archetype }}</p>
+        </div>
+        
+        <div class="story-actions">
+            <a href="{% url 'storycraft:story_detail' character.story.id %}" class="story-action-btn">
+                <i class="fas fa-arrow-left"></i> Back to Story
+            </a>
+            <a href="{% url 'storycraft:edit_character' character.id %}" class="story-action-btn">
+                <i class="fas fa-edit"></i> Edit Character
+            </a>
+        </div>
+    </div>
+    
+    <!-- Vue mounting point -->
+    <div id="character-view-app" 
+         data-character="{{ character_json|safe }}" 
+         data-story-data="{{ story_data_json|safe }}"
+         data-show-delete-button="true">
+        <!-- Vue component will be mounted here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/app.js' %}"></script>
+{% endblock %}
