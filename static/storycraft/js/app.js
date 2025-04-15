@@ -1,6 +1,3 @@
-// static/js/app.js
-
-// Import Vue components
 import StoryGraph from './components/StoryGraph.vue';
 import StoryTimeline from './components/StoryTimeline.vue';
 import CharacterView from './components/CharacterView.vue';

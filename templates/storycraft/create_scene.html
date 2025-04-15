@@ -1,0 +1,98 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Create Scene - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Create New Scene</h2>
+        <p>Story: {{ story.title }}</p>
+    </div>
+    
+    <form method="post" class="storycraft-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Scene Title</label>
+            {{ form.name }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Short Description</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.plot.id_for_label }}">Related Plot</label>
+                {{ form.plot }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.setting.id_for_label }}">Scene Setting</label>
+                {{ form.setting }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.sequence_number.id_for_label }}">Sequence Number</label>
+                {{ form.sequence_number }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.status.id_for_label }}">Scene Status</label>
+                {{ form.status }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.characters.id_for_label }}">Characters in Scene</label>
+            {{ form.characters }}
+            <small class="form-text">Hold Ctrl/Cmd to select multiple characters</small>
+        </div>
+        
+        <div class="scene-metadata">
+            <h3>Scene Details</h3>
+            
+            <div class="form-row">
+                <div class="form-group half-width">
+                    <label for="{{ form.time_of_day.id_for_label }}">Time of Day</label>
+                    {{ form.time_of_day }}
+                </div>
+                <div class="form-group half-width">
+                    <label for="{{ form.weather.id_for_label }}">Weather</label>
+                    {{ form.weather }}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.mood.id_for_label }}">Mood/Atmosphere</label>
+                {{ form.mood }}
+            </div>
+            
+            {{ form.metadata }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}">Scene Content</label>
+            {{ form.content }}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Create Scene</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

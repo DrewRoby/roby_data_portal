@@ -35,6 +35,12 @@ class Character(models.Model):
     def __str__(self):
         return f"{self.name} ({self.story.title})"
 
+    def get_all_relationships(self):
+	    """Get all relationships this character is involved in."""
+	    outgoing = self.outgoing_relationships.all()
+	    incoming = self.incoming_relationships.all()
+	    return list(outgoing) + list(incoming)
+
 
 class CharacterRelationship(models.Model):
 	"""Relationship between two characters."""
@@ -42,7 +48,7 @@ class CharacterRelationship(models.Model):
 	target = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='incoming_relationships')
 	relationship = models.CharField(max_length=100)
 	description = models.TextField(blank=True, null=True)
- 
+
 	def __str__(self):
 	    return f"{self.source.name} -> {self.relationship} -> {self.target.name}"
 
@@ -79,6 +85,10 @@ class Plot(models.Model):
 	def __str__(self):
 	    return f"{self.name} ({self.story.title})"
 
+	def get_related_characters(self):
+	    """Get all characters involved in scenes connected to this plot."""
+	    character_ids = self.scenes.values_list('characters', flat=True).distinct()
+	    return Character.objects.filter(id__in=character_ids).distinct()
 
 class Scene(models.Model):
 	"""An individual segment of a story."""

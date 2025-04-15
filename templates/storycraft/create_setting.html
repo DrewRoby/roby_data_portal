@@ -1,0 +1,64 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Create Setting - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Create New Setting</h2>
+        <p>Story: {{ story.title }}</p>
+    </div>
+    
+    <form method="post" class="storycraft-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Setting Name</label>
+            {{ form.name }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="setting-attributes">
+            <h3>Setting Details</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.geography.id_for_label }}">Geography</label>
+                {{ form.geography }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.time_period.id_for_label }}">Time Period</label>
+                {{ form.time_period }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.mood.id_for_label }}">Mood/Atmosphere</label>
+                {{ form.mood }}
+            </div>
+            
+            {{ form.attributes }}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Create Setting</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

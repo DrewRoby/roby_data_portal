@@ -2,3 +2,5 @@
 __pycache__/
 __init__
 xxfaffabout/
+package-lock.json
+static/dist/

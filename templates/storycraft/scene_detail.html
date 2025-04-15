@@ -1,0 +1,115 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}{{ scene.name }} - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="scene-detail-container">
+    <div class="story-header">
+        <div class="scene-title-section">
+            <h1>{{ scene.name }}</h1>
+            <div class="scene-meta">
+                <span class="scene-status {{ scene.status }}">{{ scene.get_status_display }}</span>
+                <span class="scene-number">Scene #{{ scene.sequence_number }}</span>
+                <span class="scene-setting">
+                    <i class="fas fa-map-marker-alt"></i> 
+                    <a href="{% url 'storycraft:setting_detail' scene.setting.id %}">{{ scene.setting.name }}</a>
+                </span>
+                <span class="scene-plot">
+                    <i class="fas fa-project-diagram"></i> 
+                    <a href="{% url 'storycraft:plot_detail' scene.plot.id %}">{{ scene.plot.name }}</a>
+                </span>
+            </div>
+        </div>
+        
+        <div class="story-actions">
+            <a href="{% url 'storycraft:story_detail' scene.story.id %}" class="story-action-btn">
+                <i class="fas fa-arrow-left"></i> Back to Story
+            </a>
+            <a href="{% url 'storycraft:edit_scene' scene.id %}" class="story-action-btn">
+                <i class="fas fa-edit"></i> Edit Scene
+            </a>
+        </div>
+    </div>
+    
+    <div class="scene-content-container">
+        <div class="scene-info">
+            {% if scene.description %}
+            <div class="scene-description-panel">
+                <h3>Description</h3>
+                <p>{{ scene.description }}</p>
+            </div>
+            {% endif %}
+            
+            {% if scene.characters.all %}
+            <div class="scene-characters-panel">
+                <h3>Characters in Scene</h3>
+                <div class="scene-characters-list">
+                    {% for character in scene.characters.all %}
+                    <div class="scene-character-item">
+                        <div class="character-avatar" style="background-color: {% cycle '#FFD3B6' '#A8E6CF' '#DCEDC2' '#FFD3B4' '#FF8C94' %}">
+                            <span>{{ character.name|slice:":1" }}</span>
+                        </div>
+                        <a href="{% url 'storycraft:character_detail' character.id %}">{{ character.name }}</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if scene.metadata %}
+            <div class="scene-metadata-panel">
+                <h3>Scene Details</h3>
+                <div class="metadata-list">
+                    {% if scene.metadata.time_of_day %}
+                    <div class="metadata-item">
+                        <span class="metadata-label">Time of Day:</span>
+                        <span class="metadata-value">{{ scene.metadata.time_of_day }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if scene.metadata.weather %}
+                    <div class="metadata-item">
+                        <span class="metadata-label">Weather:</span>
+                        <span class="metadata-value">{{ scene.metadata.weather }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if scene.metadata.mood %}
+                    <div class="metadata-item">
+                        <span class="metadata-label">Mood/Atmosphere:</span>
+                        <span class="metadata-value">{{ scene.metadata.mood }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% for key, value in scene.metadata.items %}
+                        {% if key != 'time_of_day' and key != 'weather' and key != 'mood' %}
+                        <div class="metadata-item">
+                            <span class="metadata-label">{{ key|title }}:</span>
+                            <span class="metadata-value">{{ value }}</span>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="scene-content-panel">
+            <h3>Scene Content</h3>
+            {% if scene.content %}
+            <div class="scene-content">
+                {{ scene.content|linebreaks }}
+            </div>
+            {% else %}
+            <div class="empty-content">
+                <p>No content has been written for this scene yet.</p>
+                <a href="{% url 'storycraft:edit_scene' scene.id %}" class="btn-primary">
+                    <i class="fas fa-edit"></i> Write Content
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

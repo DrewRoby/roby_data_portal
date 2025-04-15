@@ -1,0 +1,116 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}{{ plot.name }} - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="plot-detail-container">
+    <div class="story-header">
+        <div class="plot-title-section">
+            <h1>{{ plot.name }}</h1>
+            <div class="plot-meta">
+                <span class="plot-type-badge {{ plot.plot_type }}">{{ plot.get_plot_type_display }}</span>
+                <span class="plot-scenes-count">
+                    <i class="fas fa-file-alt"></i> {{ plot.scenes.count }} scenes
+                </span>
+            </div>
+        </div>
+        
+        <div class="story-actions">
+            <a href="{% url 'storycraft:story_detail' plot.story.id %}" class="story-action-btn">
+                <i class="fas fa-arrow-left"></i> Back to Story
+            </a>
+            <a href="{% url 'storycraft:edit_plot' plot.id %}" class="story-action-btn">
+                <i class="fas fa-edit"></i> Edit Plot
+            </a>
+        </div>
+    </div>
+    
+    <div class="plot-content-container">
+        <div class="plot-main-panel">
+            {% if plot.description %}
+            <div class="plot-description-panel">
+                <h3>Description</h3>
+                <div class="plot-description">
+                    {{ plot.description|linebreaks }}
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-description">
+                <p>No description has been added for this plot yet.</p>
+                <a href="{% url 'storycraft:edit_plot' plot.id %}" class="btn-primary">
+                    <i class="fas fa-edit"></i> Add Description
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="plot-scenes-panel">
+            <h3>Scenes in this Plot</h3>
+            {% if plot.scenes.all %}
+            <div class="plot-scenes-list">
+                {% for scene in plot.scenes.all|dictsort:"sequence_number" %}
+                <div class="plot-scene-item">
+                    <div class="scene-number">{{ scene.sequence_number }}</div>
+                    <div class="scene-info">
+                        <h4>
+                            <a href="{% url 'storycraft:scene_detail' scene.id %}">{{ scene.name }}</a>
+                        </h4>
+                        {% if scene.description %}
+                        <p>{{ scene.description|truncatechars:100 }}</p>
+                        {% endif %}
+                        <div class="scene-meta">
+                            <span class="scene-setting">
+                                <i class="fas fa-map-marker-alt"></i> 
+                                {{ scene.setting.name }}
+                            </span>
+                            <span class="scene-status {{ scene.status }}">
+                                {{ scene.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-scenes">
+                <p>No scenes have been added to this plot yet.</p>
+                <a href="{% url 'storycraft:create_scene' plot.story.id %}" class="btn-primary">
+                    <i class="fas fa-plus"></i> Create New Scene
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="plot-characters-panel">
+            <h3>Characters Involved</h3>
+            {% with characters=plot.get_related_characters %}
+                {% if characters %}
+                <div class="plot-characters-list">
+                    {% for character in characters %}
+                    <div class="plot-character-item">
+                        <div class="character-avatar" style="background-color: {% cycle '#FFD3B6' '#A8E6CF' '#DCEDC2' '#FFD3B4' '#FF8C94' %}">
+                            <span>{{ character.name|slice:":1" }}</span>
+                        </div>
+                        <div class="character-info">
+                            <h4>
+                                <a href="{% url 'storycraft:character_detail' character.id %}">{{ character.name }}</a>
+                            </h4>
+                            {% if character.archetype %}
+                            <span class="character-archetype">{{ character.archetype }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-characters">
+                    <p>No characters are involved in this plot yet.</p>
+                    <p class="help-text">Add characters to scenes in this plot to see them here.</p>
+                </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}

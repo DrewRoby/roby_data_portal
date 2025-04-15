@@ -1,0 +1,75 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Create Character - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Create New Character</h2>
+        <p>Story: {{ story.title }}</p>
+    </div>
+    
+    <form method="post" class="storycraft-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Character Name</label>
+            {{ form.name }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.age.id_for_label }}">Age</label>
+                {{ form.age }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.archetype.id_for_label }}">Archetype</label>
+                {{ form.archetype }}
+            </div>
+        </div>
+        
+        <div class="character-attributes">
+            <h3>Character Attributes</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.personality.id_for_label }}">Personality</label>
+                {{ form.personality }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.appearance.id_for_label }}">Appearance</label>
+                {{ form.appearance }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.goals.id_for_label }}">Goals</label>
+                {{ form.goals }}
+            </div>
+            
+            {{ form.attributes }}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Create Character</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

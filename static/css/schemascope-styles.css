@@ -819,4 +819,35 @@ pre {
     opacity: 0.75;
 }
 
-/* Make sure bootstrap-specific JS is loaded */
+/* Danger Zone */
+.danger-zone {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  background-color: #fdedec;
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--secondary-color);
+}
+
+.danger-zone h3 {
+  margin-top: 0;
+  color: var(--secondary-color);
+}
+
+.btn-danger {
+  padding: 0.6rem 1.5rem;
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: var(--transition);
+}
+
+.btn-danger:hover {
+  background-color: var(--secondary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
