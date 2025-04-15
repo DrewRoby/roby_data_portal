@@ -1,0 +1,46 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Storycraft{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'storycraft/css/storycraft-styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Include the app header component -->
+    {% include 'components/app_header.html' with 
+        app_name="Storycraft" 
+        app_home_url="storycraft:story_list" 
+        app_icon="fa-book" 
+        tabs=nav_tabs 
+        active_tab=active_tab 
+    %}
+    
+    <div class="story-header">
+        <h1>{{ story.title }} - Network View</h1>
+        <div class="story-actions">
+            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Story
+            </a>
+        </div>
+    </div>
+    
+    <!-- Vue mounting point -->
+    <div id="story-graph-app" 
+         data-story-id="{{ story.id }}" 
+         data-api-url="{% url 'storycraft:story_data' story.id %}">
+        <!-- Vue component will be mounted here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load Vue.js from CDN for simplicity -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<!-- Load your Vue application -->
+<script src="{% static 'storycraft/js/app.js' %}"></script>
+{% endblock %}
