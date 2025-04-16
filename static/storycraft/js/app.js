@@ -1,8 +1,6 @@
 // This needs to be included as a module script in your HTML
 // Add type="module" to the script tag loading this file
 
-// Import Vue if not already available globally
-import Vue from 'https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.esm.browser.js';
 
 // We'll define the components directly instead of importing .vue files
 // which browsers can't handle natively

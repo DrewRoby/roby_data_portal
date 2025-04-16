@@ -1,6 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'storycraft/base.html' %}
+{% load static %}
 
-
+<style type="text/css">
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -356,49 +357,11 @@ textarea.form-control {
   resize: vertical;
 }
 </style>
-{% endblock %}
 
-{% block content %}
-<div class="container mt-5">
-    <!-- Include the app header component if you have one -->
-    {% include 'components/app_header.html' with 
-        app_name="Storycraft" 
-        app_home_url="storycraft:story_list" 
-        app_icon="fa-book"
-    %}
 
-    <div class="row mb-4">
-        <div class="col">
-            <h1>Character Details</h1>
-            <p class="lead">View and manage character information</p>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-12">
-            <!-- The Vue app container with data -->
-            <div id="character-view-app"
-                 data-character='{{ character_json|safe }}'
-                 data-story-data='{{ story_data_json|safe }}'
-                 data-show-delete-button="true">
-                <!-- Vue will mount here -->
-                <div class="text-center p-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-3">Loading character view...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
 
-{% load static %}
 
-{% block title %}{{ character.name }} - Storycraft{% endblock %}
-
-{% block extra_css %}
 <style>
 /* Character View component styles */
 .character-view-container {
@@ -583,5 +546,51 @@ textarea.form-control {
   border-radius: 6px;
   color: #666;
 }
+</style>
+{% block extra_css %}{% endblock %}
 
-.
+{% block extra_js %}
+<!-- Import Vue from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<!-- Import our component script as a module -->
+<script type="module" src="{% static 'storycraft/js/app.js' %}"></script>
+{% endblock %}
+
+{% block title %}{{ character.name }} - Storycraft{% endblock %}
+
+<div class="container mt-5" data-app="storycraft">
+    <!-- Include the app header component if you have one -->
+    {% include 'components/app_header.html' with 
+        app_name="Storycraft" 
+        app_home_url="storycraft:story_list" 
+        app_icon="fa-book"
+    %}
+
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Character Details</h1>
+            <p class="lead">View and manage character information</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <!-- The Vue app container with data -->
+            <div id="character-view-app"
+                 data-character='{{ character_json|safe }}'
+                 data-story-data='{{ story_data_json|safe }}'
+                 data-show-delete-button="true">
+                <!-- Vue will mount here -->
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading character view...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block content %}{% endblock %}
+
