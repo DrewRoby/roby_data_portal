@@ -15,8 +15,21 @@
     </div>
     
     <div class="dashboard-cards">
-        <!-- Schema Navigator App -->
-               <a href="{% url 'schemascope:index' %}" class="app-link">
+
+        <!-- Storycraft -->
+        <div class="app-card">
+            <div class="card-color-bar red-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-red);">
+                    📚
+                </div>
+                <h3 class="app-title">StoryCraft</h3>
+                <p class="app-description">Build and visualize story components individually and as networks. Worldbuilding, timeline, plotting, and character tools help you bring your imagination to life.</p>
+                <a href="{% url 'storycraft:story_list' %}" class="app-link">Launch</a>
+            </div>
+        </div>
+        
+        <!-- Schema Scope -->
         <div class="app-card">
             <div class="card-color-bar blue-bar"></div>
             <div class="card-content">
@@ -25,20 +38,7 @@
                 </div>
                 <h3 class="app-title">SchemaScope</h3>
                 <p class="app-description">Parse and understand the schema of CSV, Excel, or JSON files.</p>
-            </div>
-        </div>
-                </a>
-        
-        <!-- Data Analytics App -->
-        <div class="app-card">
-            <div class="card-color-bar red-bar"></div>
-            <div class="card-content">
-                <div class="app-icon" style="background-color: var(--roby-red);">
-                    📊
-                </div>
-                <h3 class="app-title">Data Analytics</h3>
-                <p class="app-description">Access your analytics dashboard with real-time data insights.</p>
-                <a href="#" class="app-link">Open Analytics</a>
+               <a href="{% url 'schemascope:index' %}" class="app-link">Launch</a>
             </div>
         </div>
         

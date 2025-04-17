@@ -1,11 +1,12 @@
 {% load static %}
-{% load plotly_dash %}
+<!--  load plotly_dash  -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Roby Data Services{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
         /* Include our header styles */
@@ -76,7 +77,7 @@
     
     {% block extra_css %}{% endblock %}
     {% block extra_js %}{% endblock %}
-    {% plotly_header %}
+    <!--  plotly_header  -->
 </head>
 <body data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
     <header>
@@ -139,7 +140,7 @@
     {% block content %}{% endblock %}
     
     <footer>
-        {% plotly_footer %}
+        <!--  plotly_footer  -->
         <div class="container">
             <div class="footer-content">
                 <div class="footer-info">

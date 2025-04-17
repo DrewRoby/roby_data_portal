@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from .models import Story, Character, Setting, Plot, Scene, CharacterRelationship
 from .forms import StoryForm, CharacterForm, SettingForm, PlotForm, SceneForm, CharacterRelationshipForm
 import json
+from django.core.serializers.json import DjangoJSONEncoder
 
 #@login_required
 def story_list(request):
@@ -144,7 +145,28 @@ def create_character(request, story_id):
 
 #@login_required
 def character_detail(request, character_id):
-    """View for character details page."""
+    # character = get_object_or_404(Character, id=character_id, story__user=request.user)
+    # story = character.story
+    
+    # Create character JSON
+    # character_json = json.dumps({
+    #     'id': character.id,
+    #     'name': character.name,
+    #     'description': character.description,
+    #     'age': character.age,
+    #     'archetype': character.archetype,
+    #     'attributes': character.attributes or {}
+    # }, cls=DjangoJSONEncoder)
+    
+    # context = {
+    #     'character': character,
+    #     'story': story,
+    #     'character_json': character_json,
+    # }
+    
+    # return render(request, 'storycraft/character_detail.html', context)
+
+    # """View for character details page."""
     character = get_object_or_404(Character, id=character_id, story__user=request.user)
     story = character.story
     
@@ -164,9 +186,9 @@ def character_detail(request, character_id):
         'description': character.description,
         'age': character.age,
         'archetype': character.archetype,
-        'attributes': character.attributes,
+        'attributes': character.attributes or {},
         'type': 'Character'
-    })
+    }, cls=DjangoJSONEncoder)
     
     # Build full story data for relationships and references
     story_data = {
@@ -239,13 +261,15 @@ def character_detail(request, character_id):
         story_data['relationships'].append(rel_data)
     
     story_data_json = json.dumps(story_data)
-    
-    return render(request, 'storycraft/character_detail.html', {
+
+    context = {
         'character': character,
+        'story': story,
         'character_json': character_json,
         'story_data_json': story_data_json,
-        'story': story
-    })
+    }
+    
+    return render(request, 'storycraft/character_detail.html', context)
 
 #@login_required
 def edit_character(request, character_id):
