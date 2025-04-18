@@ -1,0 +1,61 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Edit Relationship - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Edit Character Relationship</h2>
+        <p>Story: {{ story.title }}</p>
+    </div>
+    
+    <form method="post" class="storycraft-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.source.id_for_label }}">From Character</label>
+                {{ form.source }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.target.id_for_label }}">To Character</label>
+                {{ form.target }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.relationship.id_for_label }}">Relationship Type</label>
+            {{ form.relationship }}
+            <small class="form-text">Examples: Friend, Enemy, Mentor, Parent, Rival, etc.</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Relationship Description</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Save Relationship</button>
+        </div>
+    </form>
+
+    <div class="danger-zone">
+        <h3>Danger Zone</h3>
+        <p>This action cannot be undone. Please be certain.</p>
+        <a href="{% url 'storycraft:delete_relationship' relationship.id %}" class="btn-danger">Delete Relationship</a>
+    </div>
+</div>
+{% endblock %}

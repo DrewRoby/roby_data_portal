@@ -232,32 +232,32 @@
             <div class="col-md-4 mb-4">
                 <div class="feature-card">
                     <div class="feature-icon" style="color: var(--roby-red);">💼</div>
-                    <h3 class="feature-title">Small Business Focused</h3>
+                    <h3 class="feature-title">Small Business Focus</h3>
                     <p>Designed specifically for the unique challenges and budget constraints of small businesses.</p>
                 </div>
             </div>
             
             <div class="col-md-4 mb-4">
                 <div class="feature-card">
-                    <div class="feature-icon" style="color: var(--roby-blue);">🔍</div>
-                    <h3 class="feature-title">Data Clarity</h3>
-                    <p>Easily understand and visualize your data with powerful but intuitive tools.</p>
+                    <div class="feature-icon" style="color: var(--roby-yellow);">🤝</div>
+                    <h3 class="feature-title">Partner Portal</h3>
+                    <p>Join our analyst community and pick up side work helping small businesses solve their problems.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="color: var(--roby-blue);">❄️</div>
+                    <h3 class="feature-title">Cutting Edge Tools</h3>
+                    <p>With emerging cloud and machine learning technologies, enterprise-grade solutions are within reach of small businesses. Ask us how!</p>
                 </div>
             </div>
             
             <div class="col-md-4 mb-4">
                 <div class="feature-card">
                     <div class="feature-icon" style="color: var(--roby-orange);">⚡</div>
-                    <h3 class="feature-title">Quick Implementation</h3>
-                    <p>Get up and running in minutes, not months. No complex setup or specialized IT knowledge required.</p>
-                </div>
-            </div>
-            
-            <div class="col-md-4 mb-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="color: var(--roby-yellow);">🤝</div>
-                    <h3 class="feature-title">Community Support</h3>
-                    <p>Join a community of like-minded professionals to share ideas, strategies, and solutions.</p>
+                    <h3 class="feature-title">Embracing AI</h3>
+                    <p>Our analysts don't think of LLMs as a code-writing crutch, they engage them as extremely useful (but still limited) tools. Humans supply the vision, solve the problems, and "call it good." Machines do the drudgery-- because NOBODY wants to write CSS.</p>
                 </div>
             </div>
             
@@ -272,8 +272,8 @@
             <div class="col-md-4 mb-4">
                 <div class="feature-card">
                     <div class="feature-icon" style="color: var(--roby-red);">📈</div>
-                    <h3 class="feature-title">Growth Ready</h3>
-                    <p>Scale your data capabilities as your business grows, without having to switch platforms.</p>
+                    <h3 class="feature-title">Grow With Us!</h3>
+                    <p>Let us help you make the right decisions with your data, and help you navigate the digital world.</p>
                 </div>
             </div>
         </div>
@@ -283,22 +283,9 @@
 <!-- Tools Section -->
 <section id="tools" class="tools-section">
     <div class="container">
-        <h2 class="section-title">Our Data Tools</h2>
+        <h2 class="section-title">Tools And More</h2>
         
         <div class="tool-grid">
-            <!-- Schema Navigator Tool -->
-            <div class="app-card">
-                <div class="card-color-bar blue-bar"></div>
-                <div class="card-content">
-                    <div class="app-icon" style="background-color: var(--roby-blue);">
-                        📊
-                    </div>
-                    <h3 class="app-title">SchemaNavigator</h3>
-                    <p class="app-description">Parse and understand the schema of CSV, Excel, or JSON files. Track changes between versions and document your data structure.</p>
-                    <a href="{% url 'schemascope:index' %}" class="app-link">Launch Tool</a>
-                </div>
-            </div>
-            
             <!-- Visualization Tool -->
             <div class="app-card">
                 <div class="card-color-bar orange-bar"></div>
@@ -312,6 +299,19 @@
                 </div>
             </div>
             
+            <!-- Schemascope -->
+            <div class="app-card">
+                <div class="card-color-bar blue-bar"></div>
+                <div class="card-content">
+                    <div class="app-icon" style="background-color: var(--roby-blue);">
+                        🔭
+                    </div>
+                    <h3 class="app-title">SchemaScope</h3>
+                    <p class="app-description">Store and catalog datasets and explore their schemas. Generate CREATE TABLE statements or Snowflake DATA TYPE definitions based on a file's characteristics.</p>
+                    <a href="{% url 'schemascope:index' %}" class="app-link">Launch Tool</a>
+                </div>
+            </div>
+            
             <!-- Task Manager Tool -->
             <div class="app-card">
                 <div class="card-color-bar red-bar"></div>
@@ -319,9 +319,22 @@
                     <div class="app-icon" style="background-color: var(--roby-red);">
                         ✅
                     </div>
-                    <h3 class="app-title">RobyTODO</h3>
+                    <h3 class="app-title">ToDo</h3>
                     <p class="app-description">Basic Kanban-style board for tracking tasks and managing data projects efficiently.</p>
-                    <a href="#" class="app-link">Coming Soon</a>
+                    <a href="{% url 'todo:board_list' %}" class="app-link">Launch App</a>
+                </div>
+            </div>
+
+            <!-- Storycraft -->
+            <div class="app-card">
+                <div class="card-color-bar blue-bar"></div>
+                <div class="card-content">
+                    <div class="app-icon" style="background-color: var(--roby-blue);">
+                        📚
+                    </div>
+                    <h3 class="app-title">Storycraft</h3>
+                    <p class="app-description">Put it down on paper! Track and visualize characters, scenes, relationships, and more. Use it to write new stories or tell true ones. And with Shares, you can let everyone see what the story is. </p>
+                    <a href="{% url 'schemascope:index' %}" class="app-link">Launch Tool</a>
                 </div>
             </div>
             
@@ -337,6 +350,7 @@
                     <a href="#" class="app-link">Coming Soon</a>
                 </div>
             </div>
+            
         </div>
     </div>
 </section>

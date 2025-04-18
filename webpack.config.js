@@ -2,9 +2,9 @@ const path = require('path');
 const { VueLoaderPlugin } = require('vue-loader');
 
 module.exports = {
-  entry: './static/js/app.js',
+  entry: './static/storycraft/js/app.js',
   output: {
-    path: path.resolve(__dirname, 'static/dist'),
+    path: path.resolve(__dirname, 'static/storycraft/dist'),
     filename: 'bundle.js',
   },
   module: {
@@ -31,7 +31,8 @@ module.exports = {
   },
   resolve: {
     alias: {
-      'vue$': 'vue/dist/vue.esm.js'
+      // Vue 3 uses different runtime
+      'vue$': 'vue/dist/vue.esm-bundler.js'
     },
     extensions: ['*', '.js', '.vue', '.json']
   },

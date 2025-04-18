@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'storycraft/base.html' %}
 {% load static %}
 
 {% block title %}{{ character.name }} - Character Details{% endblock %}
@@ -218,35 +218,47 @@
   </div>
 </div>
 
-<!-- Network visualization section -->
-<div class="container mt-4 mb-5">
-  <div class="info-card">
-    <h3>Character Network</h3>
-    <div id="character-network" style="height: 400px; background-color: #f5f5f5; border-radius: 5px;">
-      <div class="text-center p-5">
-        <p class="text-muted">Character network visualization will be displayed here.</p>
-        <p>We'll implement this in the next phase using a JavaScript visualization library.</p>
-      </div>
-    </div>
-  </div>
-</div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
-<script>
-  // We'll use regular JavaScript for now, but this is where Vue initialization would go
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('Character detail page loaded successfully');
-    
-    // Initialize network visualization (placeholder)
-    const characterData = {{ character_json|safe }};
-    const storyData = {{ story_data_json|safe }};
-    
-    console.log('Character data loaded:', characterData);
-    console.log('Story data loaded:', storyData);
-    
-    // Here, you would initialize your Vue application or other JavaScript frameworks
-  });
-</script>
+<script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<!-- Import our component script as a module -->
+<script type="module" src="{% static 'storycraft/js/app.js' %}"></script>
 {% endblock %}
+
+
+<div class="container mt-5" data-app="storycraft">
+    <!-- Include the app header component if you have one -->
+    {% include 'components/app_header.html' with 
+        app_name="Storycraft" 
+        app_home_url="storycraft:story_list" 
+        app_icon="fa-book"
+    %}
+
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Character Details</h1>
+            <p class="lead">View and manage character information</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <!-- The Vue app container with data -->
+            <div id="character-view-app"
+                 data-character='{{ character_json|safe }}'
+                 data-story-data='{{ story_data_json|safe }}'
+                 data-show-delete-button="true">
+                <!-- Vue will mount here -->
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading character view...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

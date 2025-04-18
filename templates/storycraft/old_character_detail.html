@@ -550,8 +550,8 @@ textarea.form-control {
 {% block extra_css %}{% endblock %}
 
 {% block extra_js %}
-<!-- Import Vue from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
 <!-- Import our component script as a module -->
 <script type="module" src="{% static 'storycraft/js/app.js' %}"></script>
 {% endblock %}

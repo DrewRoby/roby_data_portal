@@ -14,6 +14,8 @@ import uuid
 
 def home(request):
     """View for the home page."""
+    if request.user.is_authenticated:
+        return redirect('portal:home')
     return render(request, 'portal/guestpage.html')
 
 def login_view(request):
