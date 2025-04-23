@@ -45,4 +45,10 @@ urlpatterns = [
     path('story/<int:story_id>/relationship/create/', views.create_relationship, name='create_relationship'),
     path('relationship/<int:relationship_id>/edit/', views.edit_relationship, name='edit_relationship'),
     path('relationship/<int:relationship_id>/delete/', views.delete_relationship, name='delete_relationship'),
+
+    # Note views
+    path('note/create/<str:model_name>/<int:object_id>/', views.create_note, name='create_note'),
+    path('note/<int:note_id>/edit/', views.edit_note, name='edit_note'),
+    path('note/<int:note_id>/delete/', views.delete_note, name='delete_note'),
+    path('<str:model_name>/<int:object_id>/notes/', views.note_list, name='note_list'),
 ]

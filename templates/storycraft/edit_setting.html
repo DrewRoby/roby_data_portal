@@ -1,12 +1,12 @@
 {% extends 'storycraft/base.html' %}
 {% load static %}
 
-{% block storycraft_title %}Create Setting - {{ story.title }}{% endblock %}
+{% block storycraft_title %}Edit Setting - {{ setting.name }}{% endblock %}
 
 {% block storycraft_content %}
 <div class="form-container">
     <div class="form-header">
-        <h2>Create New Setting</h2>
+        <h2>Edit Setting</h2>
         <p>Story: {{ story.title }}</p>
     </div>
     
@@ -37,7 +37,7 @@
         <div class="form-group">
             <label for="{{ form.parent.id_for_label }}">Parent Setting (optional)</label>
             {{ form.parent }}
-            <small class="form-text text-muted">Leave empty to create a top-level setting</small>
+            <small class="form-text text-muted">Leave empty to make this a top-level setting</small>
         </div>
         
         <div class="setting-attributes">
@@ -62,8 +62,8 @@
         </div>
         
         <div class="form-actions">
-            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">Cancel</a>
-            <button type="submit" class="btn-primary">Create Setting</button>
+            <a href="{% url 'storycraft:setting_detail' setting.id %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Update Setting</button>
         </div>
     </form>
 </div>

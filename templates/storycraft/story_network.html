@@ -1,6 +1,9 @@
 {% extends 'storycraft/base.html' %}
 {% load static %}
 
+<script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
 {% block title %}{{ title }} - Storycraft{% endblock %}
 
 {% block extra_css %}
@@ -16,7 +19,6 @@
         app_icon="fa-book" 
         tabs=nav_tabs 
         active_tab=active_tab
-        type="module" 
     %}
     
     <div class="story-header">
@@ -28,21 +30,16 @@
         </div>
     </div>
     
-    <!-- Vue mounting point -->
+
     <div id="story-graph-app" 
          data-story-id="{{ story.id }}" 
-         data-api-url="{% url 'api:story_graph_data' story.id %}"
-         type="module">
+         data-api-url="{% url 'api:story_graph_data' story.id %}">
         <!-- Vue component will be mounted here -->
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Load Vue.js from CDN for simplicity -->
-<script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-
-<!-- Load your Vue application -->
+<!-- Load Vue application -->
 <script src="{% static 'storycraft/js/app.js' %}" type="module"></script>
 {% endblock %}

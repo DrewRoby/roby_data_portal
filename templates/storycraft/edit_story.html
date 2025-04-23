@@ -48,7 +48,13 @@
     <div class="danger-zone">
         <h3>Danger Zone</h3>
         <p>This action cannot be undone. Please be certain.</p>
-        <a href="{% url 'storycraft:delete_story' story.id %}" class="btn-danger">Delete Story</a>
+        <form method="post" action="{% url 'storycraft:delete_story' story.id %}" class="inline">
+        {% csrf_token %}
+            <!-- <input type="hidden" name="extra_submit_param" value="extra_submit_value"> -->
+              <button type="submit" name="submit_param" value="submit_value" class="btn-danger" class="link-button">
+                Delete Story
+              </button>
+        </form>
     </div>
 </div>
 {% endblock %}

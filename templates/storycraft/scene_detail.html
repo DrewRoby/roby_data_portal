@@ -1,8 +1,81 @@
 {% extends 'storycraft/base.html' %}
 {% load static %}
 
+{% load filter %}
+
 {% block storycraft_title %}{{ scene.name }} - {{ story.title }}{% endblock %}
 
+<!-- {% block extra_head %}
+<style>
+    .character-motivations {
+        margin-top: 20px;
+    }
+    
+    .character-motivation-card {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .motivation-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e1e4e8;
+    }
+    
+    .character-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .motivation-header h4 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    
+    .motivation-content {
+        padding: 15px;
+    }
+    
+    .motivation-item {
+        margin-bottom: 12px;
+    }
+    
+    .motivation-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .motivation-label {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #333;
+        display: block;
+    }
+    
+    .motivation-text {
+        margin: 0;
+        line-height: 1.5;
+        color: #444;
+    }
+    
+    .empty-motivation {
+        color: #888;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+ -->
 {% block storycraft_content %}
 <div class="scene-detail-container">
     <div class="story-header">
@@ -55,8 +128,55 @@
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
             
+<!-- 
+            <div class="character-motivations">
+                <h3>Character Motivations</h3>
+                
+                {% for character in scene.characters.all %}
+                    {% with motivation=character_motivations|get_item:character.id %}
+                    <div class="character-motivation-card">
+                        <div class="motivation-header">
+                            <div class="character-avatar" style="background-color: {% cycle '#FFD3B6' '#A8E6CF' '#DCEDC2' '#FFD3B4' '#FF8C94' %}">
+                                <span>{{ character.name|slice:":1" }}</span>
+                            </div>
+                            <h4>{{ character.name }}</h4>
+                        </div>
+                        
+                        <div class="motivation-content">
+                            <div class="motivation-item">
+                                <span class="motivation-label">Desire: What do they want?</span>
+                                {% if motivation.desire %}
+                                <p class="motivation-text">{{ motivation.desire }}</p>
+                                {% else %}
+                                <p class="motivation-text empty-motivation">No desire specified</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="motivation-item">
+                                <span class="motivation-label">Obstacle: Why can't they have it?</span>
+                                {% if motivation.obstacle %}
+                                <p class="motivation-text">{{ motivation.obstacle }}</p>
+                                {% else %}
+                                <p class="motivation-text empty-motivation">No obstacle specified</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="motivation-item">
+                                <span class="motivation-label">Action: What do they do about it?</span>
+                                {% if motivation.action %}
+                                <p class="motivation-text">{{ motivation.action }}</p>
+                                {% else %}
+                                <p class="motivation-text empty-motivation">No action specified</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            {% endif %}
+ -->            
             {% if scene.metadata %}
             <div class="scene-metadata-panel">
                 <h3>Scene Details</h3>

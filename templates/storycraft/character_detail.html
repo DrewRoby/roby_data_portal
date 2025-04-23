@@ -1,5 +1,7 @@
 {% extends 'storycraft/base.html' %}
 {% load static %}
+<script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
 
 {% block title %}{{ character.name }} - Character Details{% endblock %}
 
@@ -215,19 +217,68 @@
         </div>
       </div>
     </div>
+
+    <div class="character-scenes">
+      <div class="info-card">
+        
+        <div class="section-header">
+            <h3>Notes</h3>
+            <div class="section-actions">
+                <a href="{% url 'storycraft:create_note' 'character' character.id %}" class="btn-sm" title="Add Note">
+                    <i class="fas fa-plus"></i> Add Note
+                </a>
+                <a href="{% url 'storycraft:note_list' 'character' character.id %}" class="btn-sm" title="View All Notes">
+                    <i class="fas fa-list"></i> View All
+                </a>
+            </div>
+        </div>
+        
+        <div class="notes-preview">
+            {% for note in story.notes.all|slice:":3" %}
+            <div class="note-card">
+                <div class="note-header">
+                    <span class="note-date">{{ note.created_at|date:"M d, Y" }}</span>
+                    <div class="note-actions">
+                        <a href="{% url 'storycraft:edit_note' note.id %}" class="btn-icon" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'storycraft:delete_note' note.id %}" class="btn-icon btn-icon-danger" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="note-content">
+                    {{ note.text|truncatewords:30|linebreaks }}
+                    {% if note.text|wordcount > 30 %}
+                    <a href="{% url 'storycraft:edit_note' note.id %}" class="note-read-more">Read more</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-field">No notes added yet. <a href="{% url 'storycraft:create_note' 'character' character.id %}">Add one now</a>.</p>
+            {% endfor %}
+            
+            {% if story.notes.count > 3 %}
+            <a href="{% url 'storycraft:note_list' 'character' character.id %}" class="view-all-link">
+                View all {{ story.notes.count }} notes <i class="fas fa-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 
 {% endblock %}
 
+
+
+
 {% block extra_js %}
-<script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
-<script src="https://d3js.org/d3.v7.min.js"></script>
 <!-- Import our component script as a module -->
 <script type="module" src="{% static 'storycraft/js/app.js' %}"></script>
 {% endblock %}
-
 
 <div class="container mt-5" data-app="storycraft">
     <!-- Include the app header component if you have one -->

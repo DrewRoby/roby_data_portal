@@ -1,5 +1,5 @@
 from django import forms
-from .models import Story, Character, Setting, Plot, Scene, CharacterRelationship
+from .models import Story, Character, Setting, Plot, Scene, CharacterRelationship, Note, CharacterSceneMotivation
 
 class StoryForm(forms.ModelForm):
     class Meta:
@@ -61,11 +61,21 @@ class CharacterForm(forms.ModelForm):
 class SettingForm(forms.ModelForm):
     class Meta:
         model = Setting
-        fields = ['name', 'description', 'attributes']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Setting Name'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Setting Description', 'rows': 3}),
-        }
+        fields = ['name', 'description', 'parent', 'attributes']
+    
+    def __init__(self, *args, **kwargs):
+        self.story = kwargs.pop('story', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter parent choices to settings from the same story
+        if self.story:
+            # Exclude the current setting from parent choices (if editing)
+            if self.instance.pk:
+                self.fields['parent'].queryset = Setting.objects.filter(
+                    story=self.story
+                ).exclude(pk=self.instance.pk)
+            else:
+                self.fields['parent'].queryset = Setting.objects.filter(story=self.story)
         
     # Similar custom handling for attributes as in CharacterForm
     def __init__(self, *args, **kwargs):
@@ -113,10 +123,21 @@ class PlotForm(forms.ModelForm):
             'plot_type': forms.Select(attrs={'class': 'form-select'}),
         }
 
+class CharacterSceneMotivationForm(forms.ModelForm):
+    """Form for character motivations within a scene."""
+    class Meta:
+        model = CharacterSceneMotivation
+        fields = ['desire', 'obstacle', 'action']
+        widgets = {
+            'desire': forms.Textarea(attrs={'rows': 3, 'placeholder': 'What does the character want?'}),
+            'obstacle': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Why can\'t they have it?'}),
+            'action': forms.Textarea(attrs={'rows': 3, 'placeholder': 'What do they do about it?'}),
+        }
+
 class SceneForm(forms.ModelForm):
     class Meta:
         model = Scene
-        fields = ['name', 'description', 'content', 'plot', 'setting', 'sequence_number', 'status', 'metadata']
+        fields = ['name', 'description', 'content', 'plot', 'setting', 'sequence_number', 'status', 'characters', 'metadata']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Scene Name'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Scene Description', 'rows': 2}),
@@ -131,7 +152,7 @@ class SceneForm(forms.ModelForm):
     characters = forms.ModelMultipleChoiceField(
         queryset=Character.objects.none(),
         widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
-        required=False
+        required=False,
     )
     
     # Custom field for metadata JSON
@@ -197,3 +218,11 @@ class CharacterRelationshipForm(forms.ModelForm):
             # Filter character fields by story
             self.fields['source'].queryset = Character.objects.filter(story=story)
             self.fields['target'].queryset = Character.objects.filter(story=story)
+
+class NoteForm(forms.ModelForm):
+    class Meta:
+        model = Note
+        fields = ['text']
+        widgets = {
+            'text': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Add your notes here...'}),
+        }

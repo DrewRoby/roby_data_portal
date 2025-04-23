@@ -1,0 +1,29 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Delete Note{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container confirmation-container">
+    <div class="form-header">
+        <h2>Delete Note</h2>
+        <p>for {{ object }}</p>
+    </div>
+    
+    <div class="confirmation-message">
+        <p>Are you sure you want to delete this note?</p>
+        <div class="note-preview">
+            {{ note.text|linebreaks }}
+        </div>
+        <p class="warning">This action cannot be undone.</p>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <a href="javascript:history.back()" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-danger">Delete</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

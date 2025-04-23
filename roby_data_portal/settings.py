@@ -41,12 +41,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-
     # Third-party apps
     'django_plotly_dash',
     'rest_framework',
     # 'channels',
-    # 'corsheaders',
+    'corsheaders',
+
+    # Utility
+    'templatetags.filters',
+
 
     # Project apps
     'portal.apps.PortalConfig',
@@ -55,10 +58,11 @@ INSTALLED_APPS = [
     'api',
     'auth_detector',
     'todo',
+
 ]
 
 MIDDLEWARE = [
-    # 'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -87,6 +91,9 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 # 'django_plotly_dash.context_processors.plotly_dash',
             ],
+            'libraries':{
+                'filter':'templatetags.filters'
+            }
         },
     },
 ]

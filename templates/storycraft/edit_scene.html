@@ -1,104 +1,249 @@
 {% extends 'storycraft/base.html' %}
 {% load static %}
 
-{% block storycraft_title %}Edit Scene - {{ scene.name }}{% endblock %}
+{% block storycraft_title %}Edit Scene - {{ story.title }}{% endblock %}
+
+{% block extra_head %}
+<script src="{% static 'storycraft/js/character-motivations.js' %}" defer></script>
+<style>
+    .character-motivation-container {
+        margin-top: 20px;
+        border-left: 3px solid #3498db;
+        padding-left: 15px;
+        background-color: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+    }
+    
+    .character-motivation-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .character-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .motivation-fields {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    @media (min-width: 768px) {
+        .motivation-fields {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    .motivation-field {
+        margin-bottom: 10px;
+    }
+    
+    .motivation-field label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    #character-motivation-section {
+        margin-top: 30px;
+        border-top: 1px solid #e1e4e8;
+        padding-top: 20px;
+    }
+</style>
+{% endblock %}
 
 {% block storycraft_content %}
 <div class="form-container">
-    <div class="form-header">
-        <h2>Edit Scene</h2>
-        <p>Story: {{ story.title }}</p>
+    <div class="story-header">
+        <h1>{% if scene %}Edit{% else %}New{% endif %} Scene</h1>
+        <div class="story-actions">
+            <a href="{% if scene %}{% url 'storycraft:scene_detail' scene.id %}{% else %}{% url 'storycraft:story_detail' story.id %}{% endif %}" class="story-action-btn">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
     </div>
     
-    <form method="post" class="storycraft-form">
+    <form method="post" class="form-main">
         {% csrf_token %}
         
-        {% if form.errors %}
-        <div class="form-errors">
-            <p>Please correct the errors below:</p>
-            {% for field in form %}
-                {% for error in field.errors %}
-                <div class="error-message">{{ error }}</div>
-                {% endfor %}
-            {% endfor %}
-        </div>
-        {% endif %}
-        
         <div class="form-group">
-            <label for="{{ form.name.id_for_label }}">Scene Title</label>
+            <label for="{{ form.name.id_for_label }}">Scene Name:</label>
             {{ form.name }}
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.description.id_for_label }}">Short Description</label>
-            {{ form.description }}
+            {{ form.name.errors }}
         </div>
         
         <div class="form-row">
-            <div class="form-group half-width">
-                <label for="{{ form.plot.id_for_label }}">Related Plot</label>
-                {{ form.plot }}
-            </div>
-            <div class="form-group half-width">
-                <label for="{{ form.setting.id_for_label }}">Scene Setting</label>
-                {{ form.setting }}
-            </div>
-        </div>
-        
-        <div class="form-row">
-            <div class="form-group half-width">
-                <label for="{{ form.sequence_number.id_for_label }}">Sequence Number</label>
+            <div class="form-group form-group-half">
+                <label for="{{ form.sequence_number.id_for_label }}">Sequence Number:</label>
                 {{ form.sequence_number }}
+                {{ form.sequence_number.errors }}
             </div>
-            <div class="form-group half-width">
-                <label for="{{ form.status.id_for_label }}">Scene Status</label>
+            
+            <div class="form-group form-group-half">
+                <label for="{{ form.status.id_for_label }}">Status:</label>
                 {{ form.status }}
+                {{ form.status.errors }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="{{ form.plot.id_for_label }}">Plot:</label>
+                {{ form.plot }}
+                {{ form.plot.errors }}
+            </div>
+            
+            <div class="form-group form-group-half">
+                <label for="{{ form.setting.id_for_label }}">Setting:</label>
+                {{ form.setting }}
+                {{ form.setting.errors }}
             </div>
         </div>
         
         <div class="form-group">
-            <label for="{{ form.characters.id_for_label }}">Characters in Scene</label>
-            {{ form.characters }}
-            <small class="form-text">Hold Ctrl/Cmd to select multiple characters</small>
-        </div>
-        
-        <div class="scene-metadata">
-            <h3>Scene Details</h3>
-            
-            <div class="form-row">
-                <div class="form-group half-width">
-                    <label for="{{ form.time_of_day.id_for_label }}">Time of Day</label>
-                    {{ form.time_of_day }}
-                </div>
-                <div class="form-group half-width">
-                    <label for="{{ form.weather.id_for_label }}">Weather</label>
-                    {{ form.weather }}
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="{{ form.mood.id_for_label }}">Mood/Atmosphere</label>
-                {{ form.mood }}
-            </div>
-            
-            {{ form.metadata }}
+            <label for="{{ form.description.id_for_label }}">Description:</label>
+            {{ form.description }}
+            {{ form.description.errors }}
         </div>
         
         <div class="form-group">
-            <label for="{{ form.content.id_for_label }}">Scene Content</label>
+            <label>Characters in Scene:</label>
+            <div class="character-selection" id="character-selection">
+                {% for character_choice in form.characters %}
+                <div class="character-choice">
+                    {{ character_choice }}
+<!--                     <label for="{{ character_choice.id_for_label }}" class="character-label">{{ character_choice.choice_label }}</label>
+  -->               </div>
+                {% endfor %}
+            </div>
+            {{ form.characters.errors }}
+        </div>
+        
+        <!-- Character Motivations Section -->
+        <div id="character-motivation-section">
+            <h3>Character Motivations</h3>
+            <p class="help-text">Select characters above to add their motivations for this scene.</p>
+            
+            <div id="character-motivations-container">
+                <!-- This will be populated by JavaScript when characters are selected -->
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}">Scene Content:</label>
             {{ form.content }}
+            {{ form.content.errors }}
         </div>
         
         <div class="form-actions">
-            <a href="{% url 'storycraft:scene_detail' scene.id %}" class="btn-secondary">Cancel</a>
-            <button type="submit" class="btn-primary">Save Changes</button>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> {% if scene %}Update{% else %}Create{% endif %} Scene
+            </button>
         </div>
     </form>
-    
-    <div class="danger-zone">
-        <h3>Danger Zone</h3>
-        <p>This action cannot be undone. Please be certain.</p>
-        <a href="{% url 'storycraft:delete_scene' scene.id %}" class="btn-danger">Delete Scene</a>
-    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const characterCheckboxes = document.querySelectorAll('#character-selection input[type="checkbox"]');
+    const motivationsContainer = document.getElementById('character-motivations-container');
+    
+    // Character motivation data from the server
+    const characterMotivations = {
+        {% if character_motivations %}
+            {% for char_id, motivation in character_motivations.items %}
+                {{ char_id }}: {
+                    'desire': `{{ motivation.desire|escapejs }}`,
+                    'obstacle': `{{ motivation.obstacle|escapejs }}`,
+                    'action': `{{ motivation.action|escapejs }}`
+                },
+            {% endfor %}
+        {% endif %}
+    };
+    
+    // Function to create motivation fields for a character
+    function createMotivationFields(characterId, characterName) {
+        const motivation = characterMotivations[characterId] || { desire: '', obstacle: '', action: '' };
+        
+        const colorChoices = ['#FFD3B6', '#A8E6CF', '#DCEDC2', '#FFD3B4', '#FF8C94'];
+        const colorIndex = Math.floor(Math.random() * colorChoices.length);
+        const backgroundColor = colorChoices[colorIndex];
+        
+        const container = document.createElement('div');
+        container.className = 'character-motivation-container';
+        container.id = `motivation-${characterId}`;
+        
+        container.innerHTML = `
+            <div class="character-motivation-header">
+                <div class="character-avatar" style="background-color: ${backgroundColor}">
+                    <span>${characterName.charAt(0)}</span>
+                </div>
+                <h4>${characterName}</h4>
+            </div>
+            <div class="motivation-fields">
+                <div class="motivation-field">
+                    <label for="desire_${characterId}">What do they want? (Desire)</label>
+                    <textarea name="desire_${characterId}" id="desire_${characterId}" rows="3" placeholder="What does the character want?">${motivation.desire}</textarea>
+                </div>
+                <div class="motivation-field">
+                    <label for="obstacle_${characterId}">Why can't they have it? (Obstacle)</label>
+                    <textarea name="obstacle_${characterId}" id="obstacle_${characterId}" rows="3" placeholder="Why can't they have it?">${motivation.obstacle}</textarea>
+                </div>
+                <div class="motivation-field">
+                    <label for="action_${characterId}">What do they do about it? (Action)</label>
+                    <textarea name="action_${characterId}" id="action_${characterId}" rows="3" placeholder="What do they do about it?">${motivation.action}</textarea>
+                </div>
+            </div>
+        `;
+        
+        return container;
+    }
+    
+    // Function to update motivation fields based on selected characters
+    function updateMotivationFields() {
+        // Clear the container
+        motivationsContainer.innerHTML = '';
+        
+        // Add fields for each selected character
+        characterCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                const characterId = checkbox.value;
+                const characterName = checkbox.nextElementSibling.textContent.trim();
+                
+                const motivationFields = createMotivationFields(characterId, characterName);
+                motivationsContainer.appendChild(motivationFields);
+            }
+        });
+        
+        // Show/hide the motivation section based on whether any characters are selected
+        const motivationSection = document.getElementById('character-motivation-section');
+        if (motivationsContainer.children.length > 0) {
+            motivationSection.style.display = 'block';
+        } else {
+            motivationSection.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners to checkboxes
+    characterCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateMotivationFields);
+    });
+    
+    // Initialize on page load
+    updateMotivationFields();
+});
+</script>
 {% endblock %}

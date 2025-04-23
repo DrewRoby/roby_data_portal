@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from .models import Story, Character, Setting, Plot, Scene, CharacterRelationship
-from .forms import StoryForm, CharacterForm, SettingForm, PlotForm, SceneForm, CharacterRelationshipForm
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
+from .models import Story, Character, Setting, Plot, Scene, CharacterRelationship, Note, CharacterSceneMotivation
+from .forms import StoryForm, CharacterForm, SettingForm, PlotForm, SceneForm, CharacterRelationshipForm, NoteForm
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from django.contrib.contenttypes.models import ContentType
 
-#@login_required
+
 def story_list(request):
     """View for listing all stories."""
     stories = Story.objects.filter(user=request.user).order_by('-updated_at')
@@ -21,13 +22,16 @@ def create_story(request):
             story = form.save(commit=False)
             story.user = request.user
             story.save()
+            
+            # Create default plot
+            story.create_default_plot()
+            
             return redirect('storycraft:story_detail', story_id=story.id)
     else:
         form = StoryForm()
     
     return render(request, 'storycraft/create_story.html', {'form': form})
 
-#@login_required
 def story_detail(request, story_id):
     """View for story details page."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -50,7 +54,6 @@ def story_detail(request, story_id):
     
     return render(request, 'storycraft/story_detail.html', context)
 
-#@login_required
 def edit_story(request, story_id):
     """View for editing a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -65,7 +68,6 @@ def edit_story(request, story_id):
     
     return render(request, 'storycraft/edit_story.html', {'form': form, 'story': story})
 
-#@login_required
 def delete_story(request, story_id):
     """View for deleting a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -76,7 +78,6 @@ def delete_story(request, story_id):
     
     return render(request, 'storycraft/delete_story.html', {'story': story})
 
-#@login_required
 def story_network(request, story_id):
     """View for the story network visualization."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -94,7 +95,6 @@ def story_network(request, story_id):
     
     return render(request, 'storycraft/story_network.html', context)
 
-#@login_required
 def story_timeline(request, story_id):
     """View for the story timeline visualization."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -112,7 +112,6 @@ def story_timeline(request, story_id):
     return render(request, 'storycraft/story_timeline.html', context)
 
 # Character-related views
-#@login_required
 def character_list(request, story_id):
     """View for listing all characters in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -123,7 +122,6 @@ def character_list(request, story_id):
         'characters': characters
     })
 
-#@login_required
 def create_character(request, story_id):
     """View for creating a new character."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -143,7 +141,6 @@ def create_character(request, story_id):
         'story': story
     })
 
-#@login_required
 def character_detail(request, character_id):
     # character = get_object_or_404(Character, id=character_id, story__user=request.user)
     # story = character.story
@@ -271,7 +268,6 @@ def character_detail(request, character_id):
     
     return render(request, 'storycraft/character_detail.html', context)
 
-#@login_required
 def edit_character(request, character_id):
     """View for editing a character."""
     character = get_object_or_404(Character, id=character_id, story__user=request.user)
@@ -290,7 +286,6 @@ def edit_character(request, character_id):
         'story': character.story
     })
 
-#@login_required
 def delete_character(request, character_id):
     """View for deleting a character."""
     character = get_object_or_404(Character, id=character_id, story__user=request.user)
@@ -306,7 +301,6 @@ def delete_character(request, character_id):
     })
 
 # Setting-related views
-#@login_required
 def setting_list(request, story_id):
     """View for listing all settings in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -317,7 +311,6 @@ def setting_list(request, story_id):
         'settings': settings
     })
 
-#@login_required
 def create_setting(request, story_id):
     """View for creating a new setting."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -333,33 +326,22 @@ def create_setting(request, story_id):
         form = SettingForm()
     
     return render(request, 'storycraft/create_setting.html', {
-        'form': form, 
+        'form': form,
         'story': story
     })
 
-#@login_required
-def setting_detail(request, setting_id):
-    """View for setting details page."""
-    setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
-    story = setting.story
-    
-    return render(request, 'storycraft/setting_detail.html', {
-        'setting': setting,
-        'story': story
-    })
-
-#@login_required
 def edit_setting(request, setting_id):
     """View for editing a setting."""
     setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
+    story = setting.story
     
     if request.method == 'POST':
-        form = SettingForm(request.POST, instance=setting)
+        form = SettingForm(request.POST, instance=setting, story=story)
         if form.is_valid():
             form.save()
             return redirect('storycraft:setting_detail', setting_id=setting.id)
     else:
-        form = SettingForm(instance=setting)
+        form = SettingForm(instance=setting, story=story)
     
     return render(request, 'storycraft/edit_setting.html', {
         'form': form, 
@@ -367,7 +349,18 @@ def edit_setting(request, setting_id):
         'story': setting.story
     })
 
-#@login_required
+def setting_detail(request, setting_id):
+    """View for setting details page."""
+    setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
+    story = setting.story
+    children = setting.get_all_children()
+    
+    return render(request, 'storycraft/setting_detail.html', {
+        'setting': setting,
+        'story': story,
+        'children': children
+    })
+
 def delete_setting(request, setting_id):
     """View for deleting a setting."""
     setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
@@ -383,7 +376,6 @@ def delete_setting(request, setting_id):
     })
 
 # Plot-related views
-#@login_required
 def plot_list(request, story_id):
     """View for listing all plots in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -394,7 +386,6 @@ def plot_list(request, story_id):
         'plots': plots
     })
 
-#@login_required
 def create_plot(request, story_id):
     """View for creating a new plot."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -414,7 +405,6 @@ def create_plot(request, story_id):
         'story': story
     })
 
-#@login_required
 def plot_detail(request, plot_id):
     """View for plot details page."""
     plot = get_object_or_404(Plot, id=plot_id, story__user=request.user)
@@ -425,7 +415,6 @@ def plot_detail(request, plot_id):
         'story': story
     })
 
-#@login_required
 def edit_plot(request, plot_id):
     """View for editing a plot."""
     plot = get_object_or_404(Plot, id=plot_id, story__user=request.user)
@@ -444,7 +433,6 @@ def edit_plot(request, plot_id):
         'story': plot.story
     })
 
-#@login_required
 def delete_plot(request, plot_id):
     """View for deleting a plot."""
     plot = get_object_or_404(Plot, id=plot_id, story__user=request.user)
@@ -460,7 +448,6 @@ def delete_plot(request, plot_id):
     })
 
 # Scene-related views
-#@login_required
 def scene_list(request, story_id):
     """View for listing all scenes in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -471,7 +458,6 @@ def scene_list(request, story_id):
         'scenes': scenes
     })
 
-#@login_required
 def create_scene(request, story_id):
     """View for creating a new scene."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -484,10 +470,28 @@ def create_scene(request, story_id):
             scene.save()
             
             # Handle the many-to-many relationship with characters
+            selected_characters = []
             if 'characters' in form.cleaned_data:
-                scene.characters.set(form.cleaned_data['characters'])
+                selected_characters = form.cleaned_data['characters']
+                scene.characters.set(selected_characters)
             
-            return redirect('storycraft:story_detail', story_id=story.id)
+            # Process character motivations from the form
+            for character in selected_characters:
+                desire_key = f'desire_{character.id}'
+                obstacle_key = f'obstacle_{character.id}'
+                action_key = f'action_{character.id}'
+                
+                if desire_key in request.POST or obstacle_key in request.POST or action_key in request.POST:
+                    motivation = CharacterSceneMotivation(
+                        character=character,
+                        scene=scene,
+                        desire=request.POST.get(desire_key, ''),
+                        obstacle=request.POST.get(obstacle_key, ''),
+                        action=request.POST.get(action_key, '')
+                    )
+                    motivation.save()
+            
+            return redirect('storycraft:scene_detail', scene_id=scene.id)
     else:
         form = SceneForm(story=story)
     
@@ -495,23 +499,29 @@ def create_scene(request, story_id):
         'form': form, 
         'story': story
     })
-
-#@login_required
+    
 def scene_detail(request, scene_id):
     """View for scene details page."""
     scene = get_object_or_404(Scene, id=scene_id, story__user=request.user)
     story = scene.story
     
+    character_motivations = CharacterSceneMotivation.objects.filter(scene=scene)
+    motivation_dict = {m.character_id: m for m in character_motivations}
+    
     return render(request, 'storycraft/scene_detail.html', {
         'scene': scene,
-        'story': story
+        'story': story,
+        'character_motivations': motivation_dict
     })
 
-#@login_required
 def edit_scene(request, scene_id):
     """View for editing a scene."""
     scene = get_object_or_404(Scene, id=scene_id, story__user=request.user)
     story = scene.story
+    
+    # Get existing character motivations for this scene
+    existing_motivations = CharacterSceneMotivation.objects.filter(scene=scene)
+    motivation_dict = {m.character_id: m for m in existing_motivations}
     
     if request.method == 'POST':
         form = SceneForm(request.POST, instance=scene, story=story)
@@ -519,8 +529,43 @@ def edit_scene(request, scene_id):
             form.save()
             
             # Handle the many-to-many relationship with characters
+            selected_characters = []
             if 'characters' in form.cleaned_data:
-                scene.characters.set(form.cleaned_data['characters'])
+                selected_characters = form.cleaned_data['characters']
+                scene.characters.set(selected_characters)
+            
+            # Process character motivations from the form
+            for character in selected_characters:
+                desire_key = f'desire_{character.id}'
+                obstacle_key = f'obstacle_{character.id}'
+                action_key = f'action_{character.id}'
+                
+                # Check if motivation already exists for this character
+                if character.id in motivation_dict:
+                    # Update existing motivation
+                    motivation = motivation_dict[character.id]
+                    motivation.desire = request.POST.get(desire_key, '')
+                    motivation.obstacle = request.POST.get(obstacle_key, '')
+                    motivation.action = request.POST.get(action_key, '')
+                    motivation.save()
+                else:
+                    # Create new motivation
+                    if desire_key in request.POST or obstacle_key in request.POST or action_key in request.POST:
+                        motivation = CharacterSceneMotivation(
+                            character=character,
+                            scene=scene,
+                            desire=request.POST.get(desire_key, ''),
+                            obstacle=request.POST.get(obstacle_key, ''),
+                            action=request.POST.get(action_key, '')
+                        )
+                        motivation.save()
+            
+            # Remove motivations for characters no longer in the scene
+            CharacterSceneMotivation.objects.filter(
+                scene=scene
+            ).exclude(
+                character__in=selected_characters
+            ).delete()
             
             return redirect('storycraft:scene_detail', scene_id=scene.id)
     else:
@@ -528,13 +573,16 @@ def edit_scene(request, scene_id):
         # Set initial value for the characters field
         form.initial['characters'] = scene.characters.all()
     
+    # Pass existing motivations to the template
+    character_motivations = {m.character_id: m for m in existing_motivations}
+    
     return render(request, 'storycraft/edit_scene.html', {
         'form': form, 
         'scene': scene,
-        'story': story
+        'story': story,
+        'character_motivations': character_motivations
     })
 
-#@login_required
 def delete_scene(request, scene_id):
     """View for deleting a scene."""
     scene = get_object_or_404(Scene, id=scene_id, story__user=request.user)
@@ -550,7 +598,6 @@ def delete_scene(request, scene_id):
     })
 
 # Relationship-related views
-#@login_required
 def relationship_list(request, story_id):
     """View for listing all relationships in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -563,7 +610,6 @@ def relationship_list(request, story_id):
         'relationships': relationships
     })
 
-#@login_required
 def create_relationship(request, story_id):
     """View for creating a new relationship."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
@@ -581,7 +627,6 @@ def create_relationship(request, story_id):
         'story': story
     })
 
-#@login_required
 def edit_relationship(request, relationship_id):
     """View for editing a relationship."""
     relationship = get_object_or_404(
@@ -605,7 +650,6 @@ def edit_relationship(request, relationship_id):
         'story': story
     })
 
-#@login_required
 def delete_relationship(request, relationship_id):
     """View for deleting a relationship."""
     relationship = get_object_or_404(
@@ -623,3 +667,175 @@ def delete_relationship(request, relationship_id):
         'relationship': relationship,
         'story': relationship.source.story
     })
+
+def delete_story(request, story_id):
+    """View for deleting a whole story."""
+    story_to_delete = get_object_or_404(Story, id=story_id, user=request.user)
+    
+    if request.method == 'POST':
+        story_to_delete.delete()
+        return redirect('storycraft:story_list')
+    
+    stories = Story.objects.filter(user=request.user).order_by('-updated_at')
+    return render(request, 'storycraft/story_list.html', {'stories':stories})
+
+def create_note(request, model_name, object_id):
+    """View for creating a new note for any object."""
+    # Get the content type based on model name
+    model_mapping = {
+        'story': Story,
+        'character': Character,
+        'setting': Setting,
+        'plot': Plot,
+        'scene': Scene,
+        'relationship': CharacterRelationship,
+    }
+    
+    if model_name not in model_mapping:
+        return HttpResponseBadRequest("Invalid model name")
+        
+    model_class = model_mapping[model_name]
+    content_type = ContentType.objects.get_for_model(model_class)
+    obj = get_object_or_404(model_class, id=object_id)
+    
+    # Check if user has access to this object
+    if hasattr(obj, 'user') and obj.user != request.user:
+        return HttpResponseForbidden("You don't have permission to add notes to this object")
+    
+    if hasattr(obj, 'story') and obj.story.user != request.user:
+        return HttpResponseForbidden("You don't have permission to add notes to this object")
+    
+    if request.method == 'POST':
+        form = NoteForm(request.POST)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.content_type = content_type
+            note.object_id = object_id
+            note.user = request.user
+            note.save()
+            
+            # Determine the redirect URL based on model
+            if model_name == 'story':
+                return redirect('storycraft:story_detail', story_id=obj.id)
+            elif model_name == 'character':
+                return redirect('storycraft:character_detail', character_id=obj.id)
+            elif model_name == 'setting':
+                return redirect('storycraft:setting_detail', setting_id=obj.id)
+            elif model_name == 'plot':
+                return redirect('storycraft:plot_detail', plot_id=obj.id)
+            elif model_name == 'scene':
+                return redirect('storycraft:scene_detail', scene_id=obj.id)
+            elif model_name == 'relationship':
+                return redirect('storycraft:story_detail', story_id=obj.source.story.id)
+    else:
+        form = NoteForm()
+    
+    context = {
+        'form': form,
+        'object': obj,
+        'model_name': model_name,
+    }
+    
+    return render(request, 'storycraft/create_note.html', context)
+
+def edit_note(request, note_id):
+    """View for editing a note."""
+    note = get_object_or_404(Note, id=note_id, user=request.user)
+    obj = note.content_object
+    
+    if request.method == 'POST':
+        form = NoteForm(request.POST, instance=note)
+        if form.is_valid():
+            form.save()
+            
+            # Determine where to redirect based on the object type
+            model_name = note.content_type.model
+            if model_name == 'story':
+                return redirect('storycraft:story_detail', story_id=obj.id)
+            elif model_name == 'character':
+                return redirect('storycraft:character_detail', character_id=obj.id)
+            elif model_name == 'setting':
+                return redirect('storycraft:setting_detail', setting_id=obj.id)
+            elif model_name == 'plot':
+                return redirect('storycraft:plot_detail', plot_id=obj.id)
+            elif model_name == 'scene':
+                return redirect('storycraft:scene_detail', scene_id=obj.id)
+            elif model_name == 'characterrelationship':
+                return redirect('storycraft:story_detail', story_id=obj.source.story.id)
+    else:
+        form = NoteForm(instance=note)
+    
+    return render(request, 'storycraft/edit_note.html', {
+        'form': form,
+        'note': note,
+        'object': obj,
+    })
+
+def delete_note(request, note_id):
+    """View for deleting a note."""
+    note = get_object_or_404(Note, id=note_id, user=request.user)
+    obj = note.content_object
+    
+    if request.method == 'POST':
+        # Determine where to redirect based on the object type
+        model_name = note.content_type.model
+        
+        note.delete()
+        
+        if model_name == 'story':
+            return redirect('storycraft:story_detail', story_id=obj.id)
+        elif model_name == 'character':
+            return redirect('storycraft:character_detail', character_id=obj.id)
+        elif model_name == 'setting':
+            return redirect('storycraft:setting_detail', setting_id=obj.id)
+        elif model_name == 'plot':
+            return redirect('storycraft:plot_detail', plot_id=obj.id)
+        elif model_name == 'scene':
+            return redirect('storycraft:scene_detail', scene_id=obj.id)
+        elif model_name == 'characterrelationship':
+            return redirect('storycraft:story_detail', story_id=obj.source.story.id)
+    
+    return render(request, 'storycraft/delete_note.html', {
+        'note': note,
+        'object': obj,
+    })
+
+def note_list(request, model_name, object_id):
+    """View for listing all notes for an object."""
+    # Get the content type based on model name
+    model_mapping = {
+        'story': Story,
+        'character': Character,
+        'setting': Setting,
+        'plot': Plot,
+        'scene': Scene,
+        'relationship': CharacterRelationship,
+    }
+    
+    if model_name not in model_mapping:
+        return HttpResponseBadRequest("Invalid model name")
+        
+    model_class = model_mapping[model_name]
+    content_type = ContentType.objects.get_for_model(model_class)
+    obj = get_object_or_404(model_class, id=object_id)
+    
+    # Check if user has access to this object
+    if hasattr(obj, 'user') and obj.user != request.user:
+        return HttpResponseForbidden("You don't have permission to view notes for this object")
+    
+    if hasattr(obj, 'story') and obj.story.user != request.user:
+        return HttpResponseForbidden("You don't have permission to view notes for this object")
+    
+    notes = Note.objects.filter(
+        content_type=content_type,
+        object_id=object_id,
+        user=request.user
+    ).order_by('-created_at')
+    
+    context = {
+        'notes': notes,
+        'object': obj,
+        'model_name': model_name,
+    }
+    
+    return render(request, 'storycraft/note_list.html', context)

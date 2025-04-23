@@ -4,7 +4,7 @@
  */
 
 // Import Vue if not already available globally
-import { vue } from 'https://unpkg.com/vue@3.3.4/dist/vue.global.js';
+import { Vue } from 'https://unpkg.com/vue@3.3.4/dist/vue.global.js';
 
 
 document.addEventListener('DOMContentLoaded', function() {

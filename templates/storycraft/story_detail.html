@@ -44,6 +44,9 @@
                 <a href="#relationships" class="story-menu-item" data-section="relationships">
                     <i class="fas fa-people-arrows"></i> Relationships
                 </a>
+                <a href="#notes" class="story-menu-item" data-section="notes">
+                    <i class="fas fa-list"></i> Notes
+                </a>
             </div>
         </div>
         
@@ -243,8 +246,52 @@
                 </div>
                 {% endif %}
             </div>
+
+
+            <div id='notes' class="story-section">
+                <div class="section-header">
+                    <h3>Notes</h3>
+                    <div class="section-actions">
+                        <a href="{% url 'storycraft:create_note' 'story' story.id %}" class="btn-sm" title="Add Note">
+                            <i class="fas fa-plus"></i> Add Note
+                        </a>
+                        <a href="{% url 'storycraft:note_list' 'story' story.id %}" class="btn-sm" title="View All Notes">
+                            <i class="fas fa-list"></i> View All
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="notes-preview">
+                    {% for note in story.notes.all %}
+                    <div class="note-card">
+                        <div class="note-header">
+                            <span class="note-date">{{ note.created_at|date:"M d, Y" }}</span>
+                            <div class="note-actions">
+                                <a href="{% url 'storycraft:edit_note' note.id %}" class="btn-icon" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'storycraft:delete_note' note.id %}" class="btn-icon btn-icon-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="note-content">
+                            {{ note.text|truncatewords:30|linebreaks }}
+                            {% if note.text|wordcount > 30 %}
+                            <a href="{% url 'storycraft:edit_note' note.id %}" class="note-read-more">Read more</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="empty-field">No notes added yet. <a href="{% url 'storycraft:create_note' 'story' story.id %}">Add one now</a>.</p>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
+
     </div>
+
+</div>
 </div>
 {% endblock %}
 
