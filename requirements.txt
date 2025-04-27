@@ -1,5 +1,4 @@
 asgiref==3.8.1
-backports.zoneinfo==0.2.1
 blinker==1.8.2
 certifi==2025.1.31
 channels==4.2.0
