@@ -114,7 +114,7 @@ STATICFILES_FINDERS = [
     'django_plotly_dash.finders.DashComponentFinder',
 ]
 
-# WSGI_APPLICATION = 'roby_data_portal.wsgi.application'
+WSGI_APPLICATION = 'roby_data_portal.wsgi.application'
 ASGI_APPLICATION = 'roby_data_portal.routing.application'
 
 # Database
