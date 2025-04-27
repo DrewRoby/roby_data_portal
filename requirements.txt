@@ -28,7 +28,7 @@ Levenshtein==0.25.1
 MarkupSafe==2.1.5
 narwhals==1.32.0
 nest-asyncio==1.6.0
-numpy==1.24.4
+numpy>1.26.0
 packaging==24.2
 pandas==2.0.3
 Pillow==10.1.0
