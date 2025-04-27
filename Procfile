@@ -1,1 +1,1 @@
-web: gunicorn roby_data_portal.wsgi:application
+web: gunicorn roby_data_portal.wsgi --log-file -
