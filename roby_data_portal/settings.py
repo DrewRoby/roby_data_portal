@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 print(SECRET_KEY)
 DB_HOST = os.getenv('DB_HOST')
-print("DB_HOST is: "+string(DB_HOST))
+print("DB_HOST is: "+str(DB_HOST))
 print("OOGLY OOGLY OOGLY GOO")
 
 # SECURITY WARNING: don't run with debug turned on in production!
