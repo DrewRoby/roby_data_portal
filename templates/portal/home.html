@@ -42,16 +42,16 @@
             </div>
         </div>
         
-        <!-- Data Visualization App -->
+        <!-- Task Manager Tool -->
         <div class="app-card">
-            <div class="card-color-bar orange-bar"></div>
+            <div class="card-color-bar red-bar"></div>
             <div class="card-content">
-                <div class="app-icon" style="background-color: var(--roby-orange);">
-                    📈
+                <div class="app-icon" style="background-color: var(--roby-red);">
+                    ✅
                 </div>
-                <h3 class="app-title">Data Visualization</h3>
-                <p class="app-description">Create and manage your data visualizations and reports.</p>
-                <a href="#" class="app-link">Open Visualizer</a>
+                <h3 class="app-title">ToDo</h3>
+                <p class="app-description">Basic Kanban-style board for tracking tasks and managing data projects efficiently.</p>
+                <a href="{% url 'todo:board_list' %}" class="app-link">Launch App</a>
             </div>
         </div>
         
@@ -60,26 +60,14 @@
             <div class="card-color-bar blue-bar"></div>
             <div class="card-content">
                 <div class="app-icon" style="background-color: var(--roby-blue);">
-                    🔄
+                    🎈
                 </div>
-                <h3 class="app-title">ETL Manager</h3>
-                <p class="app-description">Monitor and manage your data integration pipelines.</p>
-                <a href="#" class="app-link">Open ETL Manager</a>
+                <h3 class="app-title">Birthday Symposium</h3>
+                <p class="app-description">You're invited! Propose a talk, RSVP, or just browse.</p>
+                <a href="#" class="app-link">Woohoo!</a>
             </div>
         </div>
         
-        <!-- Data Warehouse App -->
-        <div class="app-card">
-            <div class="card-color-bar yellow-bar"></div>
-            <div class="card-content">
-                <div class="app-icon" style="background-color: var(--roby-yellow);">
-                    🏢
-                </div>
-                <h3 class="app-title">Data Warehouse</h3>
-                <p class="app-description">Access and manage your centralized data storage.</p>
-                <a href="#" class="app-link">Open Warehouse</a>
-            </div>
-        </div>
     </div>
     
     <div class="recent-activity">
