@@ -128,6 +128,14 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PORT = os.getenv('DB_PORT')
 
+print("Vars we have: (port, pwd, usr, name, host)")
+print(DB_PORT)
+print(DB_PASSWORD)
+print(DB_USER)
+print(DB_NAME)
+print(DB_HOST)
+print("End varswehave")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
