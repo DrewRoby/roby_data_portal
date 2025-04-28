@@ -28,7 +28,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 print(SECRET_KEY)
-print("DB_HOST is: "+os.getenv('DB_HOST'))
+DB_HOST=os.getenv('DB_HOST')
+print("DB_HOST is: "+DB_HOST)
 print("OOGLY OOGLY OOGLY GOO")
 
 # SECURITY WARNING: don't run with debug turned on in production!
