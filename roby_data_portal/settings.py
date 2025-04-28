@@ -128,14 +128,6 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PORT = os.getenv('DB_PORT')
 
-#print("Vars we have: (port, pwd, usr, name, host)")
-#print(DB_PORT)
-#print(DB_PASSWORD)
-#print(DB_USER)
-#print(DB_NAME)
-#print(DB_HOST)
-#print("End varswehave")
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -197,15 +189,7 @@ EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-
-print("Email varswehave:")
-print(EMAIL_BACKEND)
-print(EMAIL_HOST)
-print(EMAIL_PORT)
-print(EMAIL_HOST_USER)
-print(EMAIL_HOST_PASSWORD)
-print("end emilvwrasehave")
-
+-
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
