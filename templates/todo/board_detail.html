@@ -13,8 +13,8 @@
             {% endif %}
         </div>
 
-        <a href="{% url 'todo:create_task' board.id %}" class="add-task-btn">
-            <i class="fas fa-plus"></i> Add Task
+        <a href="{% url 'todo:create_board' board.id %}" class="add-task-btn">
+            <i class="fas fa-plus"></i> New Board
         </a>
     </div>
 
@@ -27,8 +27,8 @@
             {% endfor %}
         </select>
 
-        <a href="{% url 'todo:create_board' %}" class="add-board-btn">
-            <i class="fas fa-plus"></i> New Board
+        <a href="{% url 'todo:create_task' %}" class="add-board-btn">
+            <i class="fas fa-plus"></i> New Task
         </a>
     </div>
 
