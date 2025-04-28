@@ -32,7 +32,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'robydataservices-dev-ed9t6.ondigitalocean.app'
+    'robydataservices-dev-ed9t6.ondigitalocean.app',
+    'dev.robydata.com',
 ]
 
 INSTALLED_APPS = [
@@ -208,7 +209,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://drewroby.github.io",
     "http://127.0.0.1:8000",
     "http://localhost:8000",
-    "https://robydataservices-dev-ed9t6.ondigitalocean.app"
+    "https://robydataservices-dev-ed9t6.ondigitalocean.app",
+    "https://dev.robydata.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
