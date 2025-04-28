@@ -3,3 +3,4 @@ __pycache__/
 __init__
 xxfaffabout/
 static/dist/
+node_modules/
