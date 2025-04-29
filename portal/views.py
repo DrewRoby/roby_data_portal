@@ -164,7 +164,24 @@ def send_verification_email(request, user, token):
         fail_silently=False
     )
 
+# portal/views.py - Updated home view to pass apps to the template
 @login_required
 def get_homepage(request):
     """View for the user home page. Requires login."""
-    return render(request, 'portal/home.html')
+    # Get the user's app access
+    from .models import UserAppAccess, App
+    
+    # Get apps that the user has access to
+    user_apps = App.objects.filter(
+        id__in=UserAppAccess.objects.filter(user=request.user).values_list('app_id', flat=True)
+    ).order_by('order', 'name')
+    
+    # If no specific apps are assigned, fall back to default apps
+    if not user_apps.exists():
+        user_apps = App.objects.filter(is_default=True).order_by('order', 'name')
+    
+    context = {
+        'apps': user_apps
+    }
+    
+    return render(request, 'portal/home.html', context)
