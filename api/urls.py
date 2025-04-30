@@ -4,9 +4,6 @@ from . import views
 app_name = 'api'
 
 urlpatterns = [
-    # User Apps API
-    path('user/apps/', views.user_apps_api, name='user_apps_api'),
-    
     # Existing endpoints
     path('images/', views.get_images, name='get_images'),
     path('images/random/', views.get_random_image, name='get_random_image'),
