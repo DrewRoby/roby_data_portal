@@ -92,7 +92,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'portal.context_processors.user_apps', 
                 # 'django_plotly_dash.context_processors.plotly_dash',
             ],
             'libraries':{

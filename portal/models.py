@@ -34,40 +34,32 @@ class EmailVerificationToken(models.Model):
     def is_expired(self):
         return timezone.now() > self.expires_at
 
-class App(models.Model):
-    """Stores information about available applications in the portal."""
-    app_id = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=100)
-    description = models.TextField()
-    icon = models.CharField(max_length=50, help_text="Icon class or name")
-    background_color = models.CharField(max_length=20, default="#ffffff")
-    link = models.CharField(max_length=100)
-    is_default = models.BooleanField(default=False)
-    order = models.IntegerField(default=0)
-    
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        ordering = ['order', 'name']
-
-class UserAppAccess(models.Model):
+class AppAccess(models.Model):
     """Tracks which applications a user has access to."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='app_access_new')
-    app = models.ForeignKey(App, on_delete=models.CASCADE)
+    APP_CHOICES = (
+        ('analytics', 'Data Analytics'),
+        ('visualization', 'Data Visualization'),
+        ('etl', 'ETL Manager'),
+        ('warehouse', 'Data Warehouse'),
+        ('ml', 'ML Workbench'),
+        ('governance', 'Data Governance'),
+    )
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='app_access')
+    app_name = models.CharField(max_length=20, choices=APP_CHOICES)
     granted_date = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ('user', 'app')
-        verbose_name_plural = "User App Access"
+        unique_together = ('user', 'app_name')
+        verbose_name_plural = "App Access"
     
     def __str__(self):
-        return f"{self.user.username} - {self.app.name}"
+        return f"{self.user.username} - {self.get_app_name_display()}"
 
 class ActivityLog(models.Model):
     """Logs user activity across applications."""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
-    app_name = models.CharField(max_length=20, choices=[])  # We'll update this to use App choices
+    app_name = models.CharField(max_length=20, choices=AppAccess.APP_CHOICES)
     activity_type = models.CharField(max_length=50)
     description = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -77,18 +69,3 @@ class ActivityLog(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.activity_type} - {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
-    
-    def save(self, *args, **kwargs):
-        # Update app_name choices to use App model if it exists
-        if not ActivityLog._meta.get_field('app_name').choices:
-            try:
-                # Attempt to update choices dynamically
-                apps = App.objects.all()
-                if apps.exists():
-                    ActivityLog._meta.get_field('app_name').choices = [
-                        (app.app_id, app.name) for app in apps
-                    ]
-            except:
-                # If App model doesn't exist yet, use empty choices
-                pass
-        super().save(*args, **kwargs)

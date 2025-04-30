@@ -4,25 +4,75 @@
 {% block title %}Roby Data Services - Home{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="display-5 fw-bold text-primary">Hey, {{ request.user.first_name }}</h1>
-            <p class="lead">Let's get to work.</p>
+<div class="container">
+    <div class="dashboard-header">
+        <div class="user-welcome">
+            <h2>Tools</h2>
+        </div>
+        <div class="user-actions">
+            <a href="{% url 'portal:logout' %}" class="logout-link">Logout</a>
         </div>
     </div>
     
-    <div class="row">
-        {% for app in apps %}
-            {% include 'components/app_card.html' with app=app %}
-        {% empty %}
-            <div class="col-12 text-center py-5">
-                <div class="alert alert-info">
-                    <h4>No applications are available</h4>
-                    <p>Contact your administrator to request access to applications.</p>
+    <div class="dashboard-cards">
+
+        <!-- Storycraft -->
+        <div class="app-card">
+            <div class="card-color-bar red-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-red);">
+                    📚
                 </div>
+                <h3 class="app-title">StoryCraft</h3>
+                <p class="app-description">Build and visualize story components individually and as networks. Worldbuilding, timeline, plotting, and character tools help you bring your imagination to life.</p>
+                <a href="{% url 'storycraft:story_list' %}" class="app-link">Launch</a>
             </div>
-        {% endfor %}
+        </div>
+        
+        <!-- Schema Scope -->
+        <div class="app-card">
+            <div class="card-color-bar blue-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-blue);">
+                    🔭
+                </div>
+                <h3 class="app-title">SchemaScope</h3>
+                <p class="app-description">Parse and understand the schema of CSV, Excel, or JSON files.</p>
+               <a href="{% url 'schemascope:index' %}" class="app-link">Launch</a>
+            </div>
+        </div>
+        
+        <!-- Task Manager Tool -->
+        <div class="app-card">
+            <div class="card-color-bar orange-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-orange);">
+                    ✅
+                </div>
+                <h3 class="app-title">ToDo</h3>
+                <p class="app-description">Basic Kanban-style board for tracking tasks and managing data projects efficiently.</p>
+                <a href="{% url 'todo:board_list' %}" class="app-link">Launch</a>
+            </div>
+        </div>
+        
+        <!-- ETL Manager App -->
+        <div class="app-card">
+            <div class="card-color-bar yellow-bar"></div>
+            <div class="card-content">
+                <div class="app-icon" style="background-color: var(--roby-yellow);">
+                    🎈
+                </div>
+                <h3 class="app-title">Birthday Symposium</h3>
+                <p class="app-description">You're invited! Propose a talk, RSVP, or just browse.</p>
+                <a href="#" class="app-link">Woohoo!</a>
+            </div>
+        </div>
+        
+    </div>
+    
+    <div class="recent-activity">
+        <h3>Recent Activity</h3>
+        <p>Your activity dashboard will appear here once you start using the applications.</p>
     </div>
 </div>
 {% endblock %}
