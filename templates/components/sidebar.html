@@ -1,0 +1,44 @@
+<div class="sidebar bg-dark text-white">
+    <div class="sidebar-header p-3 border-bottom border-secondary">
+        <a href="{% url 'portal:home' %}" class="text-decoration-none">
+            <h5 class="text-white mb-0">
+                <img src="{% static 'images/logo-icon.png' %}" alt="Logo" width="30" height="30" class="me-2">
+                Roby Data
+            </h5>
+        </a>
+    </div>
+    
+    <div class="sidebar-user p-3 border-bottom border-secondary">
+        <div class="d-flex align-items-center">
+            <div class="avatar bg-primary rounded-circle me-2">
+                {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+            </div>
+            <div>
+                <div class="fw-bold">{{ request.user.get_full_name }}</div>
+                <small class="text-muted">{{ request.user.email }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="sidebar-apps p-2">
+        <div class="sidebar-heading px-3 py-2 text-uppercase text-muted small">
+            Applications
+        </div>
+        <ul class="nav flex-column">
+            {% for app in apps %}
+            <li class="nav-item">
+                <a href="{{ app.link }}" class="nav-link text-white-50 py-2">
+                    <i class="fas {{ app.icon }} me-2"></i>
+                    {{ app.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="sidebar-footer mt-auto p-3 border-top border-secondary">
+        <a href="{% url 'portal:logout' %}" class="btn btn-outline-light btn-sm w-100">
+            <i class="fas fa-sign-out-alt me-2"></i> Logout
+        </a>
+    </div>
+</div>
