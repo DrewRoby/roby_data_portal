@@ -34,6 +34,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'robydataservices-dev-ed9t6.ondigitalocean.app',
     'dev.robydata.com',
+    '127.0.0.1',
 ]
 
 INSTALLED_APPS = [

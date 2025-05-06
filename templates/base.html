@@ -145,18 +145,15 @@
                     </div>
                 </div>
             </nav>
-            
-            <!-- Main content -->
-            {% block content %}{% endblock %}
+    
+            {% block content %}{% endblock %}            
+
         </div>
     {% else %}
         <!-- Guest layout without sidebar -->
         {% block guest_content %}
-            {% block content %}{% endblock %}
         {% endblock %}
     {% endif %}
-    
-    {% block content %}{% endblock %}
     
     <footer>
         <div class="container">
