@@ -1,0 +1,22 @@
+<div class="col-md-4 mb-4">
+    <a href="{{ app.link }}" class="text-decoration-none">
+        <div class="card app-card h-100 shadow-sm" style="background-color: {{ app.background_color }};">
+            <div class="card-body text-white d-flex flex-column">
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <i class="fas {{ app.icon }} fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ app.name }}</h5>
+                    </div>
+                </div>
+                <p class="card-text flex-grow-1">{{ app.description }}</p>
+                <div class="text-end mt-2">
+                    <span class="btn btn-sm btn-light">
+                        Launch App <i class="fas fa-arrow-right ms-1"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>

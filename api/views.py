@@ -929,3 +929,46 @@ def relationship_delete_api(request, relationship_id):
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def user_apps_api(request):
+    """API endpoint that returns the list of apps a user has access to."""
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        # Get the user's app access
+        from portal.models import UserAppAccess, App
+        
+        # Get apps that the user has access to
+        user_apps = App.objects.filter(
+            id__in=UserAppAccess.objects.filter(user=user).values_list('app_id', flat=True)
+        ).order_by('order', 'name')
+        
+        # If no specific apps are assigned, fall back to default apps
+        if not user_apps.exists():
+            user_apps = App.objects.filter(is_default=True).order_by('order', 'name')
+        
+        data = []
+        for app in user_apps:
+            app_data = {
+                'app_id': app.app_id,
+                'name': app.name,
+                'description': app.description,
+                'icon': app.icon,
+                'background_color': app.background_color,
+                'link': app.link,
+                'is_default': app.is_default,
+                'order': app.order
+            }
+            data.append(app_data)
+        
+        return Response({
+            'status': 'success',
+            'count': len(data),
+            'apps': data
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
