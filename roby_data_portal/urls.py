@@ -12,6 +12,7 @@ urlpatterns = [
     path('todo/', include('todo.urls')),
     # path('dasher/', include('dasher.urls')),
     path('storycraft/',include('storycraft.urls')),
+    path('inventory/',include('inventory.urls')),
 ]
 
 if settings.DEBUG:
