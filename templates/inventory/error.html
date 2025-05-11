@@ -1,0 +1,29 @@
+{% extends "inventory/base.html" %}
+
+{% block inventory_title %}{{ error_title|default:"Error" }}{% endblock %}
+
+{% block inventory_content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">{{ error_title|default:"Error" }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="text-center mb-4">
+            <i class="fa fa-exclamation-circle fa-5x text-danger mb-3"></i>
+            <h4>{{ error_message|default:"An error has occurred." }}</h4>
+            <p class="text-muted">{{ error_details|default:"" }}</p>
+        </div>
+        
+        <div class="d-flex justify-content-center">
+            {% if back_url %}
+                <a href="{{ back_url }}" class="btn btn-outline-secondary me-2">
+                    <i class="fa fa-arrow-left"></i> Go Back
+                </a>
+            {% endif %}
+            <a href="{% url 'inventory:dashboard' %}" class="btn btn-primary">
+                <i class="fa fa-home"></i> Return to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:shelf-detail' warehouse.id rack.id shelf.id %}">{{ shelf.name }}</a></li>
+<li class="breadcrumb-item active">{{ bin.name }}</li>
+{% endblock %}
+
+{% block inventory_title %}{{ bin.name }}{% endblock %}
+
+{% block inventory_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Bin Details</h5>
+        <div>
+            <a href="{% url 'inventory:bin-update' warehouse.id rack.id shelf.id bin.id %}" class="btn btn-warning btn-sm">
+                <i class="fa fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'inventory:bin-delete' warehouse.id rack.id shelf.id bin.id %}" class="btn btn-danger btn-sm delete-btn">
+                <i class="fa fa-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ bin.name }}</p>
+                <p><strong>Description:</strong> {{ bin.description }}</p>
+                <p><strong>Shelf:</strong> <a href="{% url 'inventory:shelf-detail' warehouse.id rack.id shelf.id %}">{{ shelf.name }}</a></p>
+                <p><strong>Rack:</strong> <a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></p>
+                <p><strong>Warehouse:</strong> <a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></p>
+                <p><strong>Created:</strong> {{ bin.created_at|date:"F d, Y" }}</p>
+                <p><strong>Last Updated:</strong> {{ bin.updated_at|date:"F d, Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Items
+                                <span class="badge bg-primary rounded-pill">{{ bin.items.count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Quantity
+                                <span class="badge bg-primary rounded-pill">{{ total_quantity }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Items Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Items</h5>
+        <a href="{% url 'inventory:item-create' warehouse.id rack.id shelf.id bin.id %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> Add Item
+        </a>
+    </div>
+    <div class="card-body">
+        {% if bin.items.all %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in bin.items.all %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}">
+                                    {{ item.name }}
+                                </a>
+                            </td>
+                            <td>{{ item.sku }}</td>
+                            <td>{{ item.description|truncatechars:50 }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.updated_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-info btn-sm">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:item-update' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-warning btn-sm">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:item-delete' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-danger btn-sm delete-btn">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No items found. <a href="{% url 'inventory:item-create' warehouse.id rack.id shelf.id bin.id %}">Add your first item</a>.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

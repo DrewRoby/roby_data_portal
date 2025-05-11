@@ -52,3 +52,23 @@ class Item(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.quantity}) in {self.bin}"
+
+class Disposition(models.Model):
+    DISPOSITION_TYPES = [
+        ('sold', 'Sold'),
+        ('waste', 'Waste/Expired'),
+        ('damaged', 'Damaged'),
+        ('transferred', 'Transferred Externally'),
+        ('returned', 'Returned to Supplier'),
+        ('other', 'Other')
+    ]
+    
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='dispositions')
+    quantity = models.PositiveIntegerField()
+    disposition_type = models.CharField(max_length=20, choices=DISPOSITION_TYPES)
+    notes = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"{self.get_disposition_type_display()} - {self.quantity} units of {self.item.name}"
