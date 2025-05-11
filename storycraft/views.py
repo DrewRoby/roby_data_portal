@@ -9,13 +9,11 @@ from django.contrib.contenttypes.models import ContentType
 
 
 def story_list(request):
-    """View for listing all stories."""
     stories = Story.objects.filter(user=request.user).order_by('-updated_at')
     return render(request, 'storycraft/story_list.html', {'stories': stories})
 
 #@login_required
 def create_story(request):
-    """View for creating a new story."""
     if request.method == 'POST':
         form = StoryForm(request.POST)
         if form.is_valid():
@@ -33,7 +31,6 @@ def create_story(request):
     return render(request, 'storycraft/create_story.html', {'form': form})
 
 def story_detail(request, story_id):
-    """View for story details page."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     characters = Character.objects.filter(story=story)
     settings = Setting.objects.filter(story=story)
@@ -55,7 +52,6 @@ def story_detail(request, story_id):
     return render(request, 'storycraft/story_detail.html', context)
 
 def edit_story(request, story_id):
-    """View for editing a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -69,7 +65,6 @@ def edit_story(request, story_id):
     return render(request, 'storycraft/edit_story.html', {'form': form, 'story': story})
 
 def delete_story(request, story_id):
-    """View for deleting a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -79,7 +74,6 @@ def delete_story(request, story_id):
     return render(request, 'storycraft/delete_story.html', {'story': story})
 
 def story_network(request, story_id):
-    """View for the story network visualization."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     context = {
@@ -96,7 +90,6 @@ def story_network(request, story_id):
     return render(request, 'storycraft/story_network.html', context)
 
 def story_timeline(request, story_id):
-    """View for the story timeline visualization."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     context = {
@@ -113,7 +106,6 @@ def story_timeline(request, story_id):
 
 # Character-related views
 def character_list(request, story_id):
-    """View for listing all characters in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     characters = Character.objects.filter(story=story)
     
@@ -123,7 +115,6 @@ def character_list(request, story_id):
     })
 
 def create_character(request, story_id):
-    """View for creating a new character."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -269,7 +260,6 @@ def character_detail(request, character_id):
     return render(request, 'storycraft/character_detail.html', context)
 
 def edit_character(request, character_id):
-    """View for editing a character."""
     character = get_object_or_404(Character, id=character_id, story__user=request.user)
     
     if request.method == 'POST':
@@ -287,7 +277,6 @@ def edit_character(request, character_id):
     })
 
 def delete_character(request, character_id):
-    """View for deleting a character."""
     character = get_object_or_404(Character, id=character_id, story__user=request.user)
     story_id = character.story.id
     
@@ -302,7 +291,6 @@ def delete_character(request, character_id):
 
 # Setting-related views
 def setting_list(request, story_id):
-    """View for listing all settings in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     settings = Setting.objects.filter(story=story)
     
@@ -312,7 +300,6 @@ def setting_list(request, story_id):
     })
 
 def create_setting(request, story_id):
-    """View for creating a new setting."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -331,7 +318,6 @@ def create_setting(request, story_id):
     })
 
 def edit_setting(request, setting_id):
-    """View for editing a setting."""
     setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
     story = setting.story
     
@@ -350,7 +336,6 @@ def edit_setting(request, setting_id):
     })
 
 def setting_detail(request, setting_id):
-    """View for setting details page."""
     setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
     story = setting.story
     children = setting.get_all_children()
@@ -362,7 +347,6 @@ def setting_detail(request, setting_id):
     })
 
 def delete_setting(request, setting_id):
-    """View for deleting a setting."""
     setting = get_object_or_404(Setting, id=setting_id, story__user=request.user)
     story_id = setting.story.id
     
@@ -377,7 +361,6 @@ def delete_setting(request, setting_id):
 
 # Plot-related views
 def plot_list(request, story_id):
-    """View for listing all plots in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     plots = Plot.objects.filter(story=story)
     
@@ -387,7 +370,6 @@ def plot_list(request, story_id):
     })
 
 def create_plot(request, story_id):
-    """View for creating a new plot."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -406,7 +388,6 @@ def create_plot(request, story_id):
     })
 
 def plot_detail(request, plot_id):
-    """View for plot details page."""
     plot = get_object_or_404(Plot, id=plot_id, story__user=request.user)
     story = plot.story
     
@@ -416,7 +397,6 @@ def plot_detail(request, plot_id):
     })
 
 def edit_plot(request, plot_id):
-    """View for editing a plot."""
     plot = get_object_or_404(Plot, id=plot_id, story__user=request.user)
     
     if request.method == 'POST':
@@ -434,7 +414,6 @@ def edit_plot(request, plot_id):
     })
 
 def delete_plot(request, plot_id):
-    """View for deleting a plot."""
     plot = get_object_or_404(Plot, id=plot_id, story__user=request.user)
     story_id = plot.story.id
     
@@ -449,7 +428,6 @@ def delete_plot(request, plot_id):
 
 # Scene-related views
 def scene_list(request, story_id):
-    """View for listing all scenes in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     scenes = Scene.objects.filter(story=story).order_by('sequence_number')
     
@@ -459,7 +437,6 @@ def scene_list(request, story_id):
     })
 
 def create_scene(request, story_id):
-    """View for creating a new scene."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -501,7 +478,6 @@ def create_scene(request, story_id):
     })
     
 def scene_detail(request, scene_id):
-    """View for scene details page."""
     scene = get_object_or_404(Scene, id=scene_id, story__user=request.user)
     story = scene.story
     
@@ -515,7 +491,6 @@ def scene_detail(request, scene_id):
     })
 
 def edit_scene(request, scene_id):
-    """View for editing a scene."""
     scene = get_object_or_404(Scene, id=scene_id, story__user=request.user)
     story = scene.story
     
@@ -584,7 +559,6 @@ def edit_scene(request, scene_id):
     })
 
 def delete_scene(request, scene_id):
-    """View for deleting a scene."""
     scene = get_object_or_404(Scene, id=scene_id, story__user=request.user)
     story_id = scene.story.id
     
@@ -599,7 +573,6 @@ def delete_scene(request, scene_id):
 
 # Relationship-related views
 def relationship_list(request, story_id):
-    """View for listing all relationships in a story."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     relationships = CharacterRelationship.objects.filter(
         source__story=story, target__story=story
@@ -611,7 +584,6 @@ def relationship_list(request, story_id):
     })
 
 def create_relationship(request, story_id):
-    """View for creating a new relationship."""
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -628,7 +600,6 @@ def create_relationship(request, story_id):
     })
 
 def edit_relationship(request, relationship_id):
-    """View for editing a relationship."""
     relationship = get_object_or_404(
         CharacterRelationship, 
         id=relationship_id, 
@@ -651,7 +622,6 @@ def edit_relationship(request, relationship_id):
     })
 
 def delete_relationship(request, relationship_id):
-    """View for deleting a relationship."""
     relationship = get_object_or_404(
         CharacterRelationship, 
         id=relationship_id, 
@@ -669,7 +639,6 @@ def delete_relationship(request, relationship_id):
     })
 
 def delete_story(request, story_id):
-    """View for deleting a whole story."""
     story_to_delete = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
@@ -680,7 +649,6 @@ def delete_story(request, story_id):
     return render(request, 'storycraft/story_list.html', {'stories':stories})
 
 def create_note(request, model_name, object_id):
-    """View for creating a new note for any object."""
     # Get the content type based on model name
     model_mapping = {
         'story': Story,
@@ -739,7 +707,6 @@ def create_note(request, model_name, object_id):
     return render(request, 'storycraft/create_note.html', context)
 
 def edit_note(request, note_id):
-    """View for editing a note."""
     note = get_object_or_404(Note, id=note_id, user=request.user)
     obj = note.content_object
     
@@ -772,7 +739,6 @@ def edit_note(request, note_id):
     })
 
 def delete_note(request, note_id):
-    """View for deleting a note."""
     note = get_object_or_404(Note, id=note_id, user=request.user)
     obj = note.content_object
     
@@ -801,7 +767,6 @@ def delete_note(request, note_id):
     })
 
 def note_list(request, model_name, object_id):
-    """View for listing all notes for an object."""
     # Get the content type based on model name
     model_mapping = {
         'story': Story,
