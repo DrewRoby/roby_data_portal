@@ -1,0 +1,61 @@
+{% extends "inventory/base.html" %}
+
+{% block inventory_title %}Search Inventory{% endblock %}
+
+{% block inventory_content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Search Inventory</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{% url 'inventory:search' %}">
+            <div class="mb-3">
+                <label for="id_query" class="form-label">Search Term</label>
+                <input type="text" class="form-control" id="id_query" name="q" placeholder="Enter name, description, SKU..." required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_type" class="form-label">Search In</label>
+                <select class="form-select" id="id_type" name="type">
+                    <option value="all" selected>All Categories</option>
+                    <option value="warehouse">Warehouses</option>
+                    <option value="rack">Racks</option>
+                    <option value="shelf">Shelves</option>
+                    <option value="bin">Bins</option>
+                    <option value="item">Items</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-search"></i> Search
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Quick Links</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <a href="{% url 'inventory:warehouse-list' %}" class="btn btn-outline-secondary w-100">
+                    <i class="fa fa-warehouse"></i> All Warehouses
+                </a>
+            </div>
+            <div class="col-md-4 mb-2">
+                <a href="{% url 'inventory:low-stock' %}" class="btn btn-outline-warning w-100">
+                    <i class="fa fa-exclamation-triangle"></i> Low Stock Items
+                </a>
+            </div>
+            <div class="col-md-4 mb-2">
+                <a href="{% url 'inventory:report' %}" class="btn btn-outline-info w-100">
+                    <i class="fa fa-chart-bar"></i> Inventory Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

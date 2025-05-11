@@ -1,0 +1,169 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:shelf-detail' warehouse.id rack.id shelf.id %}">{{ shelf.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}">{{ bin.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}">{{ item.name }}</a></li>
+<li class="breadcrumb-item active">Transfer</li>
+{% endblock %}
+
+{% block inventory_title %}Transfer Item{% endblock %}
+
+{% block inventory_content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Transfer "{{ item.name }}"</h5>
+    </div>
+    <div class="card-body">
+        <p>Current location: <strong>{{ warehouse.name }} > {{ rack.name }} > {{ shelf.name }} > {{ bin.name }}</strong></p>
+        <p>Current quantity: <strong>{{ item.quantity }}</strong></p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="id_warehouse" class="form-label">Select Warehouse</label>
+                    <select class="form-select" id="id_warehouse" name="warehouse" required>
+                        <option value="">Select Warehouse</option>
+                        {% for w in warehouses %}
+                            <option value="{{ w.id }}" {% if w.id == warehouse.id %}selected{% endif %}>{{ w.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="id_rack" class="form-label">Select Rack</label>
+                    <select class="form-select" id="id_rack" name="rack" required>
+                        <option value="">Select Rack</option>
+                        {% for r in racks %}
+                            <option value="{{ r.id }}" {% if r.id == rack.id %}selected{% endif %}>{{ r.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="id_shelf" class="form-label">Select Shelf</label>
+                    <select class="form-select" id="id_shelf" name="shelf" required>
+                        <option value="">Select Shelf</option>
+                        {% for s in shelves %}
+                            <option value="{{ s.id }}" {% if s.id == shelf.id %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="id_bin" class="form-label">Select Bin</label>
+                    <select class="form-select" id="id_bin" name="bin" required>
+                        <option value="">Select Bin</option>
+                        {% for b in bins %}
+                            <option value="{{ b.id }}" {% if b.id == bin.id %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="id_quantity" class="form-label">Quantity to Transfer</label>
+                    <input type="number" class="form-control" id="id_quantity" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.quantity }}" required>
+                    <div class="form-text">Enter the quantity to transfer (max: {{ item.quantity }})</div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Transfer Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block inventory_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const warehouseSelect = document.getElementById('id_warehouse');
+        const rackSelect = document.getElementById('id_rack');
+        const shelfSelect = document.getElementById('id_shelf');
+        const binSelect = document.getElementById('id_bin');
+        
+        // Function to fetch data from API
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return { data: [] };
+            }
+        }
+        
+        // Update racks when warehouse changes
+        warehouseSelect.addEventListener('change', async function() {
+            const warehouseId = this.value;
+            rackSelect.innerHTML = '<option value="">Select Rack</option>';
+            shelfSelect.innerHTML = '<option value="">Select Shelf</option>';
+            binSelect.innerHTML = '<option value="">Select Bin</option>';
+            
+            if (warehouseId) {
+                const racks = await fetchData(`/api/inventory/warehouses/${warehouseId}/racks/`);
+                racks.forEach(rack => {
+                    const option = document.createElement('option');
+                    option.value = rack.id;
+                    option.textContent = rack.name;
+                    rackSelect.appendChild(option);
+                });
+            }
+        });
+        
+        // Update shelves when rack changes
+        rackSelect.addEventListener('change', async function() {
+            const warehouseId = warehouseSelect.value;
+            const rackId = this.value;
+            shelfSelect.innerHTML = '<option value="">Select Shelf</option>';
+            binSelect.innerHTML = '<option value="">Select Bin</option>';
+            
+            if (rackId) {
+                const shelves = await fetchData(`/api/inventory/warehouses/${warehouseId}/racks/${rackId}/shelves/`);
+                shelves.forEach(shelf => {
+                    const option = document.createElement('option');
+                    option.value = shelf.id;
+                    option.textContent = shelf.name;
+                    shelfSelect.appendChild(option);
+                });
+            }
+        });
+        
+        // Update bins when shelf changes
+        shelfSelect.addEventListener('change', async function() {
+            const warehouseId = warehouseSelect.value;
+            const rackId = rackSelect.value;
+            const shelfId = this.value;
+            binSelect.innerHTML = '<option value="">Select Bin</option>';
+            
+            if (shelfId) {
+                const bins = await fetchData(`/api/inventory/warehouses/${warehouseId}/racks/${rackId}/shelves/${shelfId}/bins/`);
+                bins.forEach(bin => {
+                    const option = document.createElement('option');
+                    option.value = bin.id;
+                    option.textContent = bin.name;
+                    binSelect.appendChild(option);
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

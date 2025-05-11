@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'api',
     'auth_detector',
     'todo',
+    'inventory',
 
 ]
 

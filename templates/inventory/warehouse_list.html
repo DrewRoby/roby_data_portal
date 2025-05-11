@@ -1,0 +1,62 @@
+{% extends "inventory/base.html" %}
+
+{% block inventory_title %}Warehouses{% endblock %}
+
+{% block inventory_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Warehouses</h5>
+        <a href="{% url 'inventory:warehouse-create' %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> Add Warehouse
+        </a>
+    </div>
+    <div class="card-body">
+        {% if warehouses %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Racks</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for warehouse in warehouses %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:warehouse-detail' warehouse.id %}">
+                                    {{ warehouse.name }}
+                                </a>
+                            </td>
+                            <td>{{ warehouse.description|truncatechars:50 }}</td>
+                            <td>{{ warehouse.racks.count }}</td>
+                            <td>{{ warehouse.updated_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'inventory:warehouse-detail' warehouse.id %}" class="btn btn-info btn-sm">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:warehouse-update' warehouse.id %}" class="btn btn-warning btn-sm">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:warehouse-delete' warehouse.id %}" class="btn btn-danger btn-sm delete-btn">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No warehouses found. <a href="{% url 'inventory:warehouse-create' %}">Add your first warehouse</a>.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
