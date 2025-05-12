@@ -13,7 +13,8 @@ import json
 from .models import Warehouse, Rack, Shelf, Bin, Item
 from .forms import (
     WarehouseForm, RackForm, ShelfForm, BinForm, ItemForm,
-    ItemTransferForm, RestockForm, SearchForm, DispositionForm
+    ItemTransferForm, RestockForm, SearchForm, DispositionForm,
+    StockAdditionForm
 )
 
 # Dashboard
@@ -495,6 +496,7 @@ def bin_delete(request, warehouse_id, rack_id, shelf_id, bin_id):
     return render(request, 'inventory/bin_confirm_delete.html', context)
 
 # Item Views
+# inventory/views.py
 def item_detail(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
     """
     Display details of a specific item.
@@ -504,7 +506,37 @@ def item_detail(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
     shelf = get_object_or_404(Shelf, id=shelf_id, rack=rack)
     bin_obj = get_object_or_404(Bin, id=bin_id, shelf=shelf)
     item = get_object_or_404(Item, id=item_id, bin=bin_obj)
+    
+    # Get activity history ordered by timestamp
     dispositions = item.dispositions.all().order_by('-timestamp')
+    additions = item.additions.all().order_by('-timestamp')
+    
+    # Create combined history list for the template
+    # We'll create a list of dicts with a uniform structure for easier template rendering
+    history_items = []
+    
+    for disposition in dispositions:
+        history_items.append({
+            'timestamp': disposition.timestamp,
+            'type': 'disposition',
+            'quantity': -disposition.quantity,  # Negative for dispositions
+            'reason': disposition.get_disposition_type_display(),
+            'notes': disposition.notes,
+            'user': disposition.created_by.username
+        })
+    
+    for addition in additions:
+        history_items.append({
+            'timestamp': addition.timestamp,
+            'type': 'addition',
+            'quantity': addition.quantity,  # Positive for additions
+            'reason': addition.get_addition_type_display(),
+            'notes': addition.notes,
+            'user': addition.created_by.username
+        })
+    
+    # Sort by timestamp (most recent first)
+    history_items.sort(key=lambda x: x['timestamp'], reverse=True)
     
     context = {
         'warehouse': warehouse,
@@ -512,7 +544,7 @@ def item_detail(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
         'shelf': shelf,
         'bin': bin_obj,
         'item': item,
-        'dispositions': dispositions
+        'history_items': history_items
     }
     
     return render(request, 'inventory/item_detail.html', context)
@@ -732,41 +764,6 @@ def item_transfer(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
     
     return render(request, 'inventory/item_transfer.html', context)
 
-def item_quantity_update(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
-    """
-    Quick update of item quantity from the detail page.
-    """
-    warehouse = get_object_or_404(Warehouse, id=warehouse_id, user=request.user)
-    rack = get_object_or_404(Rack, id=rack_id, warehouse=warehouse)
-    shelf = get_object_or_404(Shelf, id=shelf_id, rack=rack)
-    bin_obj = get_object_or_404(Bin, id=bin_id, shelf=shelf)
-    item = get_object_or_404(Item, id=item_id, bin=bin_obj)
-    
-    if request.method == 'POST':
-        try:
-            new_quantity = int(request.POST.get('quantity', 0))
-            if new_quantity >= 0:
-                old_quantity = item.quantity
-                item.quantity = new_quantity
-                item.save()
-                
-                if new_quantity > old_quantity:
-                    messages.success(request, f'Quantity of "{item.name}" increased from {old_quantity} to {new_quantity}.')
-                elif new_quantity < old_quantity:
-                    messages.warning(request, f'Quantity of "{item.name}" decreased from {old_quantity} to {new_quantity}.')
-                else:
-                    messages.info(request, f'Quantity of "{item.name}" remains unchanged at {new_quantity}.')
-            else:
-                messages.error(request, 'Quantity cannot be negative.')
-        except ValueError:
-            messages.error(request, 'Invalid quantity value.')
-    
-    return redirect('inventory:item-detail', 
-                   warehouse_id=warehouse.id, 
-                   rack_id=rack.id,
-                   shelf_id=shelf.id,
-                   bin_id=bin_obj.id,
-                   item_id=item.id)
 
 # Utility Views
 def search(request):
@@ -1267,3 +1264,59 @@ def item_disposition(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
     }
     
     return render(request, 'inventory/item_disposition.html', context)
+
+def item_add_stock(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
+    """
+    Record a stock addition for an item.
+    """
+    warehouse = get_object_or_404(Warehouse, id=warehouse_id, user=request.user)
+    rack = get_object_or_404(Rack, id=rack_id, warehouse=warehouse)
+    shelf = get_object_or_404(Shelf, id=shelf_id, rack=rack)
+    bin_obj = get_object_or_404(Bin, id=bin_id, shelf=shelf)
+    item = get_object_or_404(Item, id=item_id, bin=bin_obj)
+    
+    if request.method == 'POST':
+        form = StockAdditionForm(request.POST)
+        if form.is_valid():
+            addition = form.save(commit=False)
+            addition.item = item
+            addition.created_by = request.user
+            addition.save()
+            
+            # Update item quantity
+            item.quantity += addition.quantity
+            item.save()
+            
+            messages.success(
+                request, 
+                f'Successfully added {addition.quantity} units of "{item.name}".'
+            )
+            
+            # Determine where to redirect based on referer
+            referer = request.META.get('HTTP_REFERER', '')
+            if 'bin-detail' in referer:
+                return redirect('inventory:bin-detail', 
+                               warehouse_id=warehouse.id, 
+                               rack_id=rack.id,
+                               shelf_id=shelf.id,
+                               bin_id=bin_obj.id)
+            else:
+                return redirect('inventory:item-detail', 
+                               warehouse_id=warehouse.id, 
+                               rack_id=rack.id,
+                               shelf_id=shelf.id,
+                               bin_id=bin_obj.id,
+                               item_id=item.id)
+    else:
+        form = StockAdditionForm(initial={'quantity': 1})
+    
+    context = {
+        'form': form,
+        'warehouse': warehouse,
+        'rack': rack,
+        'shelf': shelf,
+        'bin': bin_obj,
+        'item': item
+    }
+    
+    return render(request, 'inventory/item_add_stock.html', context)

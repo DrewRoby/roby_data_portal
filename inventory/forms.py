@@ -2,7 +2,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from .models import Warehouse, Rack, Shelf, Bin, Item, Disposition
+from .models import Warehouse, Rack, Shelf, Bin, Item, Disposition, StockAddition
 
 class WarehouseForm(forms.ModelForm):
     class Meta:
@@ -135,3 +135,13 @@ class DispositionForm(forms.ModelForm):
         if self.item and quantity > self.item.quantity:
             raise ValidationError(f'Cannot dispose more than the available quantity ({self.item.quantity}).')
         return quantity
+
+class StockAdditionForm(forms.ModelForm):
+    class Meta:
+        model = StockAddition
+        fields = ['quantity', 'addition_type', 'notes']
+        widgets = {
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'addition_type': forms.Select(attrs={'class': 'form-select'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }

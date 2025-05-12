@@ -52,10 +52,10 @@ urlpatterns = [
          views.item_delete, name='item-delete'),
     path('warehouses/<int:warehouse_id>/racks/<int:rack_id>/shelves/<int:shelf_id>/bins/<int:bin_id>/items/<int:item_id>/transfer/', 
          views.item_transfer, name='item-transfer'),
-    path('warehouses/<int:warehouse_id>/racks/<int:rack_id>/shelves/<int:shelf_id>/bins/<int:bin_id>/items/<int:item_id>/quantity/', 
-         views.item_quantity_update, name='item-quantity-update'),
     path('warehouses/<int:warehouse_id>/racks/<int:rack_id>/shelves/<int:shelf_id>/bins/<int:bin_id>/items/<int:item_id>/disposition/', 
          views.item_disposition, name='item-disposition'),
+    path('warehouses/<int:warehouse_id>/racks/<int:rack_id>/shelves/<int:shelf_id>/bins/<int:bin_id>/items/<int:item_id>/add-stock/', 
+     views.item_add_stock, name='item-add-stock'),
     
     # Utility URLs
     path('search/', views.search, name='search'),

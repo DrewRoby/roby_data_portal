@@ -68,49 +68,229 @@
     </div>
     <div class="card-body">
         {% if bin.items.all %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>SKU</th>
-                            <th>Description</th>
-                            <th>Quantity</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in bin.items.all %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}">
-                                    {{ item.name }}
-                                </a>
-                            </td>
-                            <td>{{ item.sku }}</td>
-                            <td>{{ item.description|truncatechars:50 }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>{{ item.updated_at|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-info btn-sm">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                    <a href="{% url 'inventory:item-update' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-warning btn-sm">
-                                        <i class="fa fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'inventory:item-delete' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-danger btn-sm delete-btn">
-                                        <i class="fa fa-trash"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+<!-- Add this above the items table in templates/inventory/bin_detail.html -->
+<div class="d-flex justify-content-end mb-3">
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa fa-cogs"></i> Batch Operations
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" id="batchAddStockBtn"><i class="fa fa-plus-circle"></i> Add Stock to Multiple Items</a></li>
+            <li><a class="dropdown-item" href="#" id="batchDispositionBtn"><i class="fa fa-minus-circle"></i> Disposition Multiple Items</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" id="selectAllItemsBtn"><i class="fa fa-check-square"></i> Select All Items</a></li>
+            <li><a class="dropdown-item" href="#" id="deselectAllItemsBtn"><i class="fa fa-square"></i> Deselect All Items</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Add checkboxes to the items table -->
+<thead>
+    <tr>
+        <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
+        <th>Name</th>
+        <th>SKU</th>
+        <!-- other columns -->
+    </tr>
+</thead>
+<tbody>
+    {% for item in bin.items.all %}
+    <tr>
+        <td><input type="checkbox" class="form-check-input item-checkbox" data-item-id="{{ item.id }}" data-item-name="{{ item.name }}"></td>
+        <td>
+            <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}">
+                {{ item.name }}
+            </a>
+        </td>
+        <!-- other columns -->
+    </tr>
+    {% endfor %}
+</tbody>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>SKU</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bin.items.all %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}">
+                        {{ item.name }}
+                    </a>
+                </td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.description|truncatechars:50 }}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger me-2 subtract-stock" 
+                                data-item-id="{{ item.id }}" data-item-name="{{ item.name }}">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                        <span class="mx-2">{{ item.quantity }}</span>
+                        <button type="button" class="btn btn-sm btn-outline-success ms-2 add-stock" 
+                                data-item-id="{{ item.id }}" data-item-name="{{ item.name }}">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>{{ item.updated_at|date:"M d, Y" }}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-info btn-sm">
+                            <i class="fa fa-eye"></i>
+                        </a>
+                        <a href="{% url 'inventory:item-update' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-warning btn-sm">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                        <a href="{% url 'inventory:item-delete' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-danger btn-sm delete-btn">
+                            <i class="fa fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStockModalLabel">Add Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        {% else %}
+            <form id="add-stock-form" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Add stock to: <strong id="add-stock-item-name"></strong></p>
+                    
+                    <div class="mb-3">
+                        <label for="add-stock-quantity" class="form-label">Quantity to Add</label>
+                        <input type="number" class="form-control" id="add-stock-quantity" name="quantity" min="1" value="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="add-stock-type" class="form-label">Reason</label>
+                        <select class="form-select" id="add-stock-type" name="addition_type" required>
+                            <option value="new_stock">New Stock</option>
+                            <option value="manufactured">Manufactured</option>
+                            <option value="returned">Returned Stock</option>
+                            <option value="correction">Inventory Correction</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="add-stock-notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="add-stock-notes" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Subtract Stock (Disposition) Modal -->
+<div class="modal fade" id="subtractStockModal" tabindex="-1" aria-labelledby="subtractStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subtractStockModalLabel">Record Disposition</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="subtract-stock-form" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Subtract stock from: <strong id="subtract-stock-item-name"></strong></p>
+                    
+                    <div class="mb-3">
+                        <label for="subtract-stock-quantity" class="form-label">Quantity to Remove</label>
+                        <input type="number" class="form-control" id="subtract-stock-quantity" name="quantity" min="1" value="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subtract-stock-type" class="form-label">Reason</label>
+                        <select class="form-select" id="subtract-stock-type" name="disposition_type" required>
+                            <option value="sold">Sold</option>
+                            <option value="waste">Waste/Expired</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="transferred">Transferred Externally</option>
+                            <option value="returned">Returned to Supplier</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subtract-stock-notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="subtract-stock-notes" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Record Disposition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block inventory_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup for Add Stock modal
+        const addStockButtons = document.querySelectorAll('.add-stock');
+        const addStockModal = new bootstrap.Modal(document.getElementById('addStockModal'));
+        const addStockForm = document.getElementById('add-stock-form');
+        const addStockItemName = document.getElementById('add-stock-item-name');
+        
+        addStockButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const itemId = this.getAttribute('data-item-id');
+                const itemName = this.getAttribute('data-item-name');
+                
+                addStockItemName.textContent = itemName;
+                addStockForm.action = "{% url 'inventory:item-add-stock' warehouse.id rack.id shelf.id bin.id 0 %}".replace('/0/', `/${itemId}/`);
+                
+                addStockModal.show();
+            });
+        });
+        
+        // Setup for Subtract Stock modal
+        const subtractStockButtons = document.querySelectorAll('.subtract-stock');
+        const subtractStockModal = new bootstrap.Modal(document.getElementById('subtractStockModal'));
+        const subtractStockForm = document.getElementById('subtract-stock-form');
+        const subtractStockItemName = document.getElementById('subtract-stock-item-name');
+        
+        subtractStockButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const itemId = this.getAttribute('data-item-id');
+                const itemName = this.getAttribute('data-item-name');
+                
+                subtractStockItemName.textContent = itemName;
+                subtractStockForm.action = "{% url 'inventory:item-disposition' warehouse.id rack.id shelf.id bin.id 0 %}".replace('/0/', `/${itemId}/`);
+                
+                subtractStockModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}        {% else %}
             <div class="alert alert-info">
                 No items found. <a href="{% url 'inventory:item-create' warehouse.id rack.id shelf.id bin.id %}">Add your first item</a>.
             </div>

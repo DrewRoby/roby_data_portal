@@ -72,14 +72,10 @@
             <div class="col-md-6">
                 <div class="card mb-3">
                     <div class="card-body">
-                        <h6 class="card-title">Update Quantity</h6>
-                        <form method="post" action="{% url 'inventory:item-quantity-update' warehouse.id rack.id shelf.id bin.id item.id %}">
-                            {% csrf_token %}
-                            <div class="input-group mb-3">
-                                <input type="number" name="quantity" class="form-control" placeholder="New quantity" required min="0">
-                                <button class="btn btn-primary" type="submit">Update</button>
-                            </div>
-                        </form>
+                        <h6 class="card-title">Add Stock</h6>
+                        <a href="{% url 'inventory:item-add-stock' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-success w-100">
+                            <i class="fa fa-plus-circle"></i> Record Stock Addition
+                        </a>
                     </div>
                 </div>
             </div>
@@ -88,7 +84,7 @@
                     <div class="card-body">
                         <h6 class="card-title">Transfer Item</h6>
                         <a href="{% url 'inventory:item-transfer' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-secondary w-100">
-                            Move to Another Location
+                            <i class="fa fa-exchange-alt"></i> Move to Another Location
                         </a>
                     </div>
                 </div>
@@ -97,7 +93,7 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <h6 class="card-title">Record Disposition</h6>
-                        <a href="{% url 'inventory:item-disposition' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-secondary w-100">
+                        <a href="{% url 'inventory:item-disposition' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-danger w-100">
                             <i class="fa fa-minus-circle"></i> Sold / Waste / Transfer
                         </a>
                     </div>
@@ -107,43 +103,64 @@
     </div>
 </div>
 
-<!-- Disposition History -->
+<!-- templates/inventory/item_detail.html -->
+<!-- Replace the existing tabbed history section with this updated version -->
+
+<!-- Inventory Activity History -->
 <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Disposition History</h5>
-        <a href="{% url 'inventory:item-disposition' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-primary btn-sm">
-            <i class="fa fa-minus-circle"></i> Record Disposition
-        </a>
+    <div class="card-header">
+        <h5 class="mb-0">Inventory Activity History</h5>
     </div>
     <div class="card-body">
-        {% if item.dispositions.all %}
+        {% if history_items %}
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Date</th>
+                            <th>Date & Time</th>
                             <th>Type</th>
-                            <th>Quantity</th>
+                            <th>Quantity Change</th>
+                            <th>Reason</th>
                             <th>Notes</th>
-                            <th>Recorded by</th>
+                            <th>User</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for disposition in item.dispositions.all %}
-                        <tr>
-                            <td>{{ disposition.timestamp|date:"M d, Y H:i" }}</td>
-                            <td>{{ disposition.get_disposition_type_display }}</td>
-                            <td>{{ disposition.quantity }}</td>
-                            <td>{{ disposition.notes|default:"-" }}</td>
-                            <td>{{ disposition.created_by.username }}</td>
+                        {% for entry in history_items %}
+                        <tr class="{% if entry.type == 'addition' %}table-success{% else %}table-danger{% endif %}">
+                            <td>{{ entry.timestamp|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if entry.type == 'addition' %}
+                                <span class="badge bg-success">Addition</span>
+                                {% else %}
+                                <span class="badge bg-danger">Disposition</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.quantity > 0 %}
+                                <span class="text-success">+{{ entry.quantity }}</span>
+                                {% else %}
+                                <span class="text-danger">{{ entry.quantity }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.reason }}</td>
+                            <td>{{ entry.notes|default:"-"|truncatechars:50 }}</td>
+                            <td>{{ entry.user }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+            
+            <div class="mt-3">
+                <a href="#" class="btn btn-outline-secondary btn-sm" onclick="window.print(); return false;">
+                    <i class="fa fa-print"></i> Print History
+                </a>
+                <!-- We could add CSV export functionality here if desired -->
+            </div>
         {% else %}
             <div class="alert alert-info">
-                No dispositions recorded for this item.
+                No inventory activity recorded for this item yet.
             </div>
         {% endif %}
     </div>
