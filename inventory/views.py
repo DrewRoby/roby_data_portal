@@ -547,12 +547,11 @@ def item_create(request, warehouse_id, rack_id, shelf_id, bin_id):
                               bin_id=bin_obj.id)
             else:
                 # Redirect to the item detail page
-                return redirect('inventory:item-detail', 
+                return redirect('inventory:bin-detail', 
                               warehouse_id=warehouse.id, 
                               rack_id=rack.id,
                               shelf_id=shelf.id,
-                              bin_id=bin_obj.id,
-                              item_id=item.id)
+                              bin_id=bin_obj.id)
     else:
         form = ItemForm()
     
