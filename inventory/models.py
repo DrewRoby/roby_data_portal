@@ -72,3 +72,22 @@ class Disposition(models.Model):
     
     def __str__(self):
         return f"{self.get_disposition_type_display()} - {self.quantity} units of {self.item.name}"
+
+class StockAddition(models.Model):
+    ADDITION_TYPES = [
+        ('new_stock', 'New Stock'),
+        ('manufactured', 'Manufactured'),
+        ('returned', 'Returned Stock'),
+        ('correction', 'Inventory Correction'),
+        ('other', 'Other')
+    ]
+    
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='additions')
+    quantity = models.PositiveIntegerField()
+    addition_type = models.CharField(max_length=20, choices=ADDITION_TYPES)
+    notes = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"{self.get_addition_type_display()} - {self.quantity} units of {self.item.name}"
