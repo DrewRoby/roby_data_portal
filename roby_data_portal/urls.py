@@ -13,6 +13,7 @@ urlpatterns = [
     # path('dasher/', include('dasher.urls')),
     path('storycraft/',include('storycraft.urls')),
     path('inventory/',include('inventory.urls')),
+    path('shares/',include('shares.urls')),
 ]
 
 if settings.DEBUG:
