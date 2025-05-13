@@ -98,7 +98,8 @@ TEMPLATES = [
                 # 'django_plotly_dash.context_processors.plotly_dash',
             ],
             'libraries':{
-                'filter':'templatetags.filters'
+                'filter':'templatetags.filters',
+                'inventory_filters':'templatetags.inventory_filters'
             }
         },
     },

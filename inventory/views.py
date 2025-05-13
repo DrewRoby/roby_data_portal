@@ -10,7 +10,7 @@ from datetime import datetime
 import csv
 import json
 
-from .models import Warehouse, Rack, Shelf, Bin, Item
+from .models import Warehouse, Rack, Shelf, Bin, Item, StockAddition, Disposition
 from .forms import (
     WarehouseForm, RackForm, ShelfForm, BinForm, ItemForm,
     ItemTransferForm, RestockForm, SearchForm, DispositionForm,
@@ -901,12 +901,22 @@ def restock_item(request):
     # If not POST or form invalid, redirect to low stock page
     return redirect('inventory:low-stock')
 
+# Enhanced inventory/views.py report function
+
 def report(request):
     """
-    Generate inventory reports.
+    Generate enhanced inventory reports with better aggregation and filtering.
     """
     report_type = request.GET.get('report_type')
     warehouse_id = request.GET.get('warehouse')
+    timeframe = request.GET.get('timeframe', 'all')  # New parameter for time filtering
+    low_stock_threshold = request.GET.get('threshold', 5)  # New parameter for low stock threshold
+    sort_by = request.GET.get('sort_by', 'name')  # New parameter for sorting
+    
+    try:
+        low_stock_threshold = int(low_stock_threshold)
+    except (ValueError, TypeError):
+        low_stock_threshold = 5
     
     # Get all warehouses for the form
     warehouses = Warehouse.objects.filter(user=request.user)
@@ -927,6 +937,10 @@ def report(request):
     warehouse_stats = []
     category_distribution = []
     warehouse_distribution = []
+    item_age_distribution = []
+    recent_activity = []
+    inventory_value = 0
+    movement_data = []
     
     # Process based on report type
     if report_type == 'inventory_summary':
@@ -944,7 +958,26 @@ def report(request):
         total_quantity = items_query.aggregate(total=Sum('quantity'))['total'] or 0
         total_bins = Bin.objects.filter(shelf__rack__warehouse__in=warehouses_to_include).count()
         
-        # Get warehouse-specific data
+        # Apply time filter if specified
+        if timeframe != 'all':
+            time_threshold = timezone.now()
+            if timeframe == 'day':
+                time_threshold = time_threshold - timezone.timedelta(days=1)
+            elif timeframe == 'week':
+                time_threshold = time_threshold - timezone.timedelta(weeks=1)
+            elif timeframe == 'month':
+                time_threshold = time_threshold - timezone.timedelta(days=30)
+            elif timeframe == 'quarter':
+                time_threshold = time_threshold - timezone.timedelta(days=90)
+            
+            # Filter for recently updated items
+            items_query = items_query.filter(updated_at__gte=time_threshold)
+            
+            # Recalculate totals with time filter
+            total_items = items_query.count()
+            total_quantity = items_query.aggregate(total=Sum('quantity'))['total'] or 0
+        
+        # Get warehouse-specific data with more metrics
         for warehouse in warehouses_to_include:
             racks_count = Rack.objects.filter(warehouse=warehouse).count()
             shelves_count = Shelf.objects.filter(rack__warehouse=warehouse).count()
@@ -953,31 +986,149 @@ def report(request):
             items_quantity = Item.objects.filter(bin__shelf__rack__warehouse=warehouse).aggregate(
                 total=Sum('quantity'))['total'] or 0
             
+            # Calculate bins utilization
+            bins_with_items = Bin.objects.filter(
+                shelf__rack__warehouse=warehouse,
+                items__isnull=False
+            ).distinct().count()
+            
+            bins_utilization = 0
+            if bins_count > 0:
+                bins_utilization = (bins_with_items / bins_count) * 100
+            
+            # Get item stats - like average items per bin
+            avg_items_per_bin = 0
+            if bins_with_items > 0:
+                avg_items_per_bin = items_count / bins_with_items
+            
+            # Add enhanced warehouse data
             warehouse_data.append({
+                'id': warehouse.id,
                 'name': warehouse.name,
                 'items': items_count,
                 'quantity': items_quantity,
                 'racks': racks_count,
                 'shelves': shelves_count,
-                'bins': bins_count
+                'bins': bins_count,
+                'bins_with_items': bins_with_items,
+                'bins_utilization': round(bins_utilization, 1),
+                'avg_items_per_bin': round(avg_items_per_bin, 1),
+                'last_updated': warehouse.updated_at
             })
         
-        # Get top stocked items
-        top_items = Item.objects.filter(
+        # Sort warehouse data
+        if sort_by == 'quantity':
+            warehouse_data = sorted(warehouse_data, key=lambda x: x['quantity'], reverse=True)
+        elif sort_by == 'items':
+            warehouse_data = sorted(warehouse_data, key=lambda x: x['items'], reverse=True)
+        elif sort_by == 'utilization':
+            warehouse_data = sorted(warehouse_data, key=lambda x: x['bins_utilization'], reverse=True)
+        else:  # default to name
+            warehouse_data = sorted(warehouse_data, key=lambda x: x['name'])
+        
+        # Get top stocked items with enhanced details
+        top_items_query = Item.objects.filter(
             bin__shelf__rack__warehouse__in=warehouses_to_include
         ).order_by('-quantity')[:10]
         
-        # Format top items for display
-        formatted_top_items = []
-        for item in top_items:
-            formatted_top_items.append({
+        # Format top items for display with more details
+        for item in top_items_query:
+            bin_obj = item.bin
+            shelf = bin_obj.shelf
+            rack = shelf.rack
+            warehouse = rack.warehouse
+            
+            # Calculate how long the item has been in stock
+            days_in_stock = (timezone.now() - item.created_at).days
+            
+            top_items.append({
+                'id': item.id,
                 'name': item.name,
-                'sku': item.sku,
+                'sku': item.sku or 'N/A',
                 'quantity': item.quantity,
-                'location': f"{item.bin.shelf.rack.warehouse.name} > {item.bin.shelf.rack.name} > {item.bin.shelf.name} > {item.bin.name}"
+                'days_in_stock': days_in_stock,
+                'warehouse': warehouse.name,
+                'location': f"{warehouse.name} > {rack.name} > {shelf.name} > {bin_obj.name}",
+                'location_url': reverse('inventory:item-detail', kwargs={
+                    'warehouse_id': warehouse.id,
+                    'rack_id': rack.id,
+                    'shelf_id': shelf.id,
+                    'bin_id': bin_obj.id,
+                    'item_id': item.id
+                })
             })
-        top_items = formatted_top_items
         
+        # Calculate item age distribution
+        now = timezone.now()
+        new_items = Item.objects.filter(
+            bin__shelf__rack__warehouse__in=warehouses_to_include,
+            created_at__gte=now - timezone.timedelta(days=30)
+        ).count()
+        
+        medium_items = Item.objects.filter(
+            bin__shelf__rack__warehouse__in=warehouses_to_include,
+            created_at__lt=now - timezone.timedelta(days=30),
+            created_at__gte=now - timezone.timedelta(days=90)
+        ).count()
+        
+        old_items = Item.objects.filter(
+            bin__shelf__rack__warehouse__in=warehouses_to_include,
+            created_at__lt=now - timezone.timedelta(days=90)
+        ).count()
+        
+        item_age_distribution = [
+            {'name': 'New (< 30 days)', 'count': new_items, 'percentage': round((new_items / total_items) * 100, 1) if total_items > 0 else 0},
+            {'name': 'Medium (30-90 days)', 'count': medium_items, 'percentage': round((medium_items / total_items) * 100, 1) if total_items > 0 else 0},
+            {'name': 'Old (> 90 days)', 'count': old_items, 'percentage': round((old_items / total_items) * 100, 1) if total_items > 0 else 0},
+        ]
+        
+        # Get recent activity - both additions and dispositions
+        recent_additions = StockAddition.objects.filter(
+            item__bin__shelf__rack__warehouse__in=warehouses_to_include
+        ).order_by('-timestamp')[:5]
+        
+        recent_dispositions = Disposition.objects.filter(
+            item__bin__shelf__rack__warehouse__in=warehouses_to_include
+        ).order_by('-timestamp')[:5]
+        
+        # Combine and sort
+        for addition in recent_additions:
+            recent_activity.append({
+                'item_name': addition.item.name,
+                'type': 'Addition',
+                'quantity': addition.quantity,
+                'reason': addition.get_addition_type_display(),
+                'timestamp': addition.timestamp,
+                'user': addition.created_by.username,
+                'item_url': reverse('inventory:item-detail', kwargs={
+                    'warehouse_id': addition.item.bin.shelf.rack.warehouse.id,
+                    'rack_id': addition.item.bin.shelf.rack.id,
+                    'shelf_id': addition.item.bin.shelf.id,
+                    'bin_id': addition.item.bin.id,
+                    'item_id': addition.item.id
+                })
+            })
+        
+        for disposition in recent_dispositions:
+            recent_activity.append({
+                'item_name': disposition.item.name,
+                'type': 'Disposition',
+                'quantity': -disposition.quantity,  # Negative for removals
+                'reason': disposition.get_disposition_type_display(),
+                'timestamp': disposition.timestamp,
+                'user': disposition.created_by.username,
+                'item_url': reverse('inventory:item-detail', kwargs={
+                    'warehouse_id': disposition.item.bin.shelf.rack.warehouse.id,
+                    'rack_id': disposition.item.bin.shelf.rack.id,
+                    'shelf_id': disposition.item.bin.shelf.id,
+                    'bin_id': disposition.item.bin.id,
+                    'item_id': disposition.item.id
+                })
+            })
+        
+        # Sort by timestamp
+        recent_activity = sorted(recent_activity, key=lambda x: x['timestamp'], reverse=True)[:10]
+            
     elif report_type == 'low_stock':
         report_title = "Low Stock Report"
         
@@ -987,30 +1138,73 @@ def report(request):
         else:
             warehouse_filter = Q(bin__shelf__rack__warehouse__user=request.user)
         
-        # Get low stock items
+        # Get low stock items using the threshold parameter
         low_stock_items_query = Item.objects.filter(
             warehouse_filter,
-            quantity__lt=5  # Using 5 as the threshold for this example
+            quantity__lt=low_stock_threshold
         ).order_by('quantity')
         
         low_stock_count = low_stock_items_query.count()
         
-        # Format low stock items for display
+        # Format low stock items for display with enhanced details
         for item in low_stock_items_query:
+            bin_obj = item.bin
+            shelf = bin_obj.shelf
+            rack = shelf.rack
+            warehouse = rack.warehouse
+            
+            # Calculate if stock is critically low (less than 20% of threshold)
+            is_critical = item.quantity < (low_stock_threshold * 0.2)
+            
+            # Get recent dispositions to see rate of use
+            recent_dispositions = Disposition.objects.filter(
+                item=item
+            ).order_by('-timestamp')[:5]
+            
+            disposition_rate = 0
+            if recent_dispositions.exists():
+                # Calculate average weekly usage if we have data
+                oldest_disposition = recent_dispositions.last().timestamp
+                newest_disposition = recent_dispositions.first().timestamp
+                days_diff = (newest_disposition - oldest_disposition).days or 1  # Avoid divide by zero
+                total_disposed = sum(d.quantity for d in recent_dispositions)
+                disposition_rate = round((total_disposed / days_diff) * 7, 1)  # Weekly rate
+            
+            # Calculate estimated days until stockout
+            days_until_stockout = float('inf') if disposition_rate == 0 else round(item.quantity / (disposition_rate / 7), 1)
+            
             low_stock_items.append({
+                'id': item.id,
                 'name': item.name,
-                'sku': item.sku,
+                'sku': item.sku or 'N/A',
                 'quantity': item.quantity,
-                'min_quantity': 5,  # This would be a field on the Item model in a real application
-                'location': f"{item.bin.shelf.rack.warehouse.name} > {item.bin.shelf.rack.name} > {item.bin.shelf.name} > {item.bin.name}",
+                'min_quantity': low_stock_threshold,
+                'is_critical': is_critical,
+                'warehouse': warehouse.name,
+                'location': f"{warehouse.name} > {rack.name} > {shelf.name} > {bin_obj.name}",
+                'weekly_usage': disposition_rate,
+                'days_until_stockout': days_until_stockout if days_until_stockout != float('inf') else 'N/A',
+                'last_updated': item.updated_at,
                 'url': reverse('inventory:item-detail', kwargs={
-                    'warehouse_id': item.bin.shelf.rack.warehouse.id,
-                    'rack_id': item.bin.shelf.rack.id,
-                    'shelf_id': item.bin.shelf.id,
-                    'bin_id': item.bin.id,
+                    'warehouse_id': warehouse.id,
+                    'rack_id': rack.id,
+                    'shelf_id': shelf.id,
+                    'bin_id': bin_obj.id,
                     'item_id': item.id
                 })
             })
+            
+        # Sort low stock items
+        if sort_by == 'days_until_stockout':
+            # Sort by days until stockout, putting "N/A" values at the end
+            low_stock_items = sorted(
+                low_stock_items, 
+                key=lambda x: float('inf') if x['days_until_stockout'] == 'N/A' else x['days_until_stockout']
+            )
+        elif sort_by == 'weekly_usage':
+            low_stock_items = sorted(low_stock_items, key=lambda x: x['weekly_usage'], reverse=True)
+        else:  # Default to quantity
+            low_stock_items = sorted(low_stock_items, key=lambda x: x['quantity'])
             
     elif report_type == 'warehouse_status':
         report_title = "Warehouse Status Report"
@@ -1021,20 +1215,81 @@ def report(request):
         else:
             warehouses_to_include = warehouses
         
-        # Calculate capacity for each warehouse
+        # Apply time filter if specified
+        time_condition = Q()
+        if timeframe != 'all':
+            time_threshold = timezone.now()
+            if timeframe == 'day':
+                time_threshold = time_threshold - timezone.timedelta(days=1)
+            elif timeframe == 'week':
+                time_threshold = time_threshold - timezone.timedelta(weeks=1)
+            elif timeframe == 'month':
+                time_threshold = time_threshold - timezone.timedelta(days=30)
+            elif timeframe == 'quarter':
+                time_threshold = time_threshold - timezone.timedelta(days=90)
+            
+            time_condition = Q(updated_at__gte=time_threshold)
+        
+        # Calculate capacity and other metrics for each warehouse
         total_capacity = 0
         
         for warehouse in warehouses_to_include:
-            # In a real application, this would be calculated based on actual capacity metrics
-            # For this example, we'll use an arbitrary calculation
-            racks_count = Rack.objects.filter(warehouse=warehouse).count()
-            bins_count = Bin.objects.filter(shelf__rack__warehouse=warehouse).count()
-            items_count = Item.objects.filter(bin__shelf__rack__warehouse=warehouse).count()
-            items_quantity = Item.objects.filter(bin__shelf__rack__warehouse=warehouse).aggregate(
-                total=Sum('quantity'))['total'] or 0
+            # Get racks, shelves, bins and items with time filter if applicable
+            racks_query = Rack.objects.filter(warehouse=warehouse)
+            if timeframe != 'all':
+                racks_query = racks_query.filter(time_condition)
+            racks_count = racks_query.count()
             
-            # Arbitrary capacity calculation for the example
-            capacity = items_quantity * 2  # Assume each warehouse can hold twice its current quantity
+            shelves_query = Shelf.objects.filter(rack__warehouse=warehouse)
+            if timeframe != 'all':
+                shelves_query = shelves_query.filter(time_condition)
+            shelves_count = shelves_query.count()
+            
+            bins_query = Bin.objects.filter(shelf__rack__warehouse=warehouse)
+            if timeframe != 'all':
+                bins_query = bins_query.filter(time_condition)
+            bins_count = bins_query.count()
+            
+            items_query = Item.objects.filter(bin__shelf__rack__warehouse=warehouse)
+            if timeframe != 'all':
+                items_query = items_query.filter(time_condition)
+            items_count = items_query.count()
+            
+            items_quantity = items_query.aggregate(total=Sum('quantity'))['total'] or 0
+            
+            # Count bins with items for utilization calculation
+            bins_with_items = Bin.objects.filter(
+                shelf__rack__warehouse=warehouse,
+                items__isnull=False
+            ).distinct().count()
+            
+            bins_utilization = 0
+            if bins_count > 0:
+                bins_utilization = (bins_with_items / bins_count) * 100
+            
+            # Get item movement data
+            additions_last_30_days = StockAddition.objects.filter(
+                item__bin__shelf__rack__warehouse=warehouse,
+                timestamp__gte=timezone.now() - timezone.timedelta(days=30)
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            dispositions_last_30_days = Disposition.objects.filter(
+                item__bin__shelf__rack__warehouse=warehouse,
+                timestamp__gte=timezone.now() - timezone.timedelta(days=30)
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            # Calculate net change
+            net_change_30_days = additions_last_30_days - dispositions_last_30_days
+            
+            # Calculate turnover rate (ratio of dispositions to average inventory)
+            turnover_rate = 0
+            if items_quantity > 0:
+                turnover_rate = (dispositions_last_30_days / items_quantity) * 100
+            
+            # Better capacity calculation
+            # Measure capacity utilization by quantity vs estimated max bins capacity
+            theoretical_capacity = bins_count * 50  # Each bin could hold ~50 items (this is arbitrary)
+            capacity = theoretical_capacity if theoretical_capacity > 0 else items_quantity * 2
             total_capacity += capacity
             
             capacity_used = 50  # Default to 50% for demo
@@ -1049,17 +1304,43 @@ def report(request):
             else:
                 color = "danger"
             
+            # Calculate empty bins
+            empty_bins = bins_count - bins_with_items
+            empty_bin_percentage = 0
+            if bins_count > 0:
+                empty_bin_percentage = (empty_bins / bins_count) * 100
+            
             warehouse_stats.append({
                 'id': warehouse.id,
                 'name': warehouse.name,
                 'capacity_used': capacity_used,
                 'color': color,
                 'racks': racks_count,
-                'shelves': Shelf.objects.filter(rack__warehouse=warehouse).count(),
+                'shelves': shelves_count,
                 'bins': bins_count,
                 'items': items_count,
-                'quantity': items_quantity
+                'quantity': items_quantity,
+                'bins_utilization': round(bins_utilization, 1),
+                'empty_bins': empty_bins,
+                'empty_bin_percentage': round(empty_bin_percentage, 1),
+                'additions_last_30_days': additions_last_30_days,
+                'dispositions_last_30_days': dispositions_last_30_days,
+                'net_change_30_days': net_change_30_days,
+                'turnover_rate': round(turnover_rate, 1),
+                'last_updated': warehouse.updated_at
             })
+        
+        # Sort warehouse stats
+        if sort_by == 'capacity':
+            warehouse_stats = sorted(warehouse_stats, key=lambda x: x['capacity_used'], reverse=True)
+        elif sort_by == 'utilization':
+            warehouse_stats = sorted(warehouse_stats, key=lambda x: x['bins_utilization'], reverse=True)
+        elif sort_by == 'turnover':
+            warehouse_stats = sorted(warehouse_stats, key=lambda x: x['turnover_rate'], reverse=True)
+        elif sort_by == 'quantity':
+            warehouse_stats = sorted(warehouse_stats, key=lambda x: x['quantity'], reverse=True)
+        else:  # default to name
+            warehouse_stats = sorted(warehouse_stats, key=lambda x: x['name'])
         
         # Calculate percentages for the progress bar
         for warehouse_stat in warehouse_stats:
@@ -1068,6 +1349,44 @@ def report(request):
                 'percentage': int((warehouse_stat['quantity'] / total_capacity) * 100) if total_capacity > 0 else 0,
                 'color': warehouse_stat['color']
             })
+            
+        # Get item movement data
+        for i in range(6):  # Last 6 months
+            month_start = timezone.now() - timezone.timedelta(days=30 * (i + 1))
+            month_end = timezone.now() - timezone.timedelta(days=30 * i)
+            
+            # Ensure we're looking at complete months
+            month_start = month_start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if i == 0:  # Current month
+                month_end = timezone.now()
+            else:
+                month_end = month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            month_name = month_start.strftime("%b %Y")
+            
+            additions = StockAddition.objects.filter(
+                item__bin__shelf__rack__warehouse__in=warehouses_to_include,
+                timestamp__gte=month_start,
+                timestamp__lt=month_end
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            dispositions = Disposition.objects.filter(
+                item__bin__shelf__rack__warehouse__in=warehouses_to_include,
+                timestamp__gte=month_start,
+                timestamp__lt=month_end
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            net_change = additions - dispositions
+            
+            movement_data.append({
+                'month': month_name,
+                'additions': additions,
+                'dispositions': dispositions,
+                'net_change': net_change
+            })
+        
+        # Reverse to show chronological order
+        movement_data.reverse()
             
     elif report_type == 'item_distribution':
         report_title = "Item Distribution Report"
@@ -1078,68 +1397,140 @@ def report(request):
         else:
             warehouses_to_include = warehouses
         
-        # Get total items and quantity
-        total_items = Item.objects.filter(
-            bin__shelf__rack__warehouse__in=warehouses_to_include
-        ).count()
-        
-        total_quantity = Item.objects.filter(
-            bin__shelf__rack__warehouse__in=warehouses_to_include
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-        
-        # For this example, we'll mock category distribution
-        # In a real application, categories would be a field on the Item model
-        mock_categories = ["Electronics", "Office Supplies", "Furniture", "Tools", "Raw Materials"]
-        
-        # Create mock distribution data
-        import random
-        random.seed(42)  # For consistent demo data
-        
-        remaining_items = total_items
-        remaining_quantity = total_quantity
-        
-        for i, category in enumerate(mock_categories):
-            if i == len(mock_categories) - 1:
-                # Last category gets all remaining items
-                cat_items = remaining_items
-                cat_quantity = remaining_quantity
-            else:
-                # Distribute items randomly
-                cat_items = random.randint(1, remaining_items // 2) if remaining_items > 1 else 0
-                cat_quantity = random.randint(1, remaining_quantity // 2) if remaining_quantity > 1 else 0
-                
-                remaining_items -= cat_items
-                remaining_quantity -= cat_quantity
+        # Apply time filter if specified
+        time_condition = Q()
+        if timeframe != 'all':
+            time_threshold = timezone.now()
+            if timeframe == 'day':
+                time_threshold = time_threshold - timezone.timedelta(days=1)
+            elif timeframe == 'week':
+                time_threshold = time_threshold - timezone.timedelta(weeks=1)
+            elif timeframe == 'month':
+                time_threshold = time_threshold - timezone.timedelta(days=30)
+            elif timeframe == 'quarter':
+                time_threshold = time_threshold - timezone.timedelta(days=90)
             
-            if total_items > 0 and cat_items > 0:
-                percentage = int((cat_items / total_items) * 100)
+            time_condition = Q(updated_at__gte=time_threshold)
+        
+        # Get total items and quantity with filters
+        items_query = Item.objects.filter(
+            bin__shelf__rack__warehouse__in=warehouses_to_include
+        )
+        
+        if timeframe != 'all':
+            items_query = items_query.filter(time_condition)
+        
+        total_items = items_query.count()
+        total_quantity = items_query.aggregate(total=Sum('quantity'))['total'] or 0
+        
+        # For this example, we'll create pseudo-categories based on the first letter of the item name
+        # This is a stand-in for real categories which would require model changes
+        category_counts = {}
+        
+        for item in items_query:
+            # Create a pseudo-category based on first letter
+            if item.name:
+                first_letter = item.name[0].upper()
+                category = f"Group {first_letter}"
+                
+                if category not in category_counts:
+                    category_counts[category] = {
+                        'items': 0,
+                        'quantity': 0
+                    }
+                
+                category_counts[category]['items'] += 1
+                category_counts[category]['quantity'] += item.quantity
+        
+        # Convert to list format for template
+        for category, counts in category_counts.items():
+            if total_items > 0:
+                percentage = round((counts['items'] / total_items) * 100, 1)
             else:
                 percentage = 0
                 
             category_distribution.append({
                 'name': category,
-                'items': cat_items,
+                'items': counts['items'],
                 'percentage': percentage,
-                'quantity': cat_quantity
+                'quantity': counts['quantity']
             })
         
-        # Warehouse distribution
+        # Sort category distribution
+        if sort_by == 'items':
+            category_distribution = sorted(category_distribution, key=lambda x: x['items'], reverse=True)
+        elif sort_by == 'quantity':
+            category_distribution = sorted(category_distribution, key=lambda x: x['quantity'], reverse=True)
+        elif sort_by == 'percentage':
+            category_distribution = sorted(category_distribution, key=lambda x: x['percentage'], reverse=True)
+        else:  # default to name
+            category_distribution = sorted(category_distribution, key=lambda x: x['name'])
+        
+        # Warehouse distribution with enhanced metrics
         for warehouse in warehouses_to_include:
-            items_count = Item.objects.filter(bin__shelf__rack__warehouse=warehouse).count()
-            items_quantity = Item.objects.filter(bin__shelf__rack__warehouse=warehouse).aggregate(
-                total=Sum('quantity'))['total'] or 0
+            warehouse_items_query = Item.objects.filter(bin__shelf__rack__warehouse=warehouse)
+            
+            if timeframe != 'all':
+                warehouse_items_query = warehouse_items_query.filter(time_condition)
+            
+            items_count = warehouse_items_query.count()
+            items_quantity = warehouse_items_query.aggregate(total=Sum('quantity'))['total'] or 0
+            
+            # Calculate number of unique item names (products) in this warehouse
+            unique_items = warehouse_items_query.values('name').distinct().count()
+            
+            # Calculate average quantity per item
+            avg_quantity = 0
+            if items_count > 0:
+                avg_quantity = items_quantity / items_count
             
             if total_items > 0:
-                percentage = int((items_count / total_items) * 100)
+                percentage = round((items_count / total_items) * 100, 1)
             else:
                 percentage = 0
                 
             warehouse_distribution.append({
+                'id': warehouse.id,
                 'name': warehouse.name,
                 'items': items_count,
+                'unique_items': unique_items,
                 'percentage': percentage,
-                'quantity': items_quantity
+                'quantity': items_quantity,
+                'avg_quantity': round(avg_quantity, 1)
             })
+        
+        # Sort warehouse distribution
+        if sort_by == 'items':
+            warehouse_distribution = sorted(warehouse_distribution, key=lambda x: x['items'], reverse=True)
+        elif sort_by == 'quantity':
+            warehouse_distribution = sorted(warehouse_distribution, key=lambda x: x['quantity'], reverse=True)
+        elif sort_by == 'unique_items':
+            warehouse_distribution = sorted(warehouse_distribution, key=lambda x: x['unique_items'], reverse=True)
+        else:  # default to name
+            warehouse_distribution = sorted(warehouse_distribution, key=lambda x: x['name'])
+        
+        # Item age distribution calculation
+        now = timezone.now()
+        
+        new_items = items_query.filter(created_at__gte=now - timezone.timedelta(days=30)).count()
+        medium_items = items_query.filter(
+            created_at__lt=now - timezone.timedelta(days=30),
+            created_at__gte=now - timezone.timedelta(days=90)
+        ).count()
+        old_items = items_query.filter(created_at__lt=now - timezone.timedelta(days=90)).count()
+        
+        if total_items > 0:
+            new_percentage = round((new_items / total_items) * 100, 1)
+            medium_percentage = round((medium_items / total_items) * 100, 1)
+            old_percentage = round((old_items / total_items) * 100, 1)
+        else:
+            new_percentage = medium_percentage = old_percentage = 0
+        
+        item_age_distribution = [
+            {'name': 'New (< 30 days)', 'count': new_items, 'percentage': new_percentage},
+            {'name': 'Medium (30-90 days)', 'count': medium_items, 'percentage': medium_percentage},
+            {'name': 'Old (> 90 days)', 'count': old_items, 'percentage': old_percentage},
+        ]
     
     context = {
         'report_type': report_type,
@@ -1147,6 +1538,9 @@ def report(request):
         'warehouses': warehouses,
         'report_title': report_title,
         'generation_time': generation_time,
+        'timeframe': timeframe,
+        'low_stock_threshold': low_stock_threshold,
+        'sort_by': sort_by,
         'total_items': total_items,
         'total_quantity': total_quantity,
         'total_bins': total_bins,
@@ -1157,20 +1551,40 @@ def report(request):
         'warehouse_capacity': warehouse_capacity,
         'warehouse_stats': warehouse_stats,
         'category_distribution': category_distribution,
-        'warehouse_distribution': warehouse_distribution
+        'warehouse_distribution': warehouse_distribution,
+        'item_age_distribution': item_age_distribution,
+        'inventory_value': inventory_value,
+        'recent_activity': recent_activity,
+        'movement_data': movement_data,
     }
     
     return render(request, 'inventory/report.html', context)
 
 def export_low_stock(request):
     """
-    Export low stock items to CSV.
+    Export low stock items to CSV with enhanced information.
     """
+    # Get parameters from request
+    warehouse_id = request.GET.get('warehouse')
+    low_stock_threshold = request.GET.get('threshold', 5)
+    sort_by = request.GET.get('sort_by', 'quantity')
+    
+    try:
+        low_stock_threshold = int(low_stock_threshold)
+    except (ValueError, TypeError):
+        low_stock_threshold = 5
+    
+    # Filter by warehouse if specified
+    if warehouse_id and warehouse_id != 'all':
+        warehouse_filter = Q(bin__shelf__rack__warehouse__id=warehouse_id)
+    else:
+        warehouse_filter = Q(bin__shelf__rack__warehouse__user=request.user)
+    
     # Get low stock items
     low_stock_items = Item.objects.filter(
-        bin__shelf__rack__warehouse__user=request.user,
-        quantity__lt=5  # Using 5 as the threshold for this example
-    ).order_by('quantity')
+        warehouse_filter,
+        quantity__lt=low_stock_threshold
+    )
     
     # Create the HttpResponse object with CSV header
     response = HttpResponse(content_type='text/csv')
@@ -1179,24 +1593,60 @@ def export_low_stock(request):
     # Create the CSV writer
     writer = csv.writer(response)
     
-    # Write the header row
-    writer.writerow(['Item Name', 'SKU', 'Current Quantity', 'Min Threshold', 'Warehouse', 'Rack', 'Shelf', 'Bin'])
+    # Write the header row with enhanced columns
+    writer.writerow([
+        'Item Name', 
+        'SKU', 
+        'Current Quantity', 
+        'Min Threshold', 
+        'Weekly Usage', 
+        'Days Until Empty', 
+        'Last Updated', 
+        'Warehouse', 
+        'Rack', 
+        'Shelf', 
+        'Bin',
+        'Critically Low'
+    ])
     
-    # Write the data rows
+    # Process and write the data rows
     for item in low_stock_items:
+        # Calculate if stock is critically low (less than 20% of threshold)
+        is_critical = item.quantity < (low_stock_threshold * 0.2)
+        
+        # Get recent dispositions to see rate of use
+        recent_dispositions = Disposition.objects.filter(
+            item=item
+        ).order_by('-timestamp')[:5]
+        
+        disposition_rate = 0
+        if recent_dispositions.exists():
+            # Calculate average weekly usage if we have data
+            oldest_disposition = recent_dispositions.last().timestamp
+            newest_disposition = recent_dispositions.first().timestamp
+            days_diff = (newest_disposition - oldest_disposition).days or 1  # Avoid divide by zero
+            total_disposed = sum(d.quantity for d in recent_dispositions)
+            disposition_rate = round((total_disposed / days_diff) * 7, 1)  # Weekly rate
+        
+        # Calculate estimated days until stockout
+        days_until_stockout = "N/A" if disposition_rate == 0 else round(item.quantity / (disposition_rate / 7), 1)
+        
         writer.writerow([
             item.name,
             item.sku or 'N/A',
             item.quantity,
-            5,  # This would be a field in a real application
+            low_stock_threshold,
+            disposition_rate,
+            days_until_stockout,
+            item.updated_at.strftime("%Y-%m-%d"),
             item.bin.shelf.rack.warehouse.name,
             item.bin.shelf.rack.name,
             item.bin.shelf.name,
-            item.bin.name
+            item.bin.name,
+            "Yes" if is_critical else "No"
         ])
     
     return response
-
 # Error handler view
 def handle_error(request, error_title=None, error_message=None, error_details=None, back_url=None):
     """
