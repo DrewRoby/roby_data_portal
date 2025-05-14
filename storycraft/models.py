@@ -32,6 +32,50 @@ class Story(models.Model):
     class Meta:
         verbose_name_plural = "Stories"
 
+    # Methods required by ShareableInterface
+    def get_share_url(self):
+        from django.urls import reverse
+        return reverse('storycraft:shared_story', kwargs={'story_id': self.id})
+    
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('storycraft:story_detail', kwargs={'story_id': self.id})
+    
+    def get_share_title(self):
+        return self.title
+    
+    def get_share_description(self):
+        if self.description:
+            return self.description
+        return f"Story '{self.title}' by {self.user.username}"
+    
+    # Optional custom method to provide context for the shared template
+    def get_shareable_context(self, request, share):
+        """
+        Provide additional context for the shared view template.
+        """
+        # Get related objects needed for displaying the shared story
+        characters = self.characters.all()
+        plots = self.plots.all()
+        settings = self.settings.all()
+        scenes = self.scenes.all().order_by('sequence_number')
+        
+        # Different visibility based on permission level
+        # For example, don't show draft scenes for VIEW permission
+        if share.permission_type == 'VIEW':
+            scenes = scenes.filter(status='PUBLISHED')
+        
+        return {
+            'story': self,
+            'share': share,
+            'permission': share.permission_type,
+            'characters': characters,
+            'plots': plots,
+            'settings': settings,
+            'scenes': scenes,
+            'is_owner': request.user == self.user
+        }
+
 
 class Character(models.Model):
     """A character in a story."""

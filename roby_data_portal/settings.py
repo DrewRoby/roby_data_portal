@@ -63,19 +63,19 @@ INSTALLED_APPS = [
     'auth_detector',
     'todo',
     'inventory',
-    'shares'
+    'shares',
 
 ]
 
-SHAREABLE_MODELS = {
-    'storycraft':{
-        'story':'storycraft.models.Story',
-    },
-    'todo':{
-        'board':'todo.models.Board',
-        'task':'todo.models.Task',
-    },
-}
+# SHAREABLE_MODELS = {
+#     'storycraft':{
+#         'story':'storycraft.models.Story',
+#     },
+#     'todo':{
+#         'board':'todo.models.Board',
+#         'task':'todo.models.Task',
+#     },
+# }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -111,7 +111,8 @@ TEMPLATES = [
             ],
             'libraries':{
                 'filter':'templatetags.filters',
-                'inventory_filters':'templatetags.inventory_filters'
+                'inventory_filters':'templatetags.inventory_filters',
+                'share_tags':'shares.templatetags.share_tags',
             }
         },
     },

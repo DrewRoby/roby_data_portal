@@ -1,0 +1,31 @@
+<div class="shared-with-me">
+    <h5>Shared with Me</h5>
+    
+    {% if shares %}
+        <ul class="list-group">
+            {% for share in shares %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'shares:access_share' share_id=share.id %}" target="_blank">
+                            {{ share.name|default:share.get_object_name }}
+                        </a>
+                        <br>
+                        <small class="text-muted">
+                            Shared by {{ share.created_by.username }}
+                            &middot; {{ share.created_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">{{ share.permission_type }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+        
+        <div class="mt-2">
+            <a href="{% url 'shares:shared_with_me' %}" class="btn btn-sm btn-outline-primary">
+                View All
+            </a>
+        </div>
+    {% else %}
+        <p class="text-muted">No one has shared anything with you yet.</p>
+    {% endif %}
+</div>

@@ -70,7 +70,7 @@ class SharePermissionMiddleware:
                     # Get model from settings mapping
                     model_mapping = settings.SHAREABLE_MODELS.get(app_name, {})
                     model_class = model_mapping.get(model_type)
-                    
+
                     if not model_class:
                         return None
                 else:

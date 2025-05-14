@@ -11,7 +11,12 @@ from django.contrib.contenttypes.models import ContentType
 from shares.decorators import share_permission_required, owner_or_permission_required
 from shares.models import Share
 
-from .models import Story, Character, Plot, Scene
+from storycraft.models import Story, Character, Plot, Scene
+
+from django import template
+
+
+register = template.Library()
 
 # Example of a view that uses the owner_or_permission_required decorator
 @owner_or_permission_required('VIEW')  # Will check if user is owner or has at least VIEW permission

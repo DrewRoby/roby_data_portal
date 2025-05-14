@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load share_tags %}
+
+{% block title %}{{ story.title }} - Shared Story{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Special banner for shared content -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <i class="fas fa-share-alt fa-2x"></i>
+            </div>
+            <div>
+                <h5 class="mb-1">Shared Content</h5>
+                <p class="mb-0">
+                    This story was shared by {{ share.created_by.username }} with 
+                    {% if share.is_public %}
+                        <strong>public</strong> access
+                    {% else %}
+                        <strong>{{ share.shared_with.username }}</strong>
+                    {% endif %}
+                    ({{ permission }} permission)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-3">{{ story.title }}</h1>
+            
+            <div class="mb-4">
+                {% if story.description %}
+                    <p class="lead">{{ story.description }}</p>
+                {% endif %}
+                
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-3">Created by {{ story.user.username }}</span>
+                    {% permission_badge permission %}
+                </div>
+            </div>
+            
+            <!-- Story content sections - similar to the regular view but with potential restrictions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Characters</h5>
+                </div>
+                <div class="card-body">
+                    {% if characters %}
+                        <div class="row">
+                            {% for character in characters %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar bg-primary text-white me-3">
+                                            {{ character.name|first }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ character.name }}</h6>
+                                            {% if character.age %}
+                                                <small class="text-muted">Age: {{ character.age }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No characters in this story.</p>
+                    {% endif %}
+                    
+                    <!-- Show add button only for users with EDIT permission -->
+                    {% if permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:add_character' story_id=story.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus"></i> Add Character
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Similar sections for plots, settings, and scenes -->
+            <!-- ... -->
+            
+            <!-- Extra footer for shared content -->
+            <div class="mt-5 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">
+                            Shared on {{ share.created_at|date:"F j, Y" }}
+                            {% if share.expires_at %}
+                                | Expires on {{ share.expires_at|date:"F j, Y" }}
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    {% if is_owner %}
+                        <a href="{% url 'storycraft:story_detail' story_id=story.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> Edit Story
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
