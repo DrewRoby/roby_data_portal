@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shared with Me{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Shared with Me</h1>
+    
+    {% if shares %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Shared By</th>
+                        <th>Permission</th>
+                        <th>Received</th>
+                        <th>Expires</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for share in shares %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'shares:access_share' share_id=share.id %}" target="_blank">
+                                    {{ share.name|default:share.get_object_name }}
+                                </a>
+                            </td>
+                            <td>{{ share.created_by.username }}</td>
+                            <td>
+                                {% if share.permission_type == 'VIEW' %}
+                                    <span class="badge bg-info">View Only</span>
+                                {% elif share.permission_type == 'COMMENT' %}
+                                    <span class="badge bg-primary">Comment</span>
+                                {% elif share.permission_type == 'EDIT' %}
+                                    <span class="badge bg-warning">Edit</span>
+                                {% elif share.permission_type == 'ADMIN' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ share.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                {% if share.expires_at %}
+                                    {{ share.expires_at|date:"M d, Y" }}
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'shares:access_share' share_id=share.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="fas fa-external-link-alt"></i> Open
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p>No one has shared anything with you yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

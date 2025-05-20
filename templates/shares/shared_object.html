@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shared Content - {{ share.name|default:"Shared Item" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h2 class="card-title mb-0">{{ object.get_share_title }}</h2>
+        </div>
+        <div class="card-body">
+            {% if share.description %}
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p>{{ share.description }}</p>
+                </div>
+            {% endif %}
+            
+            <div class="alert alert-info">
+                <p class="mb-0">
+                    <strong>Note:</strong> This is a generic shared object view. The application that created this object 
+                    should provide a more specific template for viewing shared content.
+                </p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Details</h5>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Type
+                        <span class="badge bg-primary rounded-pill">{{ object._meta.verbose_name }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Permission
+                        <span class="badge bg-success rounded-pill">{{ permission }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Shared by
+                        <span>{{ share.created_by.get_full_name|default:share.created_by.username }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Shared on
+                        <span>{{ share.created_at|date:"F j, Y" }}</span>
+                    </li>
+                    {% if share.expires_at %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Expires on
+                        <span>{{ share.expires_at|date:"F j, Y" }}</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            {% if error %}
+                <div class="alert alert-danger">
+                    <p>Error rendering the shared content: {{ error }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -63,8 +63,19 @@ INSTALLED_APPS = [
     'auth_detector',
     'todo',
     'inventory',
+    'shares',
 
 ]
+
+# SHAREABLE_MODELS = {
+#     'storycraft':{
+#         'story':'storycraft.models.Story',
+#     },
+#     'todo':{
+#         'board':'todo.models.Board',
+#         'task':'todo.models.Task',
+#     },
+# }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -76,7 +87,8 @@ MIDDLEWARE = [
     'roby_data_portal.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_plotly_dash.middleware.BaseMiddleware',
+    # 'django_plotly_dash.middleware.BaseMiddleware',
+    'shares.middleware.SharePermissionMiddleware',
 ]
 
 ROOT_URLCONF = 'roby_data_portal.urls'
@@ -99,7 +111,8 @@ TEMPLATES = [
             ],
             'libraries':{
                 'filter':'templatetags.filters',
-                'inventory_filters':'templatetags.inventory_filters'
+                'inventory_filters':'templatetags.inventory_filters',
+                'share_tags':'shares.templatetags.share_tags',
             }
         },
     },

@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
 from .models import Story, Character, Setting, Plot, Scene, CharacterRelationship, Note, CharacterSceneMotivation
 from .forms import StoryForm, CharacterForm, SettingForm, PlotForm, SceneForm, CharacterRelationshipForm, NoteForm
@@ -7,12 +6,15 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.contenttypes.models import ContentType
 
+from shares.decorators import share_permission_required, owner_or_permission_required
+from shares.models import Share
+
 
 def story_list(request):
     stories = Story.objects.filter(user=request.user).order_by('-updated_at')
     return render(request, 'storycraft/story_list.html', {'stories': stories})
 
-#@login_required
+
 def create_story(request):
     if request.method == 'POST':
         form = StoryForm(request.POST)
@@ -30,6 +32,7 @@ def create_story(request):
     
     return render(request, 'storycraft/create_story.html', {'form': form})
 
+@owner_or_permission_required('VIEW')
 def story_detail(request, story_id):
     story = get_object_or_404(Story, id=story_id, user=request.user)
     characters = Character.objects.filter(story=story)
@@ -51,6 +54,7 @@ def story_detail(request, story_id):
     
     return render(request, 'storycraft/story_detail.html', context)
 
+@owner_or_permission_required('EDIT')  # Requires EDIT permission
 def edit_story(request, story_id):
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
@@ -804,3 +808,33 @@ def note_list(request, model_name, object_id):
     }
     
     return render(request, 'storycraft/note_list.html', context)
+
+def shared_story(request, story_id):
+    """
+    View for displaying a shared story.
+    This would be called from the share URL.
+    """
+    story = get_object_or_404(Story, id=story_id)
+    
+    # Get the share (would typically be handled by the shares app, but shown here for clarity)
+    share_id = request.GET.get('share')
+    if not share_id:
+        # No share ID provided, redirect to normal story detail if user has access
+        if request.user == story.user:
+            return redirect('storycraft:story_detail', story_id=story.id)
+        else:
+            share_permission = story.get_share_permissions(request.user)
+            if share_permission:
+                return redirect('storycraft:story_detail', story_id=story.id)
+            else:
+                messages.error(request, "You don't have permission to view this story.")
+                return redirect('storycraft:story_list')
+    
+    # A dedicated shared view would be handled by the shares app, 
+    # but we show this for demonstration purposes
+    share = get_object_or_404(Share, id=share_id)
+    
+    # Use the story's custom method to get context for the shared view
+    context = story.get_shareable_context(request, share)
+    
+    return render(request, 'storycraft/shared_story.html', context)

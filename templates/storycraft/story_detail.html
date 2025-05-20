@@ -1,6 +1,7 @@
 {% extends 'storycraft/base.html' %}
 {% load static %}
-
+{% load share_tags %}
+{% debug %}
 {% block storycraft_title %}{{ story.title }}{% endblock %}
 
 {% block storycraft_content %}
@@ -20,12 +21,85 @@
             <a href="{% url 'storycraft:story_timeline' story.id %}" class="story-action-btn">
                 <i class="fas fa-stream"></i> Timeline
             </a>
-            <a href="{% url 'storycraft:edit_story' story.id %}" class="story-action-btn">
+            {% if request.user == story.user %}
+            <a href="{% url 'storycraft:edit_story' story_id=story.id %}" class="btn btn-sm btn-outline-primary me-2">
                 <i class="fas fa-edit"></i> Edit Story
             </a>
+            
+            <!-- Share button using template tag -->
+            {% share_button story request.user "Share Story" "btn btn-sm btn-outline-success" %}
+        {% else %}
+            <!-- Show permission badge if the user is viewing via share -->
+            {% get_share_permission story request.user as permission %}
+            {% if permission %}
+                <div class="ms-2">
+                    {% permission_badge permission %}
+                </div>
+            {% endif %}
+        {% endif %}
+
         </div>
     </div>
     
+       <div class="col-md-4">
+            <!-- Sidebar for the owner -->
+            {% if request.user == story.user %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Story Shares</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if shares %}
+                            <ul class="list-group list-group-flush">
+                                {% for share in shares %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {% if share.is_public %}
+                                                <span class="badge bg-success">Public</span>
+                                            {% else %}
+                                                Shared with {{ share.shared_with.username }}
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">{{ share.permission_type }}</small>
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'shares:access_share' share_id=share.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                            <a href="{% url 'shares:edit_share' share_id=share.id %}" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            
+                            <!-- Create new share button -->
+                            {% get_content_type_id story as content_type_id %}
+                            <a href="{% url 'shares:create_share' content_type_id=content_type_id object_id=story.id %}" class="btn btn-sm btn-outline-success mt-3">
+                                <i class="fas fa-plus"></i> Create New Share
+                            </a>
+                        {% else %}
+                            <p class="text-muted">You haven't shared this story with anyone yet.</p>
+                            
+                            <!-- Create share button -->
+                            {% get_content_type_id story as content_type_id %}
+                            <a href="{% url 'shares:create_share' content_type_id=content_type_id object_id=story.id %}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-share-alt"></i> Share This Story
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Other sidebar elements -->
+            <!-- ... -->
+        </div>
+    </div>
+</div>
+
+
+
     <div class="story-content">
         <div class="story-sidebar">
             <div class="story-menu">
@@ -55,9 +129,11 @@
             <div id="characters" class="story-section active">
                 <div class="section-header">
                     <h2>Characters</h2>
-                    <a href="{% url 'storycraft:create_character' story.id %}" class="add-btn">
-                        <i class="fas fa-plus"></i> Add Character
-                    </a>
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:add_character' story_id=story.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus"></i> Add Character
+                        </a>
+                    {% endif %}
                 </div>
                 
                 {% if characters %}
@@ -93,9 +169,11 @@
             <div id="settings" class="story-section">
                 <div class="section-header">
                     <h2>Settings</h2>
-                    <a href="{% url 'storycraft:create_setting' story.id %}" class="add-btn">
-                        <i class="fas fa-plus"></i> Add Setting
-                    </a>
+                        {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:create_setting' story.id %}" class="add-btn">
+                            <i class="fas fa-plus"></i> Add Setting
+                        </a>
+                    {% endif %}
                 </div>
                 
                 {% if settings %}
@@ -128,9 +206,11 @@
             <div id="plots" class="story-section">
                 <div class="section-header">
                     <h2>Plots</h2>
-                    <a href="{% url 'storycraft:create_plot' story.id %}" class="add-btn">
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}                    
+                        <a href="{% url 'storycraft:create_plot' story.id %}" class="add-btn">
                         <i class="fas fa-plus"></i> Add Plot
-                    </a>
+                        </a>
+                    {% endif %}
                 </div>
                 
                 {% if plots %}
@@ -163,9 +243,11 @@
             <div id="scenes" class="story-section">
                 <div class="section-header">
                     <h2>Scenes</h2>
-                    <a href="{% url 'storycraft:create_scene' story.id %}" class="add-btn">
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:create_scene' story.id %}" class="add-btn">
                         <i class="fas fa-plus"></i> Add Scene
-                    </a>
+                        </a>
+                    {% endif %}
                 </div>
                 
                 {% if scenes %}
@@ -216,9 +298,11 @@
             <div id="relationships" class="story-section">
                 <div class="section-header">
                     <h2>Character Relationships</h2>
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
                     <a href="{% url 'storycraft:create_relationship' story.id %}" class="add-btn">
                         <i class="fas fa-plus"></i> Add Relationship
                     </a>
+                    {% endif %}
                 </div>
                 
                 {% if relationships %}
@@ -255,12 +339,14 @@
                         <a href="{% url 'storycraft:create_note' 'story' story.id %}" class="btn-sm" title="Add Note">
                             <i class="fas fa-plus"></i> Add Note
                         </a>
+                        {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
                         <a href="{% url 'storycraft:note_list' 'story' story.id %}" class="btn-sm" title="View All Notes">
                             <i class="fas fa-list"></i> View All
                         </a>
+                        {% endif %}
                     </div>
                 </div>
-                
+                {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
                 <div class="notes-preview">
                     {% for note in story.notes.all %}
                     <div class="note-card">
@@ -286,6 +372,7 @@
                     <p class="empty-field">No notes added yet. <a href="{% url 'storycraft:create_note' 'story' story.id %}">Add one now</a>.</p>
                     {% endfor %}
                 </div>
+                {% endif %}
             </div>
         </div>
 
