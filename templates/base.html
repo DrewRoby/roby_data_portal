@@ -1,5 +1,5 @@
 {% load static %}
-<!--  load plotly_dash  -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -100,7 +100,18 @@
                         </a>
                     {% endif %}
                 </div>
-                
+                <div class="navbar-nav">
+                    <div class="row">
+                        <ul class="navbar-nav bd-navbar-nav flex-row">
+                          <li class="nav-item">
+                            <a class="nav-link " href="{% url 'portal:aboutdev' %}">About</a>
+                          </li>
+                          <li class="nav-item">
+                            <a class="nav-link" href="https://github.com/DrewRoby/roby_data_portal/issues">Report Bug</a>
+                          </li>
+                        </ul>
+                    </div>
+                </div>
                 {% if user.is_authenticated %}
                 <div class="user-actions">
                     <a href="{% url 'portal:logout' %}" class="logout-link">Logout</a>
