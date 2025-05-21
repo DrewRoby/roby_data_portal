@@ -1,0 +1,245 @@
+{% extends "inventory/base.html" %}
+
+{% block inventory_title %}Search Results{% endblock %}
+
+{% block inventory_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Search Results for "{{ query }}"</h5>
+        <a href="{% url 'inventory:search' %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-search"></i> New Search
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            <form method="get" action="{% url 'inventory:search' %}">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search inventory..." value="{{ query }}">
+                    <select name="type" class="form-select" style="max-width: 150px;">
+                        <option value="all" {% if type == 'all' %}selected{% endif %}>All</option>
+                        <option value="warehouse" {% if type == 'warehouse' %}selected{% endif %}>Warehouses</option>
+                        <option value="rack" {% if type == 'rack' %}selected{% endif %}>Racks</option>
+                        <option value="shelf" {% if type == 'shelf' %}selected{% endif %}>Shelves</option>
+                        <option value="bin" {% if type == 'bin' %}selected{% endif %}>Bins</option>
+                        <option value="item" {% if type == 'item' %}selected{% endif %}>Items</option>
+                    </select>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fa fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Results Summary -->
+        <div class="alert alert-info">
+            Found {{ results_count }} result(s).
+        </div>
+        
+        <!-- Warehouses -->
+        {% if warehouses %}
+        <div class="mb-4">
+            <h5>Warehouses ({{ warehouses|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Racks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for warehouse in warehouses %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:warehouse-detail' warehouse.id %}">
+                                    {{ warehouse.name }}
+                                </a>
+                            </td>
+                            <td>{{ warehouse.description|truncatechars:50 }}</td>
+                            <td>{{ warehouse.racks.count }}</td>
+                            <td>
+                                <a href="{% url 'inventory:warehouse-detail' warehouse.id %}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Racks -->
+        {% if racks %}
+        <div class="mb-4">
+            <h5>Racks ({{ racks|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Warehouse</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rack in racks %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:rack-detail' rack.warehouse.id rack.id %}">
+                                    {{ rack.name }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'inventory:warehouse-detail' rack.warehouse.id %}">
+                                    {{ rack.warehouse.name }}
+                                </a>
+                            </td>
+                            <td>{{ rack.description|truncatechars:50 }}</td>
+                            <td>
+                                <a href="{% url 'inventory:rack-detail' rack.warehouse.id rack.id %}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Shelves -->
+        {% if shelves %}
+        <div class="mb-4">
+            <h5>Shelves ({{ shelves|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Location</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shelf in shelves %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:shelf-detail' shelf.rack.warehouse.id shelf.rack.id shelf.id %}">
+                                    {{ shelf.name }}
+                                </a>
+                            </td>
+                            <td>
+                                {{ shelf.rack.warehouse.name }} &gt; {{ shelf.rack.name }}
+                            </td>
+                            <td>{{ shelf.description|truncatechars:50 }}</td>
+                            <td>
+                                <a href="{% url 'inventory:shelf-detail' shelf.rack.warehouse.id shelf.rack.id shelf.id %}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Bins -->
+        {% if bins %}
+        <div class="mb-4">
+            <h5>Bins ({{ bins|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Location</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bin in bins %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:bin-detail' bin.shelf.rack.warehouse.id bin.shelf.rack.id bin.shelf.id bin.id %}">
+                                    {{ bin.name }}
+                                </a>
+                            </td>
+                            <td>
+                                {{ bin.shelf.rack.warehouse.name }} &gt; {{ bin.shelf.rack.name }} &gt; {{ bin.shelf.name }}
+                            </td>
+                            <td>{{ bin.description|truncatechars:50 }}</td>
+                            <td>
+                                <a href="{% url 'inventory:bin-detail' bin.shelf.rack.warehouse.id bin.shelf.rack.id bin.shelf.id bin.id %}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Items -->
+        {% if items %}
+        <div class="mb-4">
+            <h5>Items ({{ items|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Location</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:item-detail' item.bin.shelf.rack.warehouse.id item.bin.shelf.rack.id item.bin.shelf.id item.bin.id item.id %}">
+                                    {{ item.name }}
+                                </a>
+                            </td>
+                            <td>{{ item.sku|default:'N/A' }}</td>
+                            <td>
+                                {{ item.bin.shelf.rack.warehouse.name }} &gt; 
+                                {{ item.bin.shelf.rack.name }} &gt; 
+                                {{ item.bin.shelf.name }} &gt;
+                                {{ item.bin.name }}
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>
+                                <a href="{% url 'inventory:item-detail' item.bin.shelf.rack.warehouse.id item.bin.shelf.rack.id item.bin.shelf.id item.bin.id item.id %}" class="btn btn-sm btn-info">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if not warehouses and not racks and not shelves and not bins and not items %}
+            <div class="alert alert-warning">
+                No results found for "{{ query }}". Try a different search term or category.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

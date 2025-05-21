@@ -1,0 +1,155 @@
+{% extends "inventory/base.html" %}
+
+{% block inventory_title %}Inventory Dashboard{% endblock %}
+
+{% block inventory_content %}
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Warehouses</h6>
+                        <h2 class="mb-0">{{ warehouse_count }}</h2>
+                    </div>
+                    <i class="fa fa-warehouse fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a href="{% url 'inventory:warehouse-list' %}" class="text-white">View Details</a>
+                <i class="fa fa-angle-right text-white"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Total Items</h6>
+                        <h2 class="mb-0">{{ item_count }}</h2>
+                    </div>
+                    <i class="fa fa-boxes fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a href="#" class="text-white">View Reports</a>
+                <i class="fa fa-angle-right text-white"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card bg-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Low Stock</h6>
+                        <h2 class="mb-0">{{ low_stock_count }}</h2>
+                    </div>
+                    <i class="fa fa-exclamation-triangle fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a href="#" class="text-dark">View Low Stock</a>
+                <i class="fa fa-angle-right text-dark"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Recent Activity</h6>
+                        <h2 class="mb-0">{{ recent_activity_count }}</h2>
+                    </div>
+                    <i class="fa fa-history fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a href="#" class="text-white">View Activity</a>
+                <i class="fa fa-angle-right text-white"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Updates -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Updates</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_activities %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Location</th>
+                            <th>Action</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in recent_activities %}
+                        <tr>
+                            <td>{{ activity.item_name }}</td>
+                            <td>{{ activity.location }}</td>
+                            <td>{{ activity.action }}</td>
+                            <td>{{ activity.timestamp|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{{ activity.detail_url }}" class="btn btn-sm btn-info">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No recent activity. Start managing your inventory!
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Quick Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <a href="{% url 'inventory:warehouse-create' %}" class="btn btn-outline-primary w-100 py-3">
+                    <i class="fa fa-plus mb-2 d-block fa-2x"></i>
+                    Add Warehouse
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-success w-100 py-3">
+                    <i class="fa fa-search mb-2 d-block fa-2x"></i>
+                    Find Item
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-warning w-100 py-3">
+                    <i class="fa fa-file-export mb-2 d-block fa-2x"></i>
+                    Export Inventory
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-info w-100 py-3">
+                    <i class="fa fa-chart-bar mb-2 d-block fa-2x"></i>
+                    Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

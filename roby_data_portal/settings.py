@@ -34,6 +34,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'robydataservices-dev-ed9t6.ondigitalocean.app',
     'dev.robydata.com',
+    '127.0.0.1',
 ]
 
 INSTALLED_APPS = [
@@ -61,8 +62,20 @@ INSTALLED_APPS = [
     'api',
     'auth_detector',
     'todo',
+    'inventory',
+    'shares',
 
 ]
+
+# SHAREABLE_MODELS = {
+#     'storycraft':{
+#         'story':'storycraft.models.Story',
+#     },
+#     'todo':{
+#         'board':'todo.models.Board',
+#         'task':'todo.models.Task',
+#     },
+# }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -74,7 +87,8 @@ MIDDLEWARE = [
     'roby_data_portal.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_plotly_dash.middleware.BaseMiddleware',
+    # 'django_plotly_dash.middleware.BaseMiddleware',
+    'shares.middleware.SharePermissionMiddleware',
 ]
 
 ROOT_URLCONF = 'roby_data_portal.urls'
@@ -96,7 +110,9 @@ TEMPLATES = [
                 # 'django_plotly_dash.context_processors.plotly_dash',
             ],
             'libraries':{
-                'filter':'templatetags.filters'
+                'filter':'templatetags.filters',
+                'inventory_filters':'templatetags.inventory_filters',
+                'share_tags':'shares.templatetags.share_tags',
             }
         },
     },

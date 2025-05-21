@@ -1,0 +1,116 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></li>
+<li class="breadcrumb-item active">{{ shelf.name }}</li>
+{% endblock %}
+
+{% block inventory_title %}{{ shelf.name }}{% endblock %}
+
+{% block inventory_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Shelf Details</h5>
+        <div>
+            <a href="{% url 'inventory:shelf-update' warehouse.id rack.id shelf.id %}" class="btn btn-warning btn-sm">
+                <i class="fa fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'inventory:shelf-delete' warehouse.id rack.id shelf.id %}" class="btn btn-danger btn-sm delete-btn">
+                <i class="fa fa-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ shelf.name }}</p>
+                <p><strong>Description:</strong> {{ shelf.description }}</p>
+                <p><strong>Rack:</strong> <a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></p>
+                <p><strong>Warehouse:</strong> <a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></p>
+                <p><strong>Created:</strong> {{ shelf.created_at|date:"F d, Y" }}</p>
+                <p><strong>Last Updated:</strong> {{ shelf.updated_at|date:"F d, Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Bins
+                                <span class="badge bg-primary rounded-pill">{{ shelf.bins.count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Items
+                                <span class="badge bg-primary rounded-pill">{{ items_count }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bins Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Bins</h5>
+        <a href="{% url 'inventory:bin-create' warehouse.id rack.id shelf.id %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> Add Bin
+        </a>
+    </div>
+    <div class="card-body">
+        {% if shelf.bins.all %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Items</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bin in shelf.bins.all %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}">
+                                    {{ bin.name }}
+                                </a>
+                            </td>
+                            <td>{{ bin.description|truncatechars:50 }}</td>
+                            <td>{{ bin.items.count }}</td>
+                            <td>{{ bin.updated_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}" class="btn btn-info btn-sm">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:bin-update' warehouse.id rack.id shelf.id bin.id %}" class="btn btn-warning btn-sm">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:bin-delete' warehouse.id rack.id shelf.id bin.id %}" class="btn btn-danger btn-sm delete-btn">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No bins found. <a href="{% url 'inventory:bin-create' warehouse.id rack.id shelf.id %}">Add your first bin</a>.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></li>
+{% if rack %}
+<li class="breadcrumb-item"><a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></li>
+<li class="breadcrumb-item active">Edit</li>
+{% else %}
+<li class="breadcrumb-item active">Create Rack</li>
+{% endif %}
+{% endblock %}
+
+{% block inventory_title %}{% if rack %}Edit Rack{% else %}Create Rack{% endif %}{% endblock %}
+
+{% block inventory_content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{% if rack %}Edit{% else %}Create{% endif %} Rack</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="id_name" name="name" value="{{ rack.name|default:'' }}" required>
+                {% if form.name.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_description" class="form-label">Description</label>
+                <textarea class="form-control" id="id_description" name="description" rows="3">{{ rack.description|default:'' }}</textarea>
+                {% if form.description.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% if rack %}{% url 'inventory:rack-detail' warehouse.id rack.id %}{% else %}{% url 'inventory:warehouse-detail' warehouse.id %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">{% if rack %}Update{% else %}Create{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

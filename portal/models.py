@@ -44,6 +44,7 @@ class App(models.Model):
     link = models.CharField(max_length=100)
     is_default = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
+    # app_owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='app_ownership')
     
     def __str__(self):
         return self.name

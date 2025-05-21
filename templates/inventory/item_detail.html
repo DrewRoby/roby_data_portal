@@ -1,0 +1,168 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:shelf-detail' warehouse.id rack.id shelf.id %}">{{ shelf.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}">{{ bin.name }}</a></li>
+<li class="breadcrumb-item active">{{ item.name }}</li>
+{% endblock %}
+
+{% block inventory_title %}{{ item.name }}{% endblock %}
+
+{% block inventory_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Item Details</h5>
+        <div>
+            <a href="{% url 'inventory:item-update' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-warning btn-sm">
+                <i class="fa fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'inventory:item-delete' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-danger btn-sm delete-btn">
+                <i class="fa fa-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ item.name }}</p>
+                <p><strong>SKU:</strong> {{ item.sku|default:'N/A' }}</p>
+                <p><strong>Description:</strong> {{ item.description }}</p>
+                <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                <p><strong>Created:</strong> {{ item.created_at|date:"F d, Y" }}</p>
+                <p><strong>Last Updated:</strong> {{ item.updated_at|date:"F d, Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Location</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Bin:</strong> <a href="{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}">{{ bin.name }}</a>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Shelf:</strong> <a href="{% url 'inventory:shelf-detail' warehouse.id rack.id shelf.id %}">{{ shelf.name }}</a>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Rack:</strong> <a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Warehouse:</strong> <a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Quick Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Add Stock</h6>
+                        <a href="{% url 'inventory:item-add-stock' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-success w-100">
+                            <i class="fa fa-plus-circle"></i> Record Stock Addition
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Transfer Item</h6>
+                        <a href="{% url 'inventory:item-transfer' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-secondary w-100">
+                            <i class="fa fa-exchange-alt"></i> Move to Another Location
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Record Disposition</h6>
+                        <a href="{% url 'inventory:item-disposition' warehouse.id rack.id shelf.id bin.id item.id %}" class="btn btn-outline-danger w-100">
+                            <i class="fa fa-minus-circle"></i> Sold / Waste / Transfer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- templates/inventory/item_detail.html -->
+<!-- Replace the existing tabbed history section with this updated version -->
+
+<!-- Inventory Activity History -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Inventory Activity History</h5>
+    </div>
+    <div class="card-body">
+        {% if history_items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Type</th>
+                            <th>Quantity Change</th>
+                            <th>Reason</th>
+                            <th>Notes</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history_items %}
+                        <tr class="{% if entry.type == 'addition' %}table-success{% else %}table-danger{% endif %}">
+                            <td>{{ entry.timestamp|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if entry.type == 'addition' %}
+                                <span class="badge bg-success">Addition</span>
+                                {% else %}
+                                <span class="badge bg-danger">Disposition</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.quantity > 0 %}
+                                <span class="text-success">+{{ entry.quantity }}</span>
+                                {% else %}
+                                <span class="text-danger">{{ entry.quantity }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.reason }}</td>
+                            <td>{{ entry.notes|default:"-"|truncatechars:50 }}</td>
+                            <td>{{ entry.user }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-3">
+                <a href="#" class="btn btn-outline-secondary btn-sm" onclick="window.print(); return false;">
+                    <i class="fa fa-print"></i> Print History
+                </a>
+                <!-- We could add CSV export functionality here if desired -->
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No inventory activity recorded for this item yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

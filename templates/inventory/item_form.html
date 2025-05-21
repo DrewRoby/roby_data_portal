@@ -1,0 +1,87 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-detail' warehouse.id %}">{{ warehouse.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">{{ rack.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:shelf-detail' warehouse.id rack.id shelf.id %}">{{ shelf.name }}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}">{{ bin.name }}</a></li>
+{% if item %}
+<li class="breadcrumb-item"><a href="{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}">{{ item.name }}</a></li>
+<li class="breadcrumb-item active">Edit</li>
+{% else %}
+<li class="breadcrumb-item active">Create Item</li>
+{% endif %}
+{% endblock %}
+
+{% block inventory_title %}{% if item %}Edit Item{% else %}Create Item{% endif %}{% endblock %}
+
+{% block inventory_content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{% if item %}Edit{% else %}Create{% endif %} Item</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="id_name" name="name" value="{{ item.name|default:'' }}" required>
+                {% if form.name.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_sku" class="form-label">SKU</label>
+                <input type="text" class="form-control" id="id_sku" name="sku" value="{{ item.sku|default:'' }}">
+                {% if form.sku.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.sku.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_description" class="form-label">Description</label>
+                <textarea class="form-control" id="id_description" name="description" rows="3">{{ item.description|default:'' }}</textarea>
+                {% if form.description.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_quantity" class="form-label">Quantity</label>
+                <input type="number" class="form-control" id="id_quantity" name="quantity" value="{{ item.quantity|default:0 }}" min="0" required>
+                {% if form.quantity.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.quantity.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Hidden field to indicate if we should redirect to add another item -->
+            <input type="hidden" name="add_another" id="add_another" value="0">
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% if item %}{% url 'inventory:item-detail' warehouse.id rack.id shelf.id bin.id item.id %}{% else %}{% url 'inventory:bin-detail' warehouse.id rack.id shelf.id bin.id %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <div>
+                    {% if not item %}
+                    <button type="submit" class="btn btn-outline-primary" onclick="document.getElementById('add_another').value='1';">
+                        <i class="fa fa-save"></i> Save & Add Another
+                    </button>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-save"></i> {% if item %}Update{% else %}Save & Return To Bin{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,857 @@
+{% extends "inventory/base.html" %}
+{% load inventory_filters %}
+{% load filter %}
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}">Inventory</a></li>
+<li class="breadcrumb-item active">Reports</li>
+{% endblock %}
+
+{% block inventory_title %}Inventory Reports{% endblock %}
+
+{% block inventory_content %}
+<div class="row">
+    <!-- Report Selection -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Report Options</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" id="report-form">
+                    <div class="mb-3">
+                        <label for="id_report_type" class="form-label">Report Type</label>
+                        <select class="form-select" id="id_report_type" name="report_type">
+                            <option value="inventory_summary" {% if report_type == 'inventory_summary' %}selected{% endif %}>Inventory Summary</option>
+                            <option value="low_stock" {% if report_type == 'low_stock' %}selected{% endif %}>Low Stock Items</option>
+                            <option value="warehouse_status" {% if report_type == 'warehouse_status' %}selected{% endif %}>Warehouse Status</option>
+                           <option value="item_distribution" {% if report_type == 'item_distribution' %}selected{% endif %}>Item Distribution</option>
+                       </select>
+                   </div>
+                   
+                   <div class="mb-3">
+                       <label for="id_warehouse" class="form-label">Warehouse</label>
+                       <select class="form-select" id="id_warehouse" name="warehouse">
+                           <option value="all">All Warehouses</option>
+                           {% for w in warehouses %}
+                               <option value="{{ w.id }}" {% if warehouse_id == w.id|stringformat:"s" %}selected{% endif %}>{{ w.name }}</option>
+                           {% endfor %}
+                       </select>
+                   </div>
+                   
+                   <div class="mb-3">
+                       <label for="id_timeframe" class="form-label">Time Period</label>
+                       <select class="form-select" id="id_timeframe" name="timeframe">
+                           <option value="all" {% if timeframe == 'all' %}selected{% endif %}>All Time</option>
+                           <option value="day" {% if timeframe == 'day' %}selected{% endif %}>Last 24 Hours</option>
+                           <option value="week" {% if timeframe == 'week' %}selected{% endif %}>Last 7 Days</option>
+                           <option value="month" {% if timeframe == 'month' %}selected{% endif %}>Last 30 Days</option>
+                           <option value="quarter" {% if timeframe == 'quarter' %}selected{% endif %}>Last 90 Days</option>
+                       </select>
+                   </div>
+                   
+                   {% if report_type == 'low_stock' %}
+                   <div class="mb-3">
+                       <label for="id_threshold" class="form-label">Low Stock Threshold</label>
+                       <input type="number" class="form-control" id="id_threshold" name="threshold" min="1" value="{{ low_stock_threshold }}">
+                       <div class="form-text">Items with quantity below this value are considered low stock</div>
+                   </div>
+                   {% endif %}
+                   
+                   <div class="mb-3">
+                       <label for="id_sort_by" class="form-label">Sort By</label>
+                       <select class="form-select" id="id_sort_by" name="sort_by">
+                           {% if report_type == 'inventory_summary' %}
+                               <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                               <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Quantity</option>
+                               <option value="items" {% if sort_by == 'items' %}selected{% endif %}>Items</option>
+                               <option value="utilization" {% if sort_by == 'utilization' %}selected{% endif %}>Utilization</option>
+                           {% elif report_type == 'low_stock' %}
+                               <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Quantity</option>
+                               <option value="days_until_stockout" {% if sort_by == 'days_until_stockout' %}selected{% endif %}>Days Until Stockout</option>
+                               <option value="weekly_usage" {% if sort_by == 'weekly_usage' %}selected{% endif %}>Weekly Usage</option>
+                           {% elif report_type == 'warehouse_status' %}
+                               <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                               <option value="capacity" {% if sort_by == 'capacity' %}selected{% endif %}>Capacity Used</option>
+                               <option value="utilization" {% if sort_by == 'utilization' %}selected{% endif %}>Bin Utilization</option>
+                               <option value="turnover" {% if sort_by == 'turnover' %}selected{% endif %}>Turnover Rate</option>
+                               <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Total Quantity</option>
+                           {% elif report_type == 'item_distribution' %}
+                               <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                               <option value="items" {% if sort_by == 'items' %}selected{% endif %}>Items</option>
+                               <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Quantity</option>
+                               <option value="percentage" {% if sort_by == 'percentage' %}selected{% endif %}>Percentage</option>
+                               <option value="unique_items" {% if sort_by == 'unique_items' %}selected{% endif %}>Unique Items</option>
+                           {% else %}
+                               <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                           {% endif %}
+                       </select>
+                   </div>
+                   
+                   <button type="submit" class="btn btn-primary w-100">
+                       <i class="fa fa-sync"></i> Generate Report
+                   </button>
+               </form>
+               
+               <hr>
+               
+               <div class="d-grid gap-2">
+                   <button class="btn btn-outline-secondary" id="btn-print">
+                       <i class="fa fa-print"></i> Print Report
+                   </button>
+                   <a href="#" onclick="window.location.href=window.location.pathname+'?'+getExportParams()" class="btn btn-outline-secondary">
+                       <i class="fa fa-file-csv"></i> Export as CSV
+                   </a>
+               </div>
+           </div>
+       </div>
+   </div>
+   
+   <!-- Report Content -->
+   <div class="col-md-9">
+       <div class="card">
+           <div class="card-header d-flex justify-content-between align-items-center">
+               <h5 class="mb-0">{{ report_title }}</h5>
+               <div>
+                   <span class="badge bg-secondary">{{ timeframe|title }} Time Data</span>
+                   <span class="text-muted ms-2">Generated: {{ generation_time }}</span>
+               </div>
+           </div>
+           <div class="card-body">
+               <div id="report-container">
+               
+                   {% if report_type == 'inventory_summary' %}
+                       <!-- Inventory Summary Report -->
+                       <div class="row mb-4">
+                           <div class="col-md-4 mb-3">
+                               <div class="card bg-light h-100">
+                                   <div class="card-body text-center">
+                                       <h3>{{ total_items }}</h3>
+                                       <p class="mb-0">Total Items</p>
+                                   </div>
+                               </div>
+                           </div>
+                           <div class="col-md-4 mb-3">
+                               <div class="card bg-light h-100">
+                                   <div class="card-body text-center">
+                                       <h3>{{ total_quantity }}</h3>
+                                       <p class="mb-0">Total Quantity</p>
+                                   </div>
+                               </div>
+                           </div>
+                           <div class="col-md-4 mb-3">
+                               <div class="card bg-light h-100">
+                                   <div class="card-body text-center">
+                                       <h3>{{ total_bins }}</h3>
+                                       <p class="mb-0">Total Bins</p>
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+                       
+                       <!-- Item Age Distribution -->
+                       {% if item_age_distribution %}
+                       <div class="mb-4">
+                           <h6>Item Age Distribution</h6>
+                           <div class="progress" style="height: 25px;">
+                               <div class="progress-bar bg-success" role="progressbar" 
+                                    style="width: {{ item_age_distribution.0.percentage }}%" 
+                                    aria-valuenow="{{ item_age_distribution.0.percentage }}" 
+                                    aria-valuemin="0" aria-valuemax="100">
+                                   {{ item_age_distribution.0.name }}: {{ item_age_distribution.0.count }} ({{ item_age_distribution.0.percentage }}%)
+                               </div>
+                               <div class="progress-bar bg-info" role="progressbar" 
+                                    style="width: {{ item_age_distribution.1.percentage }}%" 
+                                    aria-valuenow="{{ item_age_distribution.1.percentage }}" 
+                                    aria-valuemin="0" aria-valuemax="100">
+                                   {{ item_age_distribution.1.name }}: {{ item_age_distribution.1.count }} ({{ item_age_distribution.1.percentage }}%)
+                               </div>
+                               <div class="progress-bar bg-warning" role="progressbar" 
+                                    style="width: {{ item_age_distribution.2.percentage }}%" 
+                                    aria-valuenow="{{ item_age_distribution.2.percentage }}" 
+                                    aria-valuemin="0" aria-valuemax="100">
+                                   {{ item_age_distribution.2.name }}: {{ item_age_distribution.2.count }} ({{ item_age_distribution.2.percentage }}%)
+                               </div>
+                           </div>
+                       </div>
+                       {% endif %}
+                       
+                       <!-- Warehouse Data Table -->
+                       <h6>Items by Warehouse</h6>
+                       <div class="table-responsive mb-4">
+                           <table class="table table-bordered table-hover">
+                               <thead class="table-light">
+                                   <tr>
+                                       <th>Warehouse</th>
+                                       <th>Items</th>
+                                       <th>Total Quantity</th>
+                                       <th>Bins</th>
+                                       <th>Bin Utilization</th>
+                                       <th>Items/Bin</th>
+                                       <th>Actions</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {% for w in warehouse_data %}
+                                   <tr>
+                                       <td><a href="{% url 'inventory:warehouse-detail' w.id %}">{{ w.name }}</a></td>
+                                       <td>{{ w.items }}</td>
+                                       <td>{{ w.quantity }}</td>
+                                       <td>{{ w.bins }}</td>
+                                       <td>
+                                           <div class="progress" style="height: 15px;">
+                                               <div class="progress-bar {% if w.bins_utilization < 50 %}bg-warning{% elif w.bins_utilization < 80 %}bg-info{% else %}bg-success{% endif %}" 
+                                                    role="progressbar" style="width: {{ w.bins_utilization }}%" 
+                                                    aria-valuenow="{{ w.bins_utilization }}" aria-valuemin="0" 
+                                                    aria-valuemax="100">{{ w.bins_utilization }}%</div>
+                                           </div>
+                                       </td>
+                                       <td>{{ w.avg_items_per_bin }}</td>
+                                       <td>
+                                           <a href="{% url 'inventory:warehouse-detail' w.id %}" class="btn btn-sm btn-primary">
+                                               <i class="fa fa-eye"></i>
+                                           </a>
+                                       </td>
+                                   </tr>
+                                   {% endfor %}
+                               </tbody>
+                           </table>
+                       </div>
+                       
+                       <!-- Most Stocked Items -->
+                       <h6>Most Stocked Items</h6>
+                       <div class="table-responsive mb-4">
+                           <table class="table table-bordered table-hover">
+                               <thead class="table-light">
+                                   <tr>
+                                       <th>Item</th>
+                                       <th>SKU</th>
+                                       <th>Quantity</th>
+                                       <th>Days in Stock</th>
+                                       <th>Location</th>
+                                       <th>Actions</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {% for item in top_items %}
+                                   <tr>
+                                       <td>{{ item.name }}</td>
+                                       <td>{{ item.sku }}</td>
+                                       <td>{{ item.quantity }}</td>
+                                       <td>{{ item.days_in_stock }}</td>
+                                       <td>{{ item.location }}</td>
+                                       <td>
+                                           <a href="{{ item.location_url }}" class="btn btn-sm btn-primary">
+                                               <i class="fa fa-eye"></i>
+                                           </a>
+                                       </td>
+                                   </tr>
+                                   {% endfor %}
+                               </tbody>
+                           </table>
+                       </div>
+                       
+                       <!-- Recent Activity -->
+                       {% if recent_activity %}
+                       <h6>Recent Inventory Activity</h6>
+                       <div class="table-responsive">
+                           <table class="table table-bordered table-hover">
+                               <thead class="table-light">
+                                   <tr>
+                                       <th>Item</th>
+                                       <th>Type</th>
+                                       <th>Quantity</th>
+                                       <th>Reason</th>
+                                       <th>User</th>
+                                       <th>Date/Time</th>
+                                       <th>Actions</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {% for activity in recent_activity %}
+                                   <tr>
+                                       <td>{{ activity.item_name }}</td>
+                                       <td>
+                                           <span class="badge {% if activity.type == 'Addition' %}bg-success{% else %}bg-danger{% endif %}">
+                                               {{ activity.type }}
+                                           </span>
+                                       </td>
+                                       <td>
+                                           {% if activity.quantity > 0 %}
+                                           <span class="text-success">+{{ activity.quantity }}</span>
+                                           {% else %}
+                                           <span class="text-danger">{{ activity.quantity }}</span>
+                                           {% endif %}
+                                       </td>
+                                       <td>{{ activity.reason }}</td>
+                                       <td>{{ activity.user }}</td>
+                                       <td>{{ activity.timestamp|date:"M d, Y H:i" }}</td>
+                                       <td>
+                                           <a href="{{ activity.item_url }}" class="btn btn-sm btn-primary">
+                                               <i class="fa fa-eye"></i>
+                                           </a>
+                                       </td>
+                                   </tr>
+                                   {% endfor %}
+                               </tbody>
+                           </table>
+                       </div>
+                       {% endif %}
+                   {% endif %}
+                   
+                   {% if report_type == 'low_stock' %}
+                       <!-- Low Stock Report -->
+                       <div class="alert {% if low_stock_count > 0 %}alert-warning{% else %}alert-success{% endif %} mb-4">
+                           <i class="fa fa-{% if low_stock_count > 0 %}exclamation-triangle{% else %}check-circle{% endif %}"></i> 
+                           {% if low_stock_count > 0 %}
+                           There are <strong>{{ low_stock_count }}</strong> items with stock levels below the threshold ({{ low_stock_threshold }}).
+                           {% else %}
+                           No items are below the low stock threshold ({{ low_stock_threshold }}).
+                           {% endif %}
+                       </div>
+                       
+                       {% if low_stock_items %}
+                       <div class="table-responsive">
+                           <table class="table table-bordered table-hover">
+                               <thead class="table-light">
+                                   <tr>
+                                       <th>Item</th>
+                                       <th>SKU</th>
+                                       <th>Current Quantity</th>
+                                       <th>Weekly Usage</th>
+                                       <th>Days Until Empty</th>
+                                       <th>Location</th>
+                                       <th>Actions</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {% for item in low_stock_items %}
+                                   <tr {% if item.is_critical %}class="table-danger"{% endif %}>
+                                       <td>{{ item.name }}</td>
+                                       <td>{{ item.sku }}</td>
+                                       <td>
+                                           <div class="d-flex align-items-center">
+                                               <div class="me-2">
+                                                   <span class="badge {% if item.is_critical %}bg-danger{% else %}bg-warning{% endif %}">
+                                                       {{ item.quantity }}
+                                                   </span>
+                                               </div>
+                                               <div class="progress flex-grow-1" style="height: 10px;">
+                                                   <div class="progress-bar {% if item.is_critical %}bg-danger{% else %}bg-warning{% endif %}" 
+                                                        role="progressbar" 
+                                                        style="width: {{ item.quantity|floatformat:0|default:0|mul:100|floatformat:0|div:item.min_quantity|floatformat:0 }}%" 
+                                                        aria-valuenow="{{ item.quantity }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="{{ item.min_quantity }}"></div>
+                                               </div>
+                                           </div>
+                                       </td>
+                                       <td>{{ item.weekly_usage }}</td>
+                                       <td>
+                                           {% if item.days_until_stockout == 'N/A' %}
+                                               <span class="badge bg-secondary">N/A</span>
+                                           {% elif item.days_until_stockout < 7 %}
+                                               <span class="badge bg-danger">{{ item.days_until_stockout }} days</span>
+                                           {% elif item.days_until_stockout < 14 %}
+                                               <span class="badge bg-warning">{{ item.days_until_stockout }} days</span>
+                                           {% else %}
+                                               <span class="badge bg-success">{{ item.days_until_stockout }} days</span>
+                                           {% endif %}
+                                       </td>
+                                       <td>{{ item.location }}</td>
+                                       <td>
+                                           <div class="btn-group">
+                                               <a href="{{ item.url }}" class="btn btn-sm btn-info">
+                                                   <i class="fa fa-eye"></i>
+                                               </a>
+                                               <button type="button" class="btn btn-sm btn-success restock-btn" 
+                                                       data-item-id="{{ item.id }}" data-item-name="{{ item.name }}">
+                                                   <i class="fa fa-plus"></i>
+                                               </button>
+                                           </div>
+                                       </td>
+                                   </tr>
+                                   {% endfor %}
+                               </tbody>
+                           </table>
+                       </div>
+                       {% endif %}
+                   {% endif %}
+                   
+                   {% if report_type == 'warehouse_status' %}
+                       <!-- Warehouse Status Report -->
+                       <div class="mb-4">
+                           <h6>Warehouse Capacity Overview</h6>
+                           <div class="progress mb-3" style="height: 25px;">
+                               {% for w in warehouse_capacity %}
+                               {% if w.percentage > 0 %}
+                               <div class="progress-bar bg-{{ w.color }}" role="progressbar" style="width: {{ w.percentage }}%" 
+                                    aria-valuenow="{{ w.percentage }}" aria-valuemin="0" aria-valuemax="100" 
+                                    data-bs-toggle="tooltip" title="{{ w.name }}: {{ w.percentage }}%">
+                                   {{ w.name }}
+                               </div>
+                               {% endif %}
+                               {% endfor %}
+                           </div>
+                           <div class="small text-muted text-end">Based on estimated capacity</div>
+                       </div>
+                       
+                       <div class="row mb-4">
+                           {% for w in warehouse_stats %}
+                           <div class="col-md-6 mb-3">
+                               <div class="card h-100">
+                                   <div class="card-header d-flex justify-content-between align-items-center">
+                                       <h6 class="mb-0">{{ w.name }}</h6>
+                                       <a href="{% url 'inventory:warehouse-detail' w.id %}" class="btn btn-sm btn-primary">
+                                           <i class="fa fa-eye"></i>
+                                       </a>
+                                   </div>
+                                   <div class="card-body">
+                                       <div class="mb-3">
+                                           <div class="d-flex justify-content-between mb-1">
+                                               <span>Capacity Usage</span>
+                                               <span>{{ w.capacity_used }}%</span>
+                                           </div>
+                                           <div class="progress" style="height: 8px;">
+                                               <div class="progress-bar bg-{{ w.color }}" role="progressbar" style="width: {{ w.capacity_used }}%" 
+                                                    aria-valuenow="{{ w.capacity_used }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                           </div>
+                                       </div>
+                                       
+                                       <div class="mb-3">
+                                           <div class="d-flex justify-content-between mb-1">
+                                               <span>Bin Utilization</span>
+                                               <span>{{ w.bins_utilization }}%</span>
+                                           </div>
+                                           <div class="progress" style="height: 8px;">
+                                               <div class="progress-bar bg-info" role="progressbar" style="width: {{ w.bins_utilization }}%" 
+                                                    aria-valuenow="{{ w.bins_utilization }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                           </div>
+                                       </div>
+                                       
+                                       <table class="table table-sm">
+                                           <tbody>
+                                               <tr>
+                                                   <td>Items</td>
+                                                   <td>{{ w.items }}</td>
+                                               </tr>
+                                               <tr>
+                                                   <td>Total Quantity</td>
+                                                   <td>{{ w.quantity }}</td>
+                                               </tr>
+                                               <tr>
+                                                   <td>Empty Bins</td>
+                                                   <td>{{ w.empty_bins }} ({{ w.empty_bin_percentage }}%)</td>
+                                               </tr>
+                                               <tr>
+                                                   <td>30-Day Additions</td>
+                                                   <td class="text-success">+{{ w.additions_last_30_days }}</td>
+                                               </tr>
+                                               <tr>
+                                                   <td>30-Day Dispositions</td>
+                                                   <td class="text-danger">-{{ w.dispositions_last_30_days }}</td>
+                                               </tr>
+                                               <tr>
+                                                   <td>30-Day Net Change</td>
+                                                   <td class="{% if w.net_change_30_days >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                       {{ w.net_change_30_days }}
+                                                   </td>
+                                               </tr>
+                                               <tr>
+                                                   <td>Turnover Rate</td>
+                                                   <td>{{ w.turnover_rate }}%</td>
+                                               </tr>
+                                           </tbody>
+                                       </table>
+                                   </div>
+                               </div>
+                           </div>
+                           {% endfor %}
+                       </div>
+                       
+                       {% if movement_data %}
+                       <h6>Inventory Movement Trends</h6>
+                       <div class="table-responsive mb-4">
+                           <table class="table table-bordered table-hover">
+                               <thead class="table-light">
+                                   <tr>
+                                       <th>Month</th>
+                                       <th>Additions</th>
+                                       <th>Dispositions</th>
+                                       <th>Net Change</th>
+                                       <th>Trend</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {% for month in movement_data %}
+                                   <tr>
+                                       <td>{{ month.month }}</td>
+                                       <td class="text-success">+{{ month.additions }}</td>
+                                       <td class="text-danger">-{{ month.dispositions }}</td>
+                                       <td class="{% if month.net_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                           {{ month.net_change }}
+                                       </td>
+                                       <td>
+                                           <div class="progress" style="height: 20px;">
+                                               {% if month.net_change >= 0 %}
+                                               <div class="progress-bar bg-success" role="progressbar" 
+                                                    style="width: {{ month.net_change|floatformat:0|div:month.additions|mul:100|floatformat:0 }}%" 
+                                                    aria-valuenow="{{ month.net_change }}" aria-valuemin="0" 
+                                                    aria-valuemax="{{ month.additions }}"></div>
+                                               {% else %}
+                                               <div class="progress-bar bg-danger" role="progressbar" 
+                                                    style="width: {{ month.net_change|floatformat:0|div:month.dispositions|mul:100|floatformat:0|abs_value }}%" 
+                                                    aria-valuenow="{{ month.net_change|abs_value }}" aria-valuemin="0" 
+                                                    aria-valuemax="{{ month.dispositions }}"></div>
+                                               {% endif %}
+                                           </div>
+                                       </td>
+                                   </tr>
+                                   {% endfor %}
+                               </tbody>
+                           </table>
+                       </div>
+                       {% endif %}
+                   {% endif %}
+                   
+                   {% if report_type == 'item_distribution' %}
+                       <!-- Item Distribution Report -->
+                       <div class="row mb-4">
+                           <div class="col-md-4 mb-3">
+                               <div class="card bg-light h-100">
+                                   <div class="card-body text-center">
+                                       <h3>{{ total_items }}</h3>
+                                       <p class="mb-0">Total Items</p>
+                                   </div>
+                               </div>
+                           </div>
+                           <div class="col-md-4 mb-3">
+                               <div class="card bg-light h-100">
+                                   <div class="card-body text-center">
+                                       <h3>{{ total_quantity }}</h3>
+                                       <p class="mb-0">Total Quantity</p>
+                                   </div>
+                               </div>
+                           </div>
+                           <div class="col-md-4 mb-3">
+                               <div class="card bg-light h-100">
+                                   <div class="card-body text-center">
+                                       <h3>{{ total_bins }}</h3>
+                                       <p class="mb-0">Total Bins</p>
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+                       
+                       <!-- Item Age Distribution -->
+                       <h6>Item Age Distribution</h6>
+                       <div class="progress mb-4" style="height: 25px;">
+                           <div class="progress-bar bg-success" role="progressbar" 
+                                style="width: {{ item_age_distribution.0.percentage }}%" 
+                                aria-valuenow="{{ item_age_distribution.0.percentage }}" 
+                                aria-valuemin="0" aria-valuemax="100">
+                               {{ item_age_distribution.0.name }}: {{ item_age_distribution.0.count }} ({{ item_age_distribution.0.percentage }}%)
+                           </div>
+                           <div class="progress-bar bg-info" role="progressbar" 
+                                style="width: {{ item_age_distribution.1.percentage }}%" 
+                                aria-valuenow="{{ item_age_distribution.1.percentage }}" 
+                                aria-valuemin="0" aria-valuemax="100">
+                               {{ item_age_distribution.1.name }}: {{ item_age_distribution.1.count }} ({{ item_age_distribution.1.percentage }}%)
+                           </div>
+                           <div class="progress-bar bg-warning" role="progressbar" 
+                                style="width: {{ item_age_distribution.2.percentage }}%" 
+                                aria-valuenow="{{ item_age_distribution.2.percentage }}" 
+                                aria-valuemin="0" aria-valuemax="100">
+                               {{ item_age_distribution.2.name }}: {{ item_age_distribution.2.count }} ({{ item_age_distribution.2.percentage }}%)
+                           </div>
+                       </div>
+                       
+                       <!-- Distribution by Category -->
+                       {% if category_distribution %}
+                       <h6>Distribution by Group</h6>
+                       <div class="mb-4">
+                           {% for category in category_distribution %}
+                           {% if category.percentage > 0 %}
+                           <div class="mb-2">
+                               <div class="d-flex justify-content-between mb-1">
+                                   <span>{{ category.name }}</span>
+                                   <span>{{ category.items }} items ({{ category.percentage }}%)</span>
+                               </div>
+                               <div class="progress" style="height: 15px;">
+                                   <div class="progress-bar" role="progressbar" 
+                                        style="width: {{ category.percentage }}%; background-color: hsl({{ forloop.counter|mul:50 }}, 70%, 60%)" 
+                                        aria-valuenow="{{ category.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                       {{ category.percentage }}%
+                                   </div>
+                               </div>
+                           </div>
+                           {% endif %}
+                           {% endfor %}
+                       </div>
+                       {% endif %}
+                       
+                       <!-- Distribution by Warehouse -->
+                       <h6>Distribution by Warehouse</h6>
+                       <div class="table-responsive">
+                           <table class="table table-bordered table-hover">
+                               <thead class="table-light">
+                                   <tr>
+                                       <th>Warehouse</th>
+                                       <th>Items</th>
+                                       <th>Unique Items</th>
+                                       <th>Percentage</th>
+                                       <th>Total Quantity</th>
+                                       <th>Avg. Per Item</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   {% for w in warehouse_distribution %}
+                                   <tr>
+                                       <td><a href="{% url 'inventory:warehouse-detail' w.id %}">{{ w.name }}</a></td>
+                                       <td>{{ w.items }}</td>
+                                       <td>{{ w.unique_items }}</td>
+                                       <td>
+                                           <div class="progress" style="height: 15px;">
+                                               <div class="progress-bar" role="progressbar" 
+                                                    style="width: {{ w.percentage }}%; background-color: hsl({{ forloop.counter|mul:30 }}, 70%, 60%)" 
+                                                    aria-valuenow="{{ w.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                                   {{ w.percentage }}%
+                                               </div>
+                                           </div>
+                                       </td>
+                                       <td>{{ w.quantity }}</td>
+                                       <td>{{ w.avg_quantity }}</td>
+                                   </tr>
+                                   {% endfor %}
+                               </tbody>
+                           </table>
+                       </div>
+                   {% endif %}
+                   
+                   {% if not report_type %}
+                       <div class="alert alert-info">
+                           <i class="fa fa-info-circle"></i> 
+                           <p>Select a report type from the options on the left to generate a report.</p>
+                           <h6 class="mt-3">Available Reports:</h6>
+                           <ul class="mb-0">
+                               <li><strong>Inventory Summary</strong> - Overview of all inventory items and warehouses</li>
+                               <li><strong>Low Stock</strong> - Items that need to be restocked</li>
+                               <li><strong>Warehouse Status</strong> - Capacity and utilization metrics for warehouses</li>
+                               <li><strong>Item Distribution</strong> - How items are distributed across warehouses</li>
+                           </ul>
+                       </div>
+                   {% endif %}
+               </div>
+           </div>
+       </div>
+   </div>
+</div>
+{% endblock %}
+
+{% block inventory_scripts %}
+<script>
+   document.addEventListener('DOMContentLoaded', function() {
+       // Adjust form fields based on report type
+       const reportTypeSelect = document.getElementById('id_report_type');
+       const sortBySelect = document.getElementById('id_sort_by');
+       const thresholdDiv = document.querySelector('div:has(> #id_threshold)');
+       
+       if (reportTypeSelect) {
+           reportTypeSelect.addEventListener('change', function() {
+               // Show/hide threshold field
+               if (this.value === 'low_stock') {
+                   if (thresholdDiv) {
+                       thresholdDiv.style.display = 'block';
+                   }
+               } else {
+                   if (thresholdDiv) {
+                       thresholdDiv.style.display = 'none';
+                   }
+               }
+               
+               // Update sort options
+               updateSortOptions(this.value);
+           });
+       }
+       
+       function updateSortOptions(reportType) {
+           // Clear existing options
+           sortBySelect.innerHTML = '';
+           
+           // Add appropriate options based on report type
+           if (reportType === 'inventory_summary') {
+               addOption(sortBySelect, 'name', 'Name');
+               addOption(sortBySelect, 'quantity', 'Quantity');
+               addOption(sortBySelect, 'items', 'Items');
+               addOption(sortBySelect, 'utilization', 'Utilization');
+           } else if (reportType === 'low_stock') {
+               addOption(sortBySelect, 'quantity', 'Quantity');
+               addOption(sortBySelect, 'days_until_stockout', 'Days Until Stockout');
+               addOption(sortBySelect, 'weekly_usage', 'Weekly Usage');
+           } else if (reportType === 'warehouse_status') {
+               addOption(sortBySelect, 'name', 'Name');
+               addOption(sortBySelect, 'capacity', 'Capacity Used');
+               addOption(sortBySelect, 'utilization', 'Bin Utilization');
+               addOption(sortBySelect, 'turnover', 'Turnover Rate');
+               addOption(sortBySelect, 'quantity', 'Total Quantity');
+           } else if (reportType === 'item_distribution') {
+               addOption(sortBySelect, 'name', 'Name');
+               addOption(sortBySelect, 'items', 'Items');
+               addOption(sortBySelect, 'quantity', 'Quantity');
+               addOption(sortBySelect, 'percentage', 'Percentage');
+               addOption(sortBySelect, 'unique_items', 'Unique Items');
+           }
+           
+           // Mark current sort option as selected
+           const currentSort = "{{ sort_by }}";
+           if (currentSort) {
+               const option = sortBySelect.querySelector(`option[value="${currentSort}"]`);
+               if (option) {
+                   option.selected = true;
+               }
+           }
+       }
+       
+       function addOption(select, value, text) {
+           const option = document.createElement('option');
+           option.value = value;
+           option.textContent = text;
+           select.appendChild(option);
+       }
+       
+       // Initialize sort options based on current report type
+       if (reportTypeSelect && sortBySelect) {
+           const currentReportType = reportTypeSelect.value;
+           if (currentReportType) {
+               updateSortOptions(currentReportType);
+           }
+       }
+       
+       // Print functionality
+       document.getElementById('btn-print').addEventListener('click', function() {
+           const reportContent = document.getElementById('report-container').innerHTML;
+           const reportTitle = document.querySelector('.card-header h5').textContent;
+           
+           // Create print window
+           const printWindow = window.open('', '_blank');
+           printWindow.document.write(`
+               <html>
+               <head>
+                   <title>${reportTitle}</title>
+                   <style>
+                       body { 
+                           font-family: Arial, sans-serif; 
+                           padding: 20px; 
+                           line-height: 1.5;
+                       }
+                       table {
+                           width: 100%;
+                           border-collapse: collapse;
+                           margin-bottom: 20px;
+                       }
+                       th, td {
+                           border: 1px solid #ddd;
+                           padding: 8px;
+                           text-align: left;
+                       }
+                       th {
+                           background-color: #f2f2f2;
+                       }
+                       .progress {
+                           background-color: #f5f5f5;
+                           border-radius: 4px;
+                           height: 20px;
+                           position: relative;
+                       }
+                       .progress-bar {
+                           background-color: #4CAF50;
+                           height: 100%;
+                           border-radius: 4px;
+                           display: flex;
+                           align-items: center;
+                           justify-content: center;
+                           color: white;
+                           font-size: 12px;
+                           white-space: nowrap;
+                       }
+                       .bg-success { background-color: #4CAF50 !important; }
+                       .bg-info { background-color: #2196F3 !important; }
+                       .bg-warning { background-color: #FFC107 !important; }
+                       .bg-danger { background-color: #F44336 !important; }
+                       .text-success { color: #4CAF50 !important; }
+                       .text-danger { color: #F44336 !important; }
+                       .badge {
+                           display: inline-block;
+                           padding: 3px 7px;
+                           font-size: 12px;
+                           font-weight: bold;
+                           line-height: 1;
+                           text-align: center;
+                           white-space: nowrap;
+                           vertical-align: baseline;
+                           border-radius: 10px;
+                           color: white;
+                       }
+                       .bg-success.badge { background-color: #4CAF50; }
+                       .bg-info.badge { background-color: #2196F3; }
+                       .bg-warning.badge { background-color: #FFC107; color: black; }
+                       .bg-danger.badge { background-color: #F44336; }
+                       .bg-secondary.badge { background-color: #757575; }
+                       h3, h6 { margin-top: 20px; margin-bottom: 10px; }
+                       .card { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px; }
+                       .card-body { padding: 15px; }
+                       .alert {
+                           padding: 15px;
+                           margin-bottom: 20px;
+                           border: 1px solid transparent;
+                           border-radius: 4px;
+                       }
+                       .alert-info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
+                       .alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
+                       .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+                       @media print {
+                           a { text-decoration: none; color: black; }
+                           .btn, button { display: none; }
+                       }
+                   </style>
+               </head>
+               <body>
+                   <header>
+                       <h1>${reportTitle}</h1>
+                       <p>Generated: ${new Date().toLocaleString()}</p>
+                       <hr>
+                   </header>
+                   ${reportContent}
+                   <footer>
+                       <hr>
+                       <p>Report generated by Inventory Management System</p>
+                   </footer>
+               </body>
+               </html>
+           `);
+           
+           printWindow.document.close();
+           
+           // Give time for styles to apply
+           setTimeout(function() {
+               printWindow.print();
+               printWindow.close();
+           }, 250);
+       });
+       
+       // Helper for CSV export
+       window.getExportParams = function() {
+           const form = document.getElementById('report-form');
+           const formData = new FormData(form);
+           const params = new URLSearchParams();
+           
+           for (const [key, value] of formData.entries()) {
+               params.append(key, value);
+           }
+           
+           params.append('format', 'csv');
+           return params.toString();
+       };
+   });
+</script>
+{% endblock %}

@@ -474,14 +474,21 @@ footer {
     width: 250px;
     position: fixed;
     top: 0;
-    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
+    z-index: 1030;
+    transition: transform 0.3s ease;
+    transform: translateX(0);
 }
 
 .sidebar-apps {
     overflow-y: auto;
     flex-grow: 1;
+}
+
+.sidebar.hidden {
+    transform: translateX(250px); /* Move it off-screen to the right */
 }
 
 .avatar {
@@ -494,8 +501,9 @@ footer {
 }
 
 .main-content {
-    margin-left: 250px;
+    margin-right: 250px;
     min-height: 100vh;
+    transition: margin 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -503,9 +511,21 @@ footer {
         width: 100%;
         height: auto;
         position: relative;
+        right: auto;
     }
     
     .main-content {
-        margin-left: 0;
+        margin-right: 0;
     }
+}
+
+.app-card {
+    transition: transform 0.2s ease-in-out;
+    border: none;
+    border-radius: 10px;
+}
+
+.app-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
 }
