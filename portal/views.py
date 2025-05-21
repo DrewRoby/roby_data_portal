@@ -18,6 +18,9 @@ def home(request):
         return redirect('portal:home')
     return render(request, 'portal/guestpage.html')
 
+def about_dev(request):
+    return render(request, 'portal/aboutpage.html')
+
 def login_view(request):
     """View for user login."""
     if request.method == 'POST':
