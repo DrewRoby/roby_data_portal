@@ -4,11 +4,20 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from typing import List, Dict, Tuple
+import requests
+import math
+import time
+import logging
 
 # Import the Storycraft models
 from storycraft.models import Story, Character, Setting, Plot, Scene, CharacterRelationship
+
+logger = logging.getLogger(__name__)
+
 
 # Existing image API endpoints
 @api_view(['GET'])
@@ -972,3 +981,443 @@ def user_apps_api(request):
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AddressFinderView(APIView):
+    """
+    API endpoint to find addresses within a specified radius of a given point.
+    Uses Nominatim (OpenStreetMap) API for geocoding - free and no API key required.
+    """
+    
+    def post(self, request):
+        """
+        Find addresses within radius of a given point.
+        
+        Expected payload:
+        {
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "radius_km": 2.0,
+            "address_types": ["house", "apartment", "residential"],  # optional
+            "limit": 100  # optional, max results to return
+        }
+        """
+        try:
+            # Extract parameters
+            latitude = request.data.get('latitude')
+            longitude = request.data.get('longitude')
+            radius_km = request.data.get('radius_km', 1.0)
+            address_types = request.data.get('address_types', ['house', 'apartment', 'residential'])
+            limit = request.data.get('limit', 100)
+            
+            # Validate required parameters
+            if latitude is None or longitude is None:
+                return Response(
+                    {'error': 'latitude and longitude are required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Convert to float and validate
+            try:
+                lat = float(latitude)
+                lon = float(longitude)
+                radius = float(radius_km)
+            except ValueError:
+                return Response(
+                    {'error': 'latitude, longitude, and radius_km must be valid numbers'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+                return Response(
+                    {'error': 'Invalid latitude or longitude values'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Find addresses
+            finder = AddressFinder()
+            addresses = finder.find_addresses_in_radius(
+                lat, lon, radius, address_types, limit
+            )
+            
+            # Add debug info if no results found
+            debug_info = {}
+            if len(addresses) == 0:
+                debug_info = finder.get_debug_info()
+            
+            response_data = {
+                'center_point': {'latitude': lat, 'longitude': lon},
+                'radius_km': radius,
+                'total_found': len(addresses),
+                'addresses': addresses
+            }
+            
+            if debug_info:
+                response_data['debug_info'] = debug_info
+                
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in AddressFinderView: {str(e)}")
+            return Response(
+                {'error': 'Internal server error'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class AddressFinder:
+    """
+    Class to handle address finding using Nominatim API
+    """
+    
+    def __init__(self):
+        self.base_url = "https://nominatim.openstreetmap.org"
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Finderino/1.0 (andrew@robydata.com)',  # REQUIRED: Replace with your app details
+            'Referer': 'https://dev.robydata.com'  # REQUIRED: Replace with your domain
+        })
+        self.debug_requests = []  # For debugging
+    
+    def find_addresses_in_radius(self, center_lat: float, center_lon: float, 
+                               radius_km: float, address_types: List[str], 
+                               limit: int = 100) -> List[Dict]:
+        """
+        Find addresses within a radius of the center point
+        """
+        addresses = []
+        
+        # Calculate bounding box for initial search
+        bbox = self._calculate_bounding_box(center_lat, center_lon, radius_km)
+        
+        # Try multiple search strategies
+        search_strategies = [
+            # Strategy 1: Search by administrative area
+            {'area_search': True},
+            # Strategy 2: Search for specific address types
+            {'address_types': address_types},
+            # Strategy 3: Broad search for any addresses
+            {'broad_search': True}
+        ]
+        
+        for strategy in search_strategies:
+            if len(addresses) >= limit:
+                break
+                
+            if strategy.get('area_search'):
+                # Search for administrative areas first, then get addresses within them
+                batch_addresses = self._search_by_area(center_lat, center_lon, radius_km, limit - len(addresses))
+            elif strategy.get('address_types'):
+                # Search for specific types
+                batch_addresses = self._search_by_types(bbox, address_types, limit - len(addresses))
+            else:
+                # Broad search
+                batch_addresses = self._broad_address_search(bbox, limit - len(addresses))
+            
+            # Filter by actual distance and avoid duplicates
+            for addr in batch_addresses:
+                if len(addresses) >= limit:
+                    break
+                    
+                try:
+                    distance = self._calculate_distance(
+                        center_lat, center_lon, 
+                        float(addr['lat']), float(addr['lon'])
+                    )
+                    
+                    if distance <= radius_km:
+                        addr['distance_km'] = round(distance, 3)
+                        
+                        # Avoid duplicates (simple check by coordinates)
+                        if not self._is_duplicate(addr, addresses):
+                            addresses.append(addr)
+                except (ValueError, KeyError):
+                    # Skip addresses with invalid coordinates
+                    continue
+            
+            # Be respectful to the API
+            time.sleep(1.5)  # Increased delay
+        
+        # Sort by distance
+        addresses.sort(key=lambda x: x['distance_km'])
+        
+        return addresses[:limit]
+    
+    def _calculate_bounding_box(self, lat: float, lon: float, radius_km: float) -> Tuple[float, float, float, float]:
+        """
+        Calculate bounding box for a given center point and radius
+        Returns (min_lat, min_lon, max_lat, max_lon)
+        """
+        # Approximate conversion: 1 degree ≈ 111 km
+        lat_delta = radius_km / 111.0
+        lon_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+        
+        return (
+            lat - lat_delta,  # min_lat
+            lon - lon_delta,  # min_lon
+            lat + lat_delta,  # max_lat
+            lon + lon_delta   # max_lon
+        )
+    
+    def _generate_search_queries(self, address_types: List[str]) -> List[str]:
+        """
+        Generate search queries based on address types
+        """
+        type_mapping = {
+            'house': ['house', 'detached', 'building'],
+            'apartment': ['apartment', 'flat', 'residential'],
+            'residential': ['residential', 'address'],
+            'commercial': ['shop', 'office', 'commercial'],
+        }
+        
+        queries = []
+        for addr_type in address_types:
+            if addr_type in type_mapping:
+                queries.extend(type_mapping[addr_type])
+            else:
+                queries.append(addr_type)
+        
+        return list(set(queries))  # Remove duplicates
+    
+    def _search_by_area(self, center_lat: float, center_lon: float, radius_km: float, limit: int) -> List[Dict]:
+        """
+        Search by finding the area first, then getting addresses within it
+        """
+        # First, do a reverse geocode to find the area
+        params = {
+            'lat': center_lat,
+            'lon': center_lon,
+            'format': 'json',
+            'addressdetails': 1,
+            'zoom': 14  # City/town level
+        }
+        
+        try:
+            response = self.session.get(
+                f"{self.base_url}/reverse",
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            if 'address' in result:
+                address = result['address']
+                city = address.get('city', address.get('town', address.get('village', '')))
+                
+                if city:
+                    # Now search for addresses in this city
+                    return self._search_nominatim_simple(f"addresses in {city}", limit)
+                    
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Reverse geocoding error: {str(e)}")
+        
+        return []
+    
+    def _search_by_types(self, bbox: Tuple[float, float, float, float], address_types: List[str], limit: int) -> List[Dict]:
+        """
+        Search for specific address types
+        """
+        addresses = []
+        
+        # Map address types to Nominatim categories
+        type_queries = {
+            'residential': 'residential',
+            'house': 'building=residential',
+            'apartment': 'building=apartments',
+            'business': 'commercial'
+        }
+        
+        for addr_type in address_types:
+            if len(addresses) >= limit:
+                break
+                
+            query = type_queries.get(addr_type, addr_type)
+            batch = self._search_nominatim_with_bbox(query, bbox, limit - len(addresses))
+            addresses.extend(batch)
+            
+            time.sleep(1)
+        
+        return addresses
+    
+    def _broad_address_search(self, bbox: Tuple[float, float, float, float], limit: int) -> List[Dict]:
+        """
+        Broad search for any addresses
+        """
+        searches = [
+            'address',
+            'street',
+            'building',
+            'house number'
+        ]
+        
+        addresses = []
+        for search_term in searches:
+            if len(addresses) >= limit:
+                break
+            batch = self._search_nominatim_with_bbox(search_term, bbox, limit - len(addresses))
+            addresses.extend(batch)
+            time.sleep(1)
+        
+        return addresses
+    
+    def _search_nominatim_simple(self, query: str, limit: int) -> List[Dict]:
+        """
+        Simple Nominatim search without bounding box constraints
+        """
+        params = {
+            'q': query,
+            'format': 'json',
+            'addressdetails': 1,
+            'limit': min(limit, 50),
+            'dedupe': 1
+        }
+        
+        try:
+            response = self.session.get(
+                f"{self.base_url}/search",
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            
+            results = response.json()
+            self._log_request(f"{self.base_url}/search", params, len(results))
+            
+            processed_results = []
+            for result in results:
+                processed_result = self._process_nominatim_result(result)
+                if processed_result:
+                    processed_results.append(processed_result)
+            
+            return processed_results
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Nominatim API error: {str(e)}")
+            self._log_request(f"{self.base_url}/search", params, 0)
+            return []
+    
+    def _search_nominatim_with_bbox(self, query: str, bbox: Tuple[float, float, float, float], limit: int) -> List[Dict]:
+        """
+        Search Nominatim API with bounding box
+        """
+        params = {
+            'q': query,
+            'format': 'json',
+            'addressdetails': 1,
+            'limit': min(limit, 50),
+            'viewbox': f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}",  # lon,lat,lon,lat
+            'bounded': 1,
+            'dedupe': 1
+        }
+        
+        try:
+            response = self.session.get(
+                f"{self.base_url}/search",
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            
+            results = response.json()
+            self._log_request(f"{self.base_url}/search", params, len(results))
+            
+            processed_results = []
+            for result in results:
+                processed_result = self._process_nominatim_result(result)
+                if processed_result:
+                    processed_results.append(processed_result)
+            
+            return processed_results
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Nominatim API error: {str(e)}")
+            self._log_request(f"{self.base_url}/search", params, 0)
+            return []
+    
+    def _process_nominatim_result(self, result: Dict) -> Dict:
+        """
+        Process a single Nominatim result to extract address information
+        """
+        address = result.get('address', {})
+        
+        # Extract components
+        house_number = address.get('house_number', '')
+        street = address.get('road', address.get('street', ''))
+        city = address.get('city', address.get('town', address.get('village', '')))
+        state = address.get('state', address.get('province', ''))
+        postcode = address.get('postcode', '')
+        country = address.get('country', '')
+        
+        # Build formatted address
+        address_parts = []
+        if house_number and street:
+            address_parts.append(f"{house_number} {street}")
+        elif street:
+            address_parts.append(street)
+        
+        if city:
+            address_parts.append(city)
+        if state:
+            address_parts.append(state)
+        if postcode:
+            address_parts.append(postcode)
+        
+        formatted_address = ', '.join(address_parts)
+        
+        if not formatted_address:
+            formatted_address = result.get('display_name', 'Unknown Address')
+        
+        return {
+            'formatted_address': formatted_address,
+            'lat': result['lat'],
+            'lon': result['lon'],
+            'house_number': house_number,
+            'street': street,
+            'city': city,
+            'state': state,
+            'postcode': postcode,
+            'country': country,
+            'place_type': result.get('type', 'unknown'),
+            'osm_id': result.get('osm_id'),
+            'osm_type': result.get('osm_type')
+        }
+    
+    def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """
+        Calculate distance between two points using Haversine formula
+        Returns distance in kilometers
+        """
+        R = 6371  # Earth's radius in kilometers
+        
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+        
+        # Haversine formula
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+        
+        a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        
+        return R * c
+    
+    def _is_duplicate(self, new_address: Dict, existing_addresses: List[Dict]) -> bool:
+        """
+        Simple duplicate check based on coordinates
+        """
+        new_lat = float(new_address['lat'])
+        new_lon = float(new_address['lon'])
+        
+        for existing in existing_addresses:
+            existing_lat = float(existing['lat'])
+            existing_lon = float(existing['lon'])
+            
+            # If coordinates are very close (within ~10 meters), consider duplicate
+            if (abs(new_lat - existing_lat) < 0.0001 and 
+                abs(new_lon - existing_lon) < 0.0001):
+                return True
+                
+        return False
