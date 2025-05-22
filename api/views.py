@@ -982,86 +982,86 @@ def user_apps_api(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class AddressFinderView(APIView):
-    """
-    API endpoint to find addresses within a specified radius of a given point.
-    Uses Nominatim (OpenStreetMap) API for geocoding - free and no API key required.
-    """
+@api_view(['POST'])
+def find_addresses(request):
+    """Find 10 closest residential addresses to a point"""
+    try:
+        lat = float(request.data.get('latitude'))
+        lon = float(request.data.get('longitude'))
+    except (ValueError, TypeError):
+        return Response({'error': 'Invalid lat/lon'}, status=400)
     
-    def post(self, request):
-        """
-        Find addresses within radius of a given point.
-        
-        Expected payload:
-        {
-            "latitude": 40.7128,
-            "longitude": -74.0060,
-            "radius_km": 2.0,
-            "address_types": ["house", "apartment", "residential"],  # optional
-            "limit": 100  # optional, max results to return
-        }
-        """
+    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        return Response({'error': 'Invalid coordinates'}, status=400)
+    
+    # Simple bounding box search
+    radius_km = 2.0  # Fixed 2km radius
+    lat_delta = radius_km / 111.0
+    lon_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+    
+    bbox = f"{lon-lon_delta},{lat-lat_delta},{lon+lon_delta},{lat+lat_delta}"
+    
+    # Search Nominatim
+    headers = {
+        'User-Agent': 'AddressFinder/1.0 (contact@example.com)',  # CHANGE THIS
+    }
+    
+    params = {
+        'q': 'building',
+        'format': 'json',
+        'addressdetails': 1,
+        'limit': 50,
+        'viewbox': bbox,
+        'bounded': 1,
+    }
+    
+    try:
+        response = requests.get(
+            'https://nominatim.openstreetmap.org/search',
+            params=params,
+            headers=headers,
+            timeout=10
+        )
+        results = response.json()
+    except:
+        return Response({'error': 'Search failed'}, status=500)
+    
+    # Process and filter results
+    addresses = []
+    for result in results:
         try:
-            # Extract parameters
-            latitude = request.data.get('latitude')
-            longitude = request.data.get('longitude')
-            radius_km = request.data.get('radius_km', 1.0)
-            address_types = request.data.get('address_types', ['house', 'apartment', 'residential'])
-            limit = request.data.get('limit', 100)
+            result_lat = float(result['lat'])
+            result_lon = float(result['lon'])
             
-            # Validate required parameters
-            if latitude is None or longitude is None:
-                return Response(
-                    {'error': 'latitude and longitude are required'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Calculate distance
+            R = 6371  # Earth radius in km
+            dlat = math.radians(result_lat - lat)
+            dlon = math.radians(result_lon - lon)
+            a = (math.sin(dlat/2)**2 + 
+                 math.cos(math.radians(lat)) * math.cos(math.radians(result_lat)) * 
+                 math.sin(dlon/2)**2)
+            distance = R * 2 * math.asin(math.sqrt(a))
             
-            # Convert to float and validate
-            try:
-                lat = float(latitude)
-                lon = float(longitude)
-                radius = float(radius_km)
-            except ValueError:
-                return Response(
-                    {'error': 'latitude, longitude, and radius_km must be valid numbers'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
-                return Response(
-                    {'error': 'Invalid latitude or longitude values'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Find addresses
-            finder = AddressFinder()
-            addresses = finder.find_addresses_in_radius(
-                lat, lon, radius, address_types, limit
-            )
-            
-            # Add debug info if no results found
-            debug_info = {}
-            if len(addresses) == 0:
-                debug_info = finder.get_debug_info()
-            
-            response_data = {
-                'center_point': {'latitude': lat, 'longitude': lon},
-                'radius_km': radius,
-                'total_found': len(addresses),
-                'addresses': addresses
-            }
-            
-            if debug_info:
-                response_data['debug_info'] = debug_info
+            if distance <= radius_km:
+                address = result.get('address', {})
+                formatted = result.get('display_name', 'Unknown')
                 
-            return Response(response_data)
-            
-        except Exception as e:
-            logger.error(f"Error in AddressFinderView: {str(e)}")
-            return Response(
-                {'error': 'Internal server error'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+                addresses.append({
+                    'address': formatted,
+                    'latitude': result_lat,
+                    'longitude': result_lon,
+                    'distance_km': round(distance, 3)
+                })
+        except:
+            continue
+    
+    # Sort by distance and return top 10
+    addresses.sort(key=lambda x: x['distance_km'])
+    
+    return Response({
+        'total_found': len(addresses),
+        'addresses': addresses[:10]
+    })
 
 
 class AddressFinder:
@@ -1073,8 +1073,8 @@ class AddressFinder:
         self.base_url = "https://nominatim.openstreetmap.org"
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'Finderino/1.0 (andrew@robydata.com)',  # REQUIRED: Replace with your app details
-            'Referer': 'https://dev.robydata.com'  # REQUIRED: Replace with your domain
+            'User-Agent': 'YourAppName/1.0 (your-email@example.com)',  # REQUIRED: Replace with your app details
+            'Referer': 'https://your-domain.com'  # REQUIRED: Replace with your domain
         })
         self.debug_requests = []  # For debugging
     
@@ -1182,6 +1182,8 @@ class AddressFinder:
         """
         Search by finding the area first, then getting addresses within it
         """
+        addresses = []
+        
         # First, do a reverse geocode to find the area
         params = {
             'lat': center_lat,
@@ -1200,18 +1202,49 @@ class AddressFinder:
             response.raise_for_status()
             result = response.json()
             
+            self._log_request(f"{self.base_url}/reverse", params, 1 if result else 0)
+            
             if 'address' in result:
                 address = result['address']
-                city = address.get('city', address.get('town', address.get('village', '')))
                 
-                if city:
-                    # Now search for addresses in this city
-                    return self._search_nominatim_simple(f"addresses in {city}", limit)
+                # Try multiple location identifiers in order of preference
+                location_keys = ['city', 'town', 'village', 'suburb', 'neighbourhood', 'county', 'state']
+                location_name = None
+                
+                for key in location_keys:
+                    if address.get(key):
+                        location_name = address[key]
+                        break
+                
+                if location_name:
+                    # Try multiple search approaches for this location
+                    search_queries = [
+                        location_name,  # Just the city name
+                        f"{location_name} address",
+                        f"{location_name} street",
+                        f"{location_name} building"
+                    ]
+                    
+                    for query in search_queries:
+                        if len(addresses) >= limit:
+                            break
+                        batch = self._search_nominatim_simple(query, limit - len(addresses))
+                        addresses.extend(batch)
+                        
+                        if batch:  # If we got results, don't need to try other queries
+                            break
+                        
+                        time.sleep(0.5)
+                else:
+                    # If we can't get a location name, try searching by coordinates with a broad query
+                    bbox = self._calculate_bounding_box(center_lat, center_lon, radius_km)
+                    addresses = self._search_nominatim_with_bbox("building", bbox, limit)
                     
         except requests.exceptions.RequestException as e:
             logger.error(f"Reverse geocoding error: {str(e)}")
+            self._log_request(f"{self.base_url}/reverse", params, 0)
         
-        return []
+        return addresses
     
     def _search_by_types(self, bbox: Tuple[float, float, float, float], address_types: List[str], limit: int) -> List[Dict]:
         """
@@ -1219,19 +1252,29 @@ class AddressFinder:
         """
         addresses = []
         
-        # Map address types to Nominatim categories
-        type_queries = {
-            'residential': 'residential',
-            'house': 'building=residential',
-            'apartment': 'building=apartments',
-            'business': 'commercial'
-        }
+        # Simplified search terms that work better with Nominatim
+        type_queries = []
         
         for addr_type in address_types:
+            if addr_type in ['residential', 'house', 'apartment']:
+                type_queries.extend(['building', 'house', 'residential'])
+            elif addr_type == 'business':
+                type_queries.extend(['shop', 'office', 'commercial'])
+            else:
+                type_queries.append(addr_type)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_queries = []
+        for query in type_queries:
+            if query not in seen:
+                seen.add(query)
+                unique_queries.append(query)
+        
+        for query in unique_queries[:3]:  # Limit to 3 queries to avoid too many requests
             if len(addresses) >= limit:
                 break
                 
-            query = type_queries.get(addr_type, addr_type)
             batch = self._search_nominatim_with_bbox(query, bbox, limit - len(addresses))
             addresses.extend(batch)
             
@@ -1241,13 +1284,13 @@ class AddressFinder:
     
     def _broad_address_search(self, bbox: Tuple[float, float, float, float], limit: int) -> List[Dict]:
         """
-        Broad search for any addresses
+        Broad search for any addresses - simplified approach
         """
+        # Use simpler, more reliable search terms
         searches = [
-            'address',
-            'street',
-            'building',
-            'house number'
+            'building',    # Most general building search
+            'address',     # Direct address search
+            'house'        # House search
         ]
         
         addresses = []
@@ -1256,6 +1299,10 @@ class AddressFinder:
                 break
             batch = self._search_nominatim_with_bbox(search_term, bbox, limit - len(addresses))
             addresses.extend(batch)
+            
+            if batch:  # If we got results, we can stop here
+                break
+                
             time.sleep(1)
         
         return addresses
