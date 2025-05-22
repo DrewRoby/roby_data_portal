@@ -130,7 +130,7 @@
                 <div class="section-header">
                     <h2>Characters</h2>
                     {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
-                        <a href="{% url 'storycraft:add_character' story_id=story.id %}" class="btn btn-sm btn-outline-primary">
+                        <a href="{% url 'storycraft:create_character' story_id=story.id %}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-plus"></i> Add Character
                         </a>
                     {% endif %}
