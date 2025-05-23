@@ -6,13 +6,11 @@ from django.urls import reverse
 from django.utils import timezone
 import uuid
 
-class ShareableInterface(models.Model):
+class ShareableInterface:
     """
     Abstract model that provides an interface for shareable objects.
     Any model that needs to be shareable should inherit from this.
     """
-    class Meta:
-        abstract = True
     
     def get_share_url(self):
         """

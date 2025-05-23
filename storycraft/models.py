@@ -3,12 +3,12 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from shares.models import ShareableInterface
 
 
 
 
-
-class Story(models.Model):
+class Story(models.Model, ShareableInterface):
     """Main container for a story project."""
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)

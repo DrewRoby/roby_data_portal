@@ -16,16 +16,24 @@
         {% for board in boards %}
         <div class="board-card">
             <div class="board-card-inner">
-                <h3 class="board-name">{{ board.name }}</h3>
-                {% if board.description %}
-                <p class="board-description">{{ board.description }}</p>
-                {% endif %}
+                <div class="board-card-content">
+                    <h3 class="board-name">{{ board.name }}</h3>
+                    
+                    {% if board.description %}
+                    <p class="board-description">{{ board.description }}</p>
+                    {% endif %}
 
-                <div class="board-meta">
-                    <span class="board-created">Created: {{ board.created_at|date:"M d, Y" }}</span>
+                    <div class="board-meta">
+                        <span class="board-created">Created: {{ board.created_at|date:"M d, Y" }}</span>
+                    </div>
                 </div>
 
-                <a href="{% url 'todo:board_detail' board.id %}" class="view-board-btn">View Board</a>
+                <div class="board-card-actions">
+                    <a href="{% url 'todo:board_detail' board.id %}" class="view-board-btn">View Board</a>
+                    <button class="view-board-btn" onclick="showDeleteModal({{ board.id }}, '{{ board.name|escapejs }}')" title="Delete Board">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -37,4 +45,48 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="delete-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Delete Board</h3>
+            <span class="close-modal" onclick="hideDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete the board "<span id="board-name-to-delete"></span>"?</p>
+            <p class="warning-text">This will also delete all tasks in this board. This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="cancel-btn" onclick="hideDeleteModal()">Cancel</button>
+            <form id="delete-form" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="delete-btn">Delete Board</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    function showDeleteModal(boardId, boardName) {
+        document.getElementById('board-name-to-delete').textContent = boardName;
+        document.getElementById('delete-form').action = `/todo/board/${boardId}/delete/`;
+        document.getElementById('delete-modal').style.display = 'block';
+    }
+
+    function hideDeleteModal() {
+        document.getElementById('delete-modal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('delete-modal');
+        if (event.target == modal) {
+            hideDeleteModal();
+        }
+    }
+</script>
 {% endblock %}

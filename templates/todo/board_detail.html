@@ -13,9 +13,14 @@
             {% endif %}
         </div>
 
-        <a href="{% url 'todo:create_board' %}" class="add-task-btn">
-            <i class="fas fa-plus"></i> New Board
-        </a>
+        <div class="board-header-actions">
+            <a href="{% url 'todo:create_board' %}" class="add-task-btn">
+                <i class="fas fa-plus"></i> New Board
+            </a>
+            <button class="delete-board-btn" onclick="showDeleteModal({{ board.id }}, '{{ board.name|escapejs }}')" title="Delete This Board">
+                <i class="fas fa-trash"></i> Delete Board
+            </button>
+        </div>
     </div>
 
     <div class="board-selector">
@@ -90,6 +95,27 @@
         <div id="task-modal-content"></div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="delete-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Delete Board</h3>
+            <span class="close-modal" onclick="hideDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete the board "<span id="board-name-to-delete"></span>"?</p>
+            <p class="warning-text">This will also delete all tasks in this board. This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="cancel-btn" onclick="hideDeleteModal()">Cancel</button>
+            <form id="delete-form" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="delete-btn">Delete Board</button>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -132,6 +158,29 @@
         // This would be implemented to show task details in the modal
         // For now, we'll just redirect to the edit page
         window.location.href = `/todo/task/${taskId}/edit/`;
+    }
+
+    // Delete modal functionality
+    function showDeleteModal(boardId, boardName) {
+        document.getElementById('board-name-to-delete').textContent = boardName;
+        document.getElementById('delete-form').action = `/todo/board/${boardId}/delete/`;
+        document.getElementById('delete-modal').style.display = 'block';
+    }
+
+    function hideDeleteModal() {
+        document.getElementById('delete-modal').style.display = 'none';
+    }
+
+    // Close delete modal when clicking outside of it
+    window.onclick = function(event) {
+        const deleteModal = document.getElementById('delete-modal');
+        const taskModal = document.getElementById('task-modal');
+        if (event.target == deleteModal) {
+            hideDeleteModal();
+        }
+        if (event.target == taskModal) {
+            taskModal.style.display = "none";
+        }
     }
 
     // Initialize drag and drop (placeholder for future implementation)

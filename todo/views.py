@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.urls import reverse
+from django.contrib import messages
 from .models import Board, Task, Project
 from .forms import BoardForm, TaskForm, ProjectForm
 
@@ -88,6 +89,19 @@ def create_board(request):
         form = BoardForm()
 
     return render(request, 'todo/create_board.html', {'form': form})
+
+
+def delete_board(request, board_id):
+    board = get_object_or_404(Board, id=board_id, user=request.user)
+    
+    if request.method == 'POST':
+        board_name = board.name
+        board.delete()
+        messages.success(request, f'Board "{board_name}" has been deleted.')
+        return redirect('todo:board_list')
+    
+    # If someone tries to access this via GET, redirect to board list
+    return redirect('todo:board_list')
 
 
 def create_task(request, board_id):
