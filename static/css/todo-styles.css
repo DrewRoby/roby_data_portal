@@ -506,19 +506,14 @@
 
 /* Delete button in board cards - styled like other buttons */
 .delete-board-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    background-color: #FEEBEE;
+    display: inline-block;
+    padding: 8px 16px;
+    margin-top: 15px;
+    text-align: center;
     text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
 }
 
 .delete-board-btn:hover {

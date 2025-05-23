@@ -30,7 +30,7 @@
 
                 <div class="board-card-actions">
                     <a href="{% url 'todo:board_detail' board.id %}" class="view-board-btn">View Board</a>
-                    <button class="delete-board-btn" onclick="showDeleteModal({{ board.id }}, '{{ board.name|escapejs }}')" title="Delete Board">
+                    <button class="view-board-btn" onclick="showDeleteModal({{ board.id }}, '{{ board.name|escapejs }}')" title="Delete Board">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
