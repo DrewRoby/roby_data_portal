@@ -982,489 +982,212 @@ def user_apps_api(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# Add to api/views.py
+
 @api_view(['POST'])
-def find_addresses(request):
-    """Find 10 closest residential addresses to a point"""
-    try:
-        lat = float(request.data.get('latitude'))
-        lon = float(request.data.get('longitude'))
-    except (ValueError, TypeError):
-        return Response({'error': 'Invalid lat/lon'}, status=400)
-    
-    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
-        return Response({'error': 'Invalid coordinates'}, status=400)
-    
-    # Simple bounding box search
-    radius_km = 2.0  # Fixed 2km radius
-    lat_delta = radius_km / 111.0
-    lon_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
-    
-    bbox = f"{lon-lon_delta},{lat-lat_delta},{lon+lon_delta},{lat+lat_delta}"
-    
-    # Search Nominatim
-    headers = {
-        'User-Agent': 'AddressFinder/1.0 (contact@example.com)',  # CHANGE THIS
-    }
-    
-    params = {
-        'q': 'building',
-        'format': 'json',
-        'addressdetails': 1,
-        'limit': 50,
-        'viewbox': bbox,
-        'bounded': 1,
-    }
-    
-    try:
-        response = requests.get(
-            'https://nominatim.openstreetmap.org/search',
-            params=params,
-            headers=headers,
-            timeout=10
-        )
-        results = response.json()
-    except:
-        return Response({'error': 'Search failed'}, status=500)
-    
-    # Process and filter results
-    addresses = []
-    for result in results:
-        try:
-            result_lat = float(result['lat'])
-            result_lon = float(result['lon'])
-            
-            # Calculate distance
-            R = 6371  # Earth radius in km
-            dlat = math.radians(result_lat - lat)
-            dlon = math.radians(result_lon - lon)
-            a = (math.sin(dlat/2)**2 + 
-                 math.cos(math.radians(lat)) * math.cos(math.radians(result_lat)) * 
-                 math.sin(dlon/2)**2)
-            distance = R * 2 * math.asin(math.sqrt(a))
-            
-            if distance <= radius_km:
-                address = result.get('address', {})
-                formatted = result.get('display_name', 'Unknown')
-                
-                addresses.append({
-                    'address': formatted,
-                    'latitude': result_lat,
-                    'longitude': result_lon,
-                    'distance_km': round(distance, 3)
-                })
-        except:
-            continue
-    
-    # Sort by distance and return top 10
-    addresses.sort(key=lambda x: x['distance_km'])
-    
-    return Response({
-        'total_found': len(addresses),
-        'addresses': addresses[:10]
-    })
-
-
-class AddressFinder:
+def find_places(request):
     """
-    Class to handle address finding using Nominatim API
+    Find places using Google Places API (New)
+    
+    Expected payload:
+    {
+        "latitude": float,
+        "longitude": float, 
+        "radius_meters": int (max 5000),
+        "place_types": list (optional),
+        "category": str ("commercial", "residential", "all"),
+        "limit": int (default 20)
+    }
+    """
+    try:
+        # Validate required fields
+        lat = request.data.get('latitude')
+        lon = request.data.get('longitude')
+        radius = request.data.get('radius_meters', 1000)
+        category = request.data.get('category', 'all')
+        place_types = request.data.get('place_types', [])
+        limit = request.data.get('limit', 20)
+        
+        # Validation
+        if lat is None or lon is None:
+            return Response({'error': 'latitude and longitude are required'}, status=400)
+            
+        try:
+            lat = float(lat)
+            lon = float(lon)
+            radius = int(radius)
+            limit = int(limit)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid numeric values'}, status=400)
+        
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+            return Response({'error': 'Invalid coordinates'}, status=400)
+            
+        if radius > 5000:
+            return Response({'error': 'Radius cannot exceed 5000 meters'}, status=400)
+            
+        if category not in ['commercial', 'residential', 'all']:
+            return Response({'error': 'Category must be commercial, residential, or all'}, status=400)
+        
+        # Initialize the Google Places finder
+        places_finder = GooglePlacesFinder()
+        
+        # Find places
+        places = places_finder.find_places_nearby(
+            latitude=lat,
+            longitude=lon,
+            radius_meters=radius,
+            category=category,
+            place_types=place_types,
+            limit=limit
+        )
+        
+        return Response({
+            'total_found': len(places),
+            'places': places
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in find_places: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=500)
+
+
+class GooglePlacesFinder:
+    """
+    Google Places API (New) integration for finding nearby places
     """
     
     def __init__(self):
-        self.base_url = "https://nominatim.openstreetmap.org"
+        self.api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', None)
+        if not self.api_key:
+            raise ValueError("GOOGLE_MAPS_API_KEY not found in settings")
+        
+        self.base_url = "https://places.googleapis.com/v1/places:searchNearby"
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'YourAppName/1.0 (your-email@example.com)',  # REQUIRED: Replace with your app details
-            'Referer': 'https://your-domain.com'  # REQUIRED: Replace with your domain
-        })
-        self.debug_requests = []  # For debugging
     
-    def find_addresses_in_radius(self, center_lat: float, center_lon: float, 
-                               radius_km: float, address_types: List[str], 
-                               limit: int = 100) -> List[Dict]:
+    def find_places_nearby(self, latitude, longitude, radius_meters, category, place_types, limit):
         """
-        Find addresses within a radius of the center point
+        Find places near a location using Google Places API (New)
         """
-        addresses = []
+        all_places = []
+        next_page_token = None
         
-        # Calculate bounding box for initial search
-        bbox = self._calculate_bounding_box(center_lat, center_lon, radius_km)
+        # Define place types based on category
+        search_types = self._get_place_types_for_category(category, place_types)
         
-        # Try multiple search strategies
-        search_strategies = [
-            # Strategy 1: Search by administrative area
-            {'area_search': True},
-            # Strategy 2: Search for specific address types
-            {'address_types': address_types},
-            # Strategy 3: Broad search for any addresses
-            {'broad_search': True}
-        ]
-        
-        for strategy in search_strategies:
-            if len(addresses) >= limit:
+        # Handle pagination
+        while len(all_places) < limit:
+            batch_limit = min(20, limit - len(all_places))  # Google max is 20 per request
+            
+            places_batch, next_token = self._search_places_batch(
+                latitude=latitude,
+                longitude=longitude,
+                radius_meters=radius_meters,
+                place_types=search_types,
+                limit=batch_limit,
+                page_token=next_page_token
+            )
+            
+            all_places.extend(places_batch)
+            
+            # Check if we have more pages and haven't hit our limit
+            if not next_token or len(all_places) >= limit:
                 break
                 
-            if strategy.get('area_search'):
-                # Search for administrative areas first, then get addresses within them
-                batch_addresses = self._search_by_area(center_lat, center_lon, radius_km, limit - len(addresses))
-            elif strategy.get('address_types'):
-                # Search for specific types
-                batch_addresses = self._search_by_types(bbox, address_types, limit - len(addresses))
-            else:
-                # Broad search
-                batch_addresses = self._broad_address_search(bbox, limit - len(addresses))
-            
-            # Filter by actual distance and avoid duplicates
-            for addr in batch_addresses:
-                if len(addresses) >= limit:
-                    break
-                    
-                try:
-                    distance = self._calculate_distance(
-                        center_lat, center_lon, 
-                        float(addr['lat']), float(addr['lon'])
-                    )
-                    
-                    if distance <= radius_km:
-                        addr['distance_km'] = round(distance, 3)
-                        
-                        # Avoid duplicates (simple check by coordinates)
-                        if not self._is_duplicate(addr, addresses):
-                            addresses.append(addr)
-                except (ValueError, KeyError):
-                    # Skip addresses with invalid coordinates
-                    continue
-            
-            # Be respectful to the API
-            time.sleep(1.5)  # Increased delay
+            next_page_token = next_token
         
-        # Sort by distance
-        addresses.sort(key=lambda x: x['distance_km'])
-        
-        return addresses[:limit]
+        return all_places[:limit]
     
-    def _calculate_bounding_box(self, lat: float, lon: float, radius_km: float) -> Tuple[float, float, float, float]:
+    def _get_place_types_for_category(self, category, custom_types):
         """
-        Calculate bounding box for a given center point and radius
-        Returns (min_lat, min_lon, max_lat, max_lon)
+        Get Google Places types based on category
         """
-        # Approximate conversion: 1 degree ≈ 111 km
-        lat_delta = radius_km / 111.0
-        lon_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+        if custom_types:
+            return custom_types
         
-        return (
-            lat - lat_delta,  # min_lat
-            lon - lon_delta,  # min_lon
-            lat + lat_delta,  # max_lat
-            lon + lon_delta   # max_lon
-        )
+        if category == 'commercial':
+            return [
+                'store', 'restaurant', 'gas_station', 'bank', 'hospital',
+                'pharmacy', 'grocery_store', 'clothing_store', 'electronics_store',
+                'shopping_mall', 'cafe', 'bar', 'gym', 'beauty_salon'
+            ]
+        elif category == 'residential':
+            return ['premise', 'subpremise', 'neighborhood']
+        else:  # 'all'
+            return []  # Empty list means search all types
     
-    def _generate_search_queries(self, address_types: List[str]) -> List[str]:
+    def _search_places_batch(self, latitude, longitude, radius_meters, place_types, limit, page_token=None):
         """
-        Generate search queries based on address types
+        Search a single batch of places
         """
-        type_mapping = {
-            'house': ['house', 'detached', 'building'],
-            'apartment': ['apartment', 'flat', 'residential'],
-            'residential': ['residential', 'address'],
-            'commercial': ['shop', 'office', 'commercial'],
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': self.api_key,
+            'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.types'
         }
         
-        queries = []
-        for addr_type in address_types:
-            if addr_type in type_mapping:
-                queries.extend(type_mapping[addr_type])
-            else:
-                queries.append(addr_type)
-        
-        return list(set(queries))  # Remove duplicates
-    
-    def _search_by_area(self, center_lat: float, center_lon: float, radius_km: float, limit: int) -> List[Dict]:
-        """
-        Search by finding the area first, then getting addresses within it
-        """
-        addresses = []
-        
-        # First, do a reverse geocode to find the area
-        params = {
-            'lat': center_lat,
-            'lon': center_lon,
-            'format': 'json',
-            'addressdetails': 1,
-            'zoom': 14  # City/town level
+        payload = {
+            'locationRestriction': {
+                'circle': {
+                    'center': {
+                        'latitude': latitude,
+                        'longitude': longitude
+                    },
+                    'radius': radius_meters
+                }
+            },
+            'maxResultCount': limit
         }
+        
+        # Add place types if specified
+        if place_types:
+            payload['includedTypes'] = place_types
+        
+        # Add page token if continuing pagination
+        if page_token:
+            payload['pageToken'] = page_token
         
         try:
-            response = self.session.get(
-                f"{self.base_url}/reverse",
-                params=params,
+            response = self.session.post(
+                self.base_url,
+                json=payload,
+                headers=headers,
                 timeout=10
             )
+            
             response.raise_for_status()
-            result = response.json()
+            data = response.json()
             
-            self._log_request(f"{self.base_url}/reverse", params, 1 if result else 0)
+            places = []
+            next_token = data.get('nextPageToken')
             
-            if 'address' in result:
-                address = result['address']
-                
-                # Try multiple location identifiers in order of preference
-                location_keys = ['city', 'town', 'village', 'suburb', 'neighbourhood', 'county', 'state']
-                location_name = None
-                
-                for key in location_keys:
-                    if address.get(key):
-                        location_name = address[key]
-                        break
-                
-                if location_name:
-                    # Try multiple search approaches for this location
-                    search_queries = [
-                        location_name,  # Just the city name
-                        f"{location_name} address",
-                        f"{location_name} street",
-                        f"{location_name} building"
-                    ]
-                    
-                    for query in search_queries:
-                        if len(addresses) >= limit:
-                            break
-                        batch = self._search_nominatim_simple(query, limit - len(addresses))
-                        addresses.extend(batch)
-                        
-                        if batch:  # If we got results, don't need to try other queries
-                            break
-                        
-                        time.sleep(0.5)
-                else:
-                    # If we can't get a location name, try searching by coordinates with a broad query
-                    bbox = self._calculate_bounding_box(center_lat, center_lon, radius_km)
-                    addresses = self._search_nominatim_with_bbox("building", bbox, limit)
-                    
+            for place in data.get('places', []):
+                processed_place = self._process_place_result(place)
+                if processed_place:
+                    places.append(processed_place)
+            
+            return places, next_token
+            
         except requests.exceptions.RequestException as e:
-            logger.error(f"Reverse geocoding error: {str(e)}")
-            self._log_request(f"{self.base_url}/reverse", params, 0)
-        
-        return addresses
+            logger.error(f"Google Places API error: {str(e)}")
+            return [], None
     
-    def _search_by_types(self, bbox: Tuple[float, float, float, float], address_types: List[str], limit: int) -> List[Dict]:
+    def _process_place_result(self, place):
         """
-        Search for specific address types
+        Process a single place result from Google Places API
         """
-        addresses = []
-        
-        # Simplified search terms that work better with Nominatim
-        type_queries = []
-        
-        for addr_type in address_types:
-            if addr_type in ['residential', 'house', 'apartment']:
-                type_queries.extend(['building', 'house', 'residential'])
-            elif addr_type == 'business':
-                type_queries.extend(['shop', 'office', 'commercial'])
-            else:
-                type_queries.append(addr_type)
-        
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_queries = []
-        for query in type_queries:
-            if query not in seen:
-                seen.add(query)
-                unique_queries.append(query)
-        
-        for query in unique_queries[:3]:  # Limit to 3 queries to avoid too many requests
-            if len(addresses) >= limit:
-                break
-                
-            batch = self._search_nominatim_with_bbox(query, bbox, limit - len(addresses))
-            addresses.extend(batch)
-            
-            time.sleep(1)
-        
-        return addresses
-    
-    def _broad_address_search(self, bbox: Tuple[float, float, float, float], limit: int) -> List[Dict]:
-        """
-        Broad search for any addresses - simplified approach
-        """
-        # Use simpler, more reliable search terms
-        searches = [
-            'building',    # Most general building search
-            'address',     # Direct address search
-            'house'        # House search
-        ]
-        
-        addresses = []
-        for search_term in searches:
-            if len(addresses) >= limit:
-                break
-            batch = self._search_nominatim_with_bbox(search_term, bbox, limit - len(addresses))
-            addresses.extend(batch)
-            
-            if batch:  # If we got results, we can stop here
-                break
-                
-            time.sleep(1)
-        
-        return addresses
-    
-    def _search_nominatim_simple(self, query: str, limit: int) -> List[Dict]:
-        """
-        Simple Nominatim search without bounding box constraints
-        """
-        params = {
-            'q': query,
-            'format': 'json',
-            'addressdetails': 1,
-            'limit': min(limit, 50),
-            'dedupe': 1
-        }
-        
         try:
-            response = self.session.get(
-                f"{self.base_url}/search",
-                params=params,
-                timeout=10
-            )
-            response.raise_for_status()
+            name = place.get('displayName', {}).get('text', 'Unnamed Place')
+            address = place.get('formattedAddress', 'Address not available')
+            location = place.get('location', {})
+            place_types = place.get('types', [])
             
-            results = response.json()
-            self._log_request(f"{self.base_url}/search", params, len(results))
-            
-            processed_results = []
-            for result in results:
-                processed_result = self._process_nominatim_result(result)
-                if processed_result:
-                    processed_results.append(processed_result)
-            
-            return processed_results
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Nominatim API error: {str(e)}")
-            self._log_request(f"{self.base_url}/search", params, 0)
-            return []
-    
-    def _search_nominatim_with_bbox(self, query: str, bbox: Tuple[float, float, float, float], limit: int) -> List[Dict]:
-        """
-        Search Nominatim API with bounding box
-        """
-        params = {
-            'q': query,
-            'format': 'json',
-            'addressdetails': 1,
-            'limit': min(limit, 50),
-            'viewbox': f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}",  # lon,lat,lon,lat
-            'bounded': 1,
-            'dedupe': 1
-        }
-        
-        try:
-            response = self.session.get(
-                f"{self.base_url}/search",
-                params=params,
-                timeout=10
-            )
-            response.raise_for_status()
-            
-            results = response.json()
-            self._log_request(f"{self.base_url}/search", params, len(results))
-            
-            processed_results = []
-            for result in results:
-                processed_result = self._process_nominatim_result(result)
-                if processed_result:
-                    processed_results.append(processed_result)
-            
-            return processed_results
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Nominatim API error: {str(e)}")
-            self._log_request(f"{self.base_url}/search", params, 0)
-            return []
-    
-    def _process_nominatim_result(self, result: Dict) -> Dict:
-        """
-        Process a single Nominatim result to extract address information
-        """
-        address = result.get('address', {})
-        
-        # Extract components
-        house_number = address.get('house_number', '')
-        street = address.get('road', address.get('street', ''))
-        city = address.get('city', address.get('town', address.get('village', '')))
-        state = address.get('state', address.get('province', ''))
-        postcode = address.get('postcode', '')
-        country = address.get('country', '')
-        
-        # Build formatted address
-        address_parts = []
-        if house_number and street:
-            address_parts.append(f"{house_number} {street}")
-        elif street:
-            address_parts.append(street)
-        
-        if city:
-            address_parts.append(city)
-        if state:
-            address_parts.append(state)
-        if postcode:
-            address_parts.append(postcode)
-        
-        formatted_address = ', '.join(address_parts)
-        
-        if not formatted_address:
-            formatted_address = result.get('display_name', 'Unknown Address')
-        
-        return {
-            'formatted_address': formatted_address,
-            'lat': result['lat'],
-            'lon': result['lon'],
-            'house_number': house_number,
-            'street': street,
-            'city': city,
-            'state': state,
-            'postcode': postcode,
-            'country': country,
-            'place_type': result.get('type', 'unknown'),
-            'osm_id': result.get('osm_id'),
-            'osm_type': result.get('osm_type')
-        }
-    
-    def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """
-        Calculate distance between two points using Haversine formula
-        Returns distance in kilometers
-        """
-        R = 6371  # Earth's radius in kilometers
-        
-        # Convert to radians
-        lat1_rad = math.radians(lat1)
-        lon1_rad = math.radians(lon1)
-        lat2_rad = math.radians(lat2)
-        lon2_rad = math.radians(lon2)
-        
-        # Haversine formula
-        dlat = lat2_rad - lat1_rad
-        dlon = lon2_rad - lon1_rad
-        
-        a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
-        c = 2 * math.asin(math.sqrt(a))
-        
-        return R * c
-    
-    def _is_duplicate(self, new_address: Dict, existing_addresses: List[Dict]) -> bool:
-        """
-        Simple duplicate check based on coordinates
-        """
-        new_lat = float(new_address['lat'])
-        new_lon = float(new_address['lon'])
-        
-        for existing in existing_addresses:
-            existing_lat = float(existing['lat'])
-            existing_lon = float(existing['lon'])
-            
-            # If coordinates are very close (within ~10 meters), consider duplicate
-            if (abs(new_lat - existing_lat) < 0.0001 and 
-                abs(new_lon - existing_lon) < 0.0001):
-                return True
-                
-        return False
+            return {
+                'name': name,
+                'address': address,
+                'latitude': location.get('latitude'),
+                'longitude': location.get('longitude'),
+                'types': place_types
+            }
+        except (KeyError, TypeError):
+            return None

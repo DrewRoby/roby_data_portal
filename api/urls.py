@@ -52,7 +52,5 @@ urlpatterns = [
     path('relationships/<int:relationship_id>/delete/', views.relationship_delete_api, name='relationship_delete_api'),
 
     # AddressFinder
-    path('find-addresses/', views.find_addresses, name='find-addresses'),
-
-
-]
+    path('find-places/', views.find_places, name='find-places'),
+    ]
