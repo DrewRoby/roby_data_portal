@@ -109,17 +109,17 @@
                 <div style="display: flex; align-items: center;">
                     {% if user.is_authenticated %}
                         <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
+                    <!-- Dev navigation pills -->
+                    <div class="dev-nav">
+                        <a class="dev-nav-link" href="{% url 'portal:aboutdev' %}">About</a>
+                        <a class="dev-nav-link" href="https://github.com/DrewRoby/roby_data_portal/issues">Report Bug</a>
+                    </div>
                     {% else %}
                         <a href="{% url 'portal:login' %}">
                             <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
                         </a>
                     {% endif %}
                     
-                    <!-- Dev navigation pills -->
-                    <div class="dev-nav">
-                        <a class="dev-nav-link" href="{% url 'portal:aboutdev' %}">About</a>
-                        <a class="dev-nav-link" href="https://github.com/DrewRoby/roby_data_portal/issues">Report Bug</a>
-                    </div>
                 </div>
                 <div class="navbar-nav">
                     <!-- Removed old navbar structure since links moved to logo area -->
