@@ -8,6 +8,7 @@ import logging
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -15,6 +16,7 @@ from rest_framework import status
 from typing import List, Dict, Tuple
 from storycraft.models import Story, Character, Setting, Plot, Scene, CharacterRelationship
 from .decorators import api_access_required
+from .models import PlacesSearchCache, APIUsageLog
 
 logger = logging.getLogger(__name__)
 
@@ -986,20 +988,10 @@ def user_apps_api(request):
 @api_view(['POST'])
 def find_places(request):
     """
-    Find places using Google Places API (New) - SECURED VERSION
-    
-    Expected payload:
-    {
-        "latitude": float,
-        "longitude": float, 
-        "radius_meters": int (max 5000),
-        "place_types": list (optional),
-        "category": str ("commercial", "residential", "all"),
-        "limit": int (default 20, max 50)
-    }
+    Find places using Google Places API (New) with caching
     """
     try:
-        # Validate required fields
+        # Validate input
         lat = request.data.get('latitude')
         lon = request.data.get('longitude')
         radius = request.data.get('radius_meters', 1000)
@@ -1007,7 +999,7 @@ def find_places(request):
         place_types = request.data.get('place_types', [])
         limit = request.data.get('limit', 20)
         
-        # Validation
+        # Validation (same as before)
         if lat is None or lon is None:
             return Response({'error': 'latitude and longitude are required'}, status=400)
             
@@ -1025,16 +1017,57 @@ def find_places(request):
         if radius > 5000:
             return Response({'error': 'Radius cannot exceed 5000 meters'}, status=400)
             
-        if limit > 50:  # Prevent excessive API usage
+        if limit > 50:
             return Response({'error': 'Limit cannot exceed 50 results'}, status=400)
             
         if category not in ['commercial', 'residential', 'all']:
             return Response({'error': 'Category must be commercial, residential, or all'}, status=400)
         
-        # Initialize the Google Places finder
-        places_finder = GooglePlacesFinder()
+        # Try to get cached results first
+        cache_data = PlacesSearchCache.get_cached_results(
+            latitude=lat,
+            longitude=lon,
+            radius_meters=radius,
+            category=category,
+            place_types=place_types,
+            max_age_hours=2  # Cache for 2 hours
+        )
         
-        # Find places
+        # Use cache only if:
+        # 1. Cache exists AND
+        # 2. Cache has actual results (not an empty search)
+        # OR cache is very recent (< 1 minute) even if empty (to avoid repeated API calls for truly empty areas)
+        use_cache = False
+        if cache_data is not None:
+            cache_age_minutes = (timezone.now() - cache_data['created_at']).total_seconds() / 60
+            use_cache = (cache_data['has_results'] or cache_age_minutes < 5)
+        
+        if use_cache:
+            # Return cached results
+            places = cache_data['results'][:limit]  # Apply limit to cached results
+            
+            # Get current usage counts
+            today = timezone.now().date()
+            daily_count = APIUsageLog.objects.filter(
+                user=request.user,
+                endpoint='find_places',
+                timestamp__date=today,
+                success=True
+            ).count()
+            
+            cache_age_minutes = (timezone.now() - cache_data['created_at']).total_seconds() / 60
+            
+            return Response({
+                'total_found': len(places),
+                'places': places,
+                'from_cache': True,
+                'cache_age_minutes': round(cache_age_minutes, 1),
+                'user_daily_usage': daily_count + 1,
+                'user_daily_limit': request.user.profile.api_daily_limit
+            })
+        
+        # No cached results, call Google API
+        places_finder = GooglePlacesFinder()
         places = places_finder.find_places_nearby(
             latitude=lat,
             longitude=lon,
@@ -1044,10 +1077,30 @@ def find_places(request):
             limit=limit
         )
         
+        # Cache the results for future use
+        PlacesSearchCache.cache_results(
+            latitude=lat,
+            longitude=lon,
+            radius_meters=radius,
+            category=category,
+            place_types=place_types,
+            results=places
+        )
+        
+        # Get current usage counts
+        today = timezone.now().date()
+        daily_count = APIUsageLog.objects.filter(
+            user=request.user,
+            endpoint='find_places',
+            timestamp__date=today,
+            success=True
+        ).count()
+        
         return Response({
             'total_found': len(places),
             'places': places,
-            'user_daily_usage': cache.get(f"api_daily_{request.user.id}_{timezone.now().date()}", 0) + 1,
+            'from_cache': False,
+            'user_daily_usage': daily_count + 1,
             'user_daily_limit': request.user.profile.api_daily_limit
         })
         
@@ -1116,7 +1169,8 @@ class GooglePlacesFinder:
                 'shopping_mall', 'cafe', 'bar', 'gym', 'beauty_salon'
             ]
         elif category == 'residential':
-            return ['premise', 'subpremise', 'neighborhood']
+            # return ['premise', 'subpremise', 'neighborhood']
+            return ['apartment_building','apartment_complex','condominium_complex','housing_complex']
         else:  # 'all'
             return []  # Empty list means search all types
     

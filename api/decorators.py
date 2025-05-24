@@ -1,9 +1,9 @@
 from functools import wraps
-from django.core.cache import cache
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from rest_framework.response import Response
 from .models import APIUsageLog
+from django.db import transaction
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,10 +25,14 @@ def api_access_required(endpoint_name):
                     'error': 'API access not enabled. Contact administrator for access.'
                 }, status=403)
             
-            # Check daily rate limit
+            # Check daily rate limit using database
             today = timezone.now().date()
-            daily_key = f"api_daily_{user.id}_{today}"
-            daily_count = cache.get(daily_key, 0)
+            daily_count = APIUsageLog.objects.filter(
+                user=user,
+                endpoint=endpoint_name,
+                timestamp__date=today,
+                success=True
+            ).count()
             
             if daily_count >= user.profile.api_daily_limit:
                 logger.warning(f"Daily rate limit exceeded for user {user.username}")
@@ -55,25 +59,24 @@ def api_access_required(endpoint_name):
             try:
                 response = view_func(request, *args, **kwargs)
                 
-                # Log successful API usage
+                # Log API usage
                 if response.status_code == 200:
-                    # Increment daily counter
-                    cache.set(daily_key, daily_count + 1, 86400)  # 24 hours
-                    
-                    # Log usage
                     result_count = 0
-                    if hasattr(response, 'data') and 'total_found' in response.data:
-                        result_count = response.data['total_found']
+                    used_cache = False
+                    
+                    if hasattr(response, 'data'):
+                        result_count = response.data.get('total_found', 0)
+                        used_cache = response.data.get('from_cache', False)
                     
                     APIUsageLog.objects.create(
                         user=user,
                         endpoint=endpoint_name,
                         request_data=request.data if hasattr(request, 'data') else None,
                         response_count=result_count,
-                        success=True
+                        success=True,
+                        used_cache=used_cache
                     )
                 else:
-                    # Log failed usage
                     APIUsageLog.objects.create(
                         user=user,
                         endpoint=endpoint_name,
@@ -85,7 +88,6 @@ def api_access_required(endpoint_name):
                 return response
                 
             except Exception as e:
-                # Log error
                 APIUsageLog.objects.create(
                     user=user,
                     endpoint=endpoint_name,
