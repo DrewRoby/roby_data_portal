@@ -10,7 +10,10 @@ class UserProfile(models.Model):
     job_title = models.CharField(max_length=100, blank=True, null=True)
     last_login_ip = models.GenericIPAddressField(blank=True, null=True)
     is_email_verified = models.BooleanField(default=False)
-    
+    api_access_enabled = models.BooleanField(default=False, help_text="Allow user to access paid APIs")
+    api_daily_limit = models.IntegerField(default=10, help_text="Maximum API calls per day")
+    api_monthly_limit = models.IntegerField(default=100, help_text="Maximum API calls per month")
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
