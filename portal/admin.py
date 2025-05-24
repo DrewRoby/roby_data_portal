@@ -3,10 +3,23 @@ from django.contrib import admin
 from .models import UserProfile, EmailVerificationToken, App, UserAppAccess, ActivityLog
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'company', 'job_title', 'is_email_verified')
+    list_display = ('user', 'company', 'job_title', 'is_email_verified', 'api_access_enabled', 'api_daily_limit')
     search_fields = ('user__username', 'user__email', 'company')
-    list_filter = ('is_email_verified',)
-
+    list_filter = ('is_email_verified', 'api_access_enabled')
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('user', 'company', 'job_title', 'is_email_verified')
+        }),
+        ('API Access', {
+            'fields': ('api_access_enabled', 'api_daily_limit', 'api_monthly_limit'),
+            'description': 'Control user access to paid APIs like Places search'
+        }),
+        ('System Information', {
+            'fields': ('last_login_ip',),
+            'classes': ('collapse',)
+        })
+    )
 class EmailVerificationTokenAdmin(admin.ModelAdmin):
     list_display = ('user', 'token', 'created_at', 'expires_at', 'is_expired')
     search_fields = ('user__username', 'user__email')
