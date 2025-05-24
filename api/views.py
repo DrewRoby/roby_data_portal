@@ -1,5 +1,10 @@
 import os
 import random
+import requests
+import math
+import time
+import logging
+
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -8,13 +13,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from typing import List, Dict, Tuple
-import requests
-import math
-import time
-import logging
-
-# Import the Storycraft models
 from storycraft.models import Story, Character, Setting, Plot, Scene, CharacterRelationship
+from .decorators import api_access_required
 
 logger = logging.getLogger(__name__)
 
@@ -982,12 +982,11 @@ def user_apps_api(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Add to api/views.py
-
+@api_access_required('find_places')
 @api_view(['POST'])
 def find_places(request):
     """
-    Find places using Google Places API (New)
+    Find places using Google Places API (New) - SECURED VERSION
     
     Expected payload:
     {
@@ -996,7 +995,7 @@ def find_places(request):
         "radius_meters": int (max 5000),
         "place_types": list (optional),
         "category": str ("commercial", "residential", "all"),
-        "limit": int (default 20)
+        "limit": int (default 20, max 50)
     }
     """
     try:
@@ -1026,6 +1025,9 @@ def find_places(request):
         if radius > 5000:
             return Response({'error': 'Radius cannot exceed 5000 meters'}, status=400)
             
+        if limit > 50:  # Prevent excessive API usage
+            return Response({'error': 'Limit cannot exceed 50 results'}, status=400)
+            
         if category not in ['commercial', 'residential', 'all']:
             return Response({'error': 'Category must be commercial, residential, or all'}, status=400)
         
@@ -1044,7 +1046,9 @@ def find_places(request):
         
         return Response({
             'total_found': len(places),
-            'places': places
+            'places': places,
+            'user_daily_usage': cache.get(f"api_daily_{request.user.id}_{timezone.now().date()}", 0) + 1,
+            'user_daily_limit': request.user.profile.api_daily_limit
         })
         
     except Exception as e:
