@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'todo',
     'inventory',
     'shares',
+    'events.apps.EventsConfig',
 
 ]
 
@@ -113,6 +114,7 @@ TEMPLATES = [
                 'filter':'templatetags.filters',
                 'inventory_filters':'templatetags.inventory_filters',
                 'share_tags':'shares.templatetags.share_tags',
+                'share_filters':'templatetags.share_filters'
             }
         },
     },

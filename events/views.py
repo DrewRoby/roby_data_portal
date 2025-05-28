@@ -5,6 +5,7 @@ from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.db import models
 
 from shares.decorators import owner_or_permission_required
 from .models import Event, EventInvitation, Space, AgendaItem, AgendaComment
@@ -44,26 +45,11 @@ def event_list(request):
                 try:
                     invitation = EventInvitation.objects.get(event=event, invitee=request.user)
                 except EventInvitation.DoesNotExist:
-            pass
+                    pass
     
-    # Get spaces with their agenda items
-    spaces = event.spaces.prefetch_related('agenda_items__comments').all()
     
-    # Check if user can suggest agenda items
-    can_suggest = event.can_user_suggest_agenda_items(request.user)
-    can_move_suggestions = event.can_user_move_suggestions(request.user)
-    
-    context = {
-        'event': event,
-        'invitation': invitation,
-        'spaces': spaces,
-        'user_permission': user_permission,
-        'can_suggest': can_suggest,
-        'can_move_suggestions': can_move_suggestions,
-        'rsvp_form': RSVPForm(instance=invitation) if invitation else None,
-    }
-    
-    return render(request, 'events/event_detail.html', context)
+    return render(request, 'events/event_list.html', {'all_events':all_events})
+
 
 
 @login_required
@@ -397,28 +383,12 @@ def add_comment(request, item_pk):
             'comment': {
                 'author': comment.author.get_full_name() or comment.author.username,
                 'content': comment.content,
-                'created_at': comment.created_at.strftime('%B %d, %Y at %I:%M %p'),
+                'created_at': comment.created_at.strftime('%B %d, %Y at %I:%M %p')
             }
         })
     
-    return JsonResponse({'error': 'Invalid comment data.'}, status=400):
-                    invitation = None
-                
-                all_events.append({
-                    'event': event,
-                    'is_created_by_user': False,
-                    'invitation': invitation
-                })
+    return JsonResponse({'error': 'Invalid comment data.'}, status=400)
         
-        # Sort by date
-        all_events.sort(key=lambda x: x['event'].date, reverse=True)
-        
-    else:
-        all_events = []
-    
-    return render(request, 'events/event_list.html', {
-        'all_events': all_events,
-    })
 
 
 def event_detail(request, pk):
@@ -439,4 +409,24 @@ def event_detail(request, pk):
     if request.user.is_authenticated:
         try:
             invitation = EventInvitation.objects.get(event=event, invitee=request.user)
-        except EventInvitation.DoesNotExist
+        except EventInvitation.DoesNotExist:
+            pass  # No invitation is fine - user might be viewing a public event
+    
+    # Get spaces with their agenda items
+    spaces = event.spaces.prefetch_related('agenda_items__comments').all()
+    
+    # Check if user can suggest agenda items
+    can_suggest = event.can_user_suggest_agenda_items(request.user)
+    can_move_suggestions = event.can_user_move_suggestions(request.user)
+    
+    context = {
+        'event': event,
+        'invitation': invitation,
+        'spaces': spaces,
+        'user_permission': user_permission,
+        'can_suggest': can_suggest,
+        'can_move_suggestions': can_move_suggestions,
+        'rsvp_form': RSVPForm(instance=invitation) if invitation else None,
+    }
+    
+    return render(request, 'events/event_detail.html', context)

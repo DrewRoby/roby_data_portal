@@ -1,0 +1,238 @@
+<!-- templates/events/shared_event.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load share_tags %}
+
+{% block title %}{{ object.title }} (Shared){% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Share notification banner -->
+    <div class="alert alert-info border-0 shadow-sm mb-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-share-alt fa-2x text-info me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Shared Event</h5>
+                <p class="mb-0">
+                    This event was shared with you by 
+                    <strong>{{ share.created_by.get_full_name|default:share.created_by.username }}</strong>.
+                    You have <span class="badge bg-primary">{{ permission }}</span> access.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Include the regular event detail content but in shared context -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ object.title }}</h1>
+            <div class="mb-3">
+                <span class="badge bg-info">{{ permission }} Access</span>
+                {% if object.is_public %}
+                    <span class="badge bg-success">Public Event</span>
+                {% endif %}
+                {% if object.is_past %}
+                    <span class="badge bg-secondary">Past Event</span>
+                {% endif %}
+                <span class="badge bg-warning">Shared Event</span>
+            </div>
+            
+            <div class="row">
+                <div class="col-sm-6">
+                    <p class="mb-1"><strong>Date:</strong> {{ object.date|date:"F j, Y" }}</p>
+                    <p class="mb-1"><strong>Time:</strong> {{ object.start_time|time:"g:i A" }}
+                        {% if object.end_time %} - {{ object.end_time|time:"g:i A" }}{% endif %}
+                    </p>
+                    {% if object.location %}
+                        <p class="mb-1"><strong>Location:</strong> {{ object.location }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-sm-6">
+                    <p class="mb-1"><strong>Created by:</strong> {{ object.created_by.get_full_name|default:object.created_by.username }}</p>
+                    <p class="mb-1"><strong>Shared on:</strong> {{ share.created_at|date:"F j, Y" }}</p>
+                    {% if share.expires_at %}
+                        <p class="mb-1"><strong>Share expires:</strong> {{ share.expires_at|date:"F j, Y" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if object.description %}
+                <div class="mt-3">
+                    <strong>Description:</strong>
+                    <p>{{ object.description|linebreaks }}</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Action buttons for shared events -->
+            <div class="d-grid gap-2">
+                {% if permission in 'EDIT,ADMIN' %}
+                    <a href="{% url 'events:event_detail' pk=object.pk %}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> View Full Event
+                    </a>
+                {% endif %}
+                
+                {% if permission == 'ADMIN' %}
+                    <a href="{% url 'events:event_edit' pk=object.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit Event
+                    </a>
+                {% endif %}
+                
+                <a href="{% url 'events:event_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-calendar"></i> All Events
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Spaces and Agenda Preview -->
+    <div class="row">
+        <div class="col-12">
+            <h3>Event Agenda</h3>
+            <p class="text-muted">
+                {% if permission == 'VIEW' %}
+                    Here's what's planned for this event:
+                {% else %}
+                    You can contribute to the planning of this event.
+                {% endif %}
+            </p>
+        </div>
+        
+        {% for space in object.spaces.all %}
+            <div class="col-lg-6 mb-4">
+                <div class="card {% if space.space_type == 'suggestion_box' %}border-warning{% endif %}">
+                    <div class="card-header {% if space.space_type == 'suggestion_box' %}bg-warning bg-opacity-25{% endif %}">
+                        <h5 class="mb-0">
+                            {{ space.name }}
+                            {% if space.space_type == 'suggestion_box' %}
+                                <i class="fas fa-lightbulb text-warning"></i>
+                            {% endif %}
+                        </h5>
+                        <small class="text-muted">Total: {{ space.total_duration_display }}</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        {% if space.description %}
+                            <p class="card-text text-muted">{{ space.description }}</p>
+                        {% endif %}
+                        
+                        {% if space.agenda_items.all %}
+                            <div class="agenda-items">
+                                {% for item in space.agenda_items.all %}
+                                    <div class="border rounded p-2 mb-2">
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'events:agenda_item_detail' pk=item.pk %}" class="text-decoration-none">
+                                                {{ item.title }}
+                                            </a>
+                                        </h6>
+                                        {% if item.description %}
+                                            <p class="text-muted small mb-1">{{ item.description|truncatewords:10 }}</p>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ item.duration_display }}
+                                            {% if item.suggested_by %}
+                                                | <i class="fas fa-user"></i> {{ item.suggested_by.username }}
+                                            {% endif %}
+                                            {% if item.comments.count %}
+                                                | <i class="fas fa-comments"></i> {{ item.comments.count }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center py-2">
+                                {% if space.space_type == 'suggestion_box' %}
+                                    No suggestions yet
+                                    {% if permission in 'EDIT,ADMIN' and user.is_authenticated %}
+                                        <br><a href="{% url 'events:agenda_item_create' space_pk=space.pk %}" class="btn btn-sm btn-outline-warning mt-2">
+                                            <i class="fas fa-lightbulb"></i> Add Suggestion
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    No agenda items yet
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- RSVP Section for authenticated users -->
+    {% if user.is_authenticated and not object.is_past %}
+        {% for invitation in user.event_invitations.all %}
+            {% if invitation.event == object %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Your RSVP</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url 'events:rsvp_update' pk=object.pk %}">
+                                    {% csrf_token %}
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <div class="btn-group" role="group">
+                                                <input type="radio" class="btn-check" name="rsvp_status" value="yes" id="rsvp_yes" 
+                                                       {% if invitation.rsvp_status == 'yes' %}checked{% endif %}>
+                                                <label class="btn btn-outline-success" for="rsvp_yes">
+                                                    <i class="fas fa-check"></i> Yes, I'll attend
+                                                </label>
+                                                
+                                                <input type="radio" class="btn-check" name="rsvp_status" value="tentative" id="rsvp_tentative"
+                                                       {% if invitation.rsvp_status == 'tentative' %}checked{% endif %}>
+                                                <label class="btn btn-outline-warning" for="rsvp_tentative">
+                                                    <i class="fas fa-question"></i> Maybe
+                                                </label>
+                                                
+                                                <input type="radio" class="btn-check" name="rsvp_status" value="no" id="rsvp_no"
+                                                       {% if invitation.rsvp_status == 'no' %}checked{% endif %}>
+                                                <label class="btn btn-outline-danger" for="rsvp_no">
+                                                    <i class="fas fa-times"></i> Can't make it
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-md-end">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> Update RSVP
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if invitation.rsvp_date %}
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                Last updated: {{ invitation.rsvp_date|date:"F j, Y \a\t g:i A" }}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Call to action for non-authenticated users -->
+    {% if not user.is_authenticated %}
+        <div class="alert alert-success text-center mt-4">
+            <h5>Want to RSVP or contribute to this event?</h5>
+            <p class="mb-3">Create an account or login to participate in event planning.</p>
+            <div class="btn-group">
+                <a href="{% url 'portal:login' %}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                <a href="{% url 'portal:register' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

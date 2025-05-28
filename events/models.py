@@ -6,6 +6,7 @@ from django.utils import timezone
 from shares.models import ShareableInterface, Share
 
 
+
 class Event(models.Model, ShareableInterface):
     """Main event model that can be shared via the shares system."""
     
@@ -57,9 +58,14 @@ class Event(models.Model, ShareableInterface):
         """Required by ShareableInterface."""
         return f"Event on {self.date} at {self.location}" if self.location else f"Event on {self.date}"
     
+    @property
     def user(self):
         """Required for owner checking in shares system."""
         return self.created_by
+
+    def get_verbose_name(self):
+        """Get the verbose name for templates (since _meta is not accessible)."""
+        return self._meta.verbose_name
     
     def get_user_permission(self, user):
         """
@@ -111,7 +117,6 @@ class Event(models.Model, ShareableInterface):
         """
         permission = self.get_user_permission(user)
         return permission == 'ADMIN'
-
 
 class EventInvitation(models.Model):
     """

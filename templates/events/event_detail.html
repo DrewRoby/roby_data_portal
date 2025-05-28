@@ -84,6 +84,9 @@
                     <a href="{% url 'shares:create_share' content_type_id event.pk %}" class="btn btn-outline-secondary">
                         <i class="fas fa-share"></i> Invite People
                     </a>
+                    <a href="{% url 'shares:my_shares' %}?event={{ event.pk }}" class="btn btn-outline-info">
+                        <i class="fas fa-link"></i> View Share Links
+                    </a>
                 {% endif %}
             </div>
         </div>
@@ -200,4 +203,25 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function copyToClipboard(input) {
+    input.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = input.nextElementSibling;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i>';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+</script>
 {% endblock %}
