@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ agenda_item.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:event_detail' pk=event.pk %}">{{ event.title }}</a></li>
+            <li class="breadcrumb-item">{{ agenda_item.space.name }}</li>
+            <li class="breadcrumb-item active">{{ agenda_item.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{{ agenda_item.title }}</h2>
+                    <div class="text-muted">
+                        <small>
+                            {{ agenda_item.space.name }} 
+                            {% if agenda_item.space.space_type == 'suggestion_box' %}
+                                <span class="badge bg-warning">Suggested</span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <strong>Duration:</strong> {{ agenda_item.duration_display }}
+                        </div>
+                        {% if agenda_item.suggested_by %}
+                            <div class="col-sm-6">
+                                <strong>Suggested by:</strong> {{ agenda_item.suggested_by.get_full_name|default:agenda_item.suggested_by.username }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if agenda_item.description %}
+                        <div class="mb-4">
+                            <strong>Description:</strong>
+                            <p>{{ agenda_item.description|linebreaks }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Action buttons -->
+                    {% if user_permission in 'EDIT,ADMIN' %}
+                        <div class="mb-4">
+                            <a href="{% url 'events:agenda_item_edit' pk=agenda_item.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            
+                            {% if agenda_item.space.space_type == 'suggestion_box' and event.can_user_move_suggestions:user %}
+                                <a href="{% url 'events:agenda_item_move' pk=agenda_item.pk %}" class="btn btn-outline-success">
+                                    <i class="fas fa-arrow-right"></i> Move to Agenda
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Details</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Event:</strong> <a href="{% url 'events:event_detail' pk=event.pk %}">{{ event.title }}</a></p>
+                    <p class="mb-1"><strong>Date:</strong> {{ event.date|date:"F j, Y" }}</p>
+                    <p class="mb-1"><strong>Time:</strong> {{ event.start_time|time:"g:i A" }}</p>
+                    {% if event.location %}
+                        <p class="mb-0"><strong>Location:</strong> {{ event.location }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comments Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Comments ({{ comments.count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if comments %}
+                        <div class="comments-list mb-4">
+                            {% for comment in comments %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ comment.author.get_full_name|default:comment.author.username }}</strong>
+                                            <small class="text-muted ms-2">{{ comment.created_at|date:"F j, Y \a\t g:i A" }}</small>
+                                        </div>
+                                    </div>
+                                    <p class="mt-2 mb-0">{{ comment.content|linebreaks }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if can_comment %}
+                        <form method="post" action="{% url 'events:add_comment' item_pk=agenda_item.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                {{ comment_form.content }}
+                                {% if comment_form.content.errors %}
+                                    <div class="text-danger">{{ comment_form.content.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Comment</button>
+                        </form>
+                    {% elif not user.is_authenticated %}
+                        <div class="alert alert-info">
+                            <a href="{% url 'portal:login' %}">Login</a> to add comments.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            You need to be invited to this event to add comments.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

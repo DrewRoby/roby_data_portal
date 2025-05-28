@@ -14,6 +14,7 @@ urlpatterns = [
     path('storycraft/',include('storycraft.urls')),
     path('inventory/',include('inventory.urls')),
     path('shares/',include('shares.urls')),
+    path('events/',include('events.urls'))
 ]
 
 if settings.DEBUG:
