@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+
 app_name = 'api'
 
 urlpatterns = [
@@ -49,4 +50,7 @@ urlpatterns = [
     path('relationships/<int:relationship_id>/', views.relationship_detail_api, name='relationship_detail_api'),
     path('relationships/<int:relationship_id>/update/', views.relationship_update_api, name='relationship_update_api'),
     path('relationships/<int:relationship_id>/delete/', views.relationship_delete_api, name='relationship_delete_api'),
-]
+
+    # AddressFinder
+    path('find-places/', views.find_places, name='find-places'),
+    ]

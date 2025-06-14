@@ -18,82 +18,148 @@ from django import template
 
 register = template.Library()
 
-# Example of a view that uses the owner_or_permission_required decorator
-@owner_or_permission_required('VIEW')  # Will check if user is owner or has at least VIEW permission
-def story_detail(request, story_id):
-    """View for displaying a story's details."""
-    story = get_object_or_404(Story, id=story_id)
-    
-    # If we get here, the user has permission to view the story
-    characters = story.characters.all()
-    plots = story.plots.all()
-    settings = story.settings.all()
-    scenes = story.scenes.all().order_by('sequence_number')
-    
-    # Get all shares for this story (if user is the owner)
-    shares = []
-    if request.user == story.user:
-        content_type = ContentType.objects.get_for_model(Story)
-        shares = Share.objects.filter(
-            content_type=content_type,
-            object_id=story.id
-        )
-    
-    return render(request, 'storycraft/story_detail.html', {
-        'story': story,
-        'characters': characters,
-        'plots': plots,
-        'settings': settings,
-        'scenes': scenes,
-        'shares': shares
-    })
 
-# Example of a view with higher permission requirement
-@owner_or_permission_required('EDIT')  # Requires EDIT permission
-def edit_story(request, story_id):
-    """View for editing a story."""
-    story = get_object_or_404(Story, id=story_id)
+@register.simple_tag
+def get_share_permission(obj, user):
+    """
+    Returns the permission level a user has for an object.
     
-    if request.method == 'POST':
-        # Process form data and update story
-        story.title = request.POST.get('title')
-        story.description = request.POST.get('description')
-        story.save()
+    Usage:
+    {% get_share_permission object user as permission %}
+    {% if permission == 'EDIT' %}
+        <a href="{% url 'edit_object' object.id %}">Edit</a>
+    {% endif %}
+    """
+    if hasattr(obj, 'get_share_permissions'):
+        return obj.get_share_permissions(user)
+    return None
+
+@register.simple_tag
+def get_content_type_id(obj):
+    """
+    Returns the content type ID for an object.
+    
+    Usage:
+    {% get_content_type_id object as content_type_id %}
+    <a href="{% url 'shares:create_share' content_type_id object.id %}">Share</a>
+    """
+    content_type = ContentType.objects.get_for_model(obj)
+    return content_type.id
+
+@register.inclusion_tag('shares/tags/share_button.html')
+def share_button(obj, user, button_text="Share", css_class="btn btn-primary"):
+    """
+    Renders a share button if the user has permission to share the object.
+    
+    Usage:
+    {% share_button object user "Share this" "btn btn-sm btn-primary" %}
+    """
+    content_type = ContentType.objects.get_for_model(obj)
+    
+    # Check if user has permission to share
+    can_share = False
+    
+    # User is owner
+    if hasattr(obj, 'user') and obj.user == user:
+        can_share = True
+    # User has admin permission
+    elif hasattr(obj, 'get_share_permissions') and obj.get_share_permissions(user) == 'ADMIN':
+        can_share = True
         
-        messages.success(request, 'Story updated successfully.')
-        return redirect('storycraft:story_detail', story_id=story.id)
-    
-    return render(request, 'storycraft/edit_story.html', {
-        'story': story
-    })
+    return {
+        'can_share': can_share,
+        'content_type_id': content_type.id,
+        'object_id': obj.id,
+        'button_text': button_text,
+        'css_class': css_class,
+    }
 
-# Example of a view specifically for shared content
-def shared_story(request, story_id):
+@register.inclusion_tag('shares/tags/permission_badge.html')
+def permission_badge(permission):
     """
-    View for displaying a shared story.
-    This would be called from the share URL.
+    Renders a badge showing the permission level.
+    
+    Usage:
+    {% permission_badge permission %}
     """
-    story = get_object_or_404(Story, id=story_id)
+    badge_classes = {
+        'VIEW': 'badge bg-info',
+        'COMMENT': 'badge bg-primary',
+        'EDIT': 'badge bg-success',
+        'ADMIN': 'badge bg-danger',
+    }
     
-    # Get the share (would typically be handled by the shares app, but shown here for clarity)
-    share_id = request.GET.get('share')
-    if not share_id:
-        # No share ID provided, redirect to normal story detail if user has access
-        if request.user == story.user:
-            return redirect('storycraft:story_detail', story_id=story.id)
-        else:
-            share_permission = story.get_share_permissions(request.user)
-            if share_permission:
-                return redirect('storycraft:story_detail', story_id=story.id)
-            else:
-                messages.error(request, "You don't have permission to view this story.")
-                return redirect('storycraft:story_list')
+    return {
+        'permission': permission,
+        'badge_class': badge_classes.get(permission, 'badge bg-secondary'),
+    }
+
+@register.filter
+def has_permission(obj, user):
+    """
+    Returns True if the user has any permission for the object.
     
-    # A dedicated shared view would be handled by the shares app, 
-    # but we show this for demonstration purposes
-    share = get_object_or_404(Share, id=share_id)
+    Usage:
+    {% if object|has_permission:user %}
+        <p>You have access to this object</p>
+    {% endif %}
+    """
+    if hasattr(obj, 'get_share_permissions'):
+        return obj.get_share_permissions(user) is not None
+    return False
+
+@register.filter
+def has_permission_level(obj, args):
+    """
+    Returns True if the user has the specified permission level for the object.
     
-    # Use the story's custom method to get context for the shared view
-    context = story.get_shareable_context(request, share)
+    Usage:
+    {% if object|has_permission_level:"user,EDIT" %}
+        <a href="{% url 'edit_object' object.id %}">Edit</a>
+    {% endif %}
+    """
+    parts = args.split(',')
+    if len(parts) != 2:
+        return False
+        
+    user, required_level = parts
     
-    return render(request, 'storycraft/shared_story.html', context)
+    if not hasattr(obj, 'get_share_permissions'):
+        return False
+        
+    user_permission = obj.get_share_permissions(user)
+    
+    if not user_permission:
+        return False
+        
+    permission_levels = ['VIEW', 'COMMENT', 'EDIT', 'ADMIN']
+    
+    try:
+        required_index = permission_levels.index(required_level)
+        user_index = permission_levels.index(user_permission)
+        return user_index >= required_index
+    except ValueError:
+        return False
+
+@register.inclusion_tag('shares/tags/share_list.html')
+def user_shares(user, limit=5):
+    """
+    Renders a list of shares created by the user.
+    
+    Usage:
+    {% user_shares user 10 %}
+    """
+    shares = Share.objects.filter(created_by=user).order_by('-created_at')[:limit]
+    return {'shares': shares}
+
+@register.inclusion_tag('shares/tags/shared_with_me.html')
+def shared_with_me(user, limit=5):
+    """
+    Renders a list of shares shared with the user.
+    
+    Usage:
+    {% shared_with_me user 10 %}
+    """
+    shares = Share.objects.filter(shared_with=user).order_by('-created_at')[:limit]
+    return {'shares': shares}
+

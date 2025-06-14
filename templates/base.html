@@ -13,6 +13,31 @@
         /* Include our header styles */
         {% include 'components/header_styles.html' %}
 
+        /* Dev navigation pills */
+        .dev-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+        
+        .dev-nav-link {
+            padding: 0.4rem 0.8rem;
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dev-nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            color: white;
+            text-decoration: none;
+        }
+
         /* User profile section styling */
         .user-profile-section {
             margin-top: auto;
@@ -81,26 +106,23 @@
         
         <div class="container">
             <div class="header-content">
-                <div>
+                <div style="display: flex; align-items: center;">
                     {% if user.is_authenticated %}
                         <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
+                    <!-- Dev navigation pills -->
+                    <div class="dev-nav">
+                        <a class="dev-nav-link" href="{% url 'portal:aboutdev' %}">About</a>
+                        <a class="dev-nav-link" href="https://github.com/DrewRoby/roby_data_portal/issues">Report Bug</a>
+                    </div>
                     {% else %}
                         <a href="{% url 'portal:login' %}">
                             <img src="{% static 'images/RDSLogoCropNegativeBlock.png' %}" alt="Roby Data Services Logo" class="logo">
                         </a>
                     {% endif %}
+                    
                 </div>
                 <div class="navbar-nav">
-                    <div class="row">
-                        <ul class="navbar-nav bd-navbar-nav flex-row">
-                          <li class="nav-item">
-                            <a class="nav-link " href="{% url 'portal:aboutdev' %}">About</a>
-                          </li>
-                          <li class="nav-item">
-                            <a class="nav-link" href="https://github.com/DrewRoby/roby_data_portal/issues">Report Bug</a>
-                          </li>
-                        </ul>
-                    </div>
+                    <!-- Removed old navbar structure since links moved to logo area -->
                 </div>
                 {% if user.is_authenticated %}
                 <div class="user-actions">
@@ -116,10 +138,10 @@
         {% include 'components/sidebar.html' with apps=user_apps %}
         
         <!-- Main content with margin to account for sidebar -->
-        <div class="main-content">
-    
-            {% block content %}{% endblock %}            
-
+        <div class="container">
+            <div class="main-content">
+                {% block content %}{% endblock %}            
+            </div>
         </div>
     {% else %}
         <!-- Guest layout without sidebar -->

@@ -79,9 +79,181 @@
                 </div>
             </div>
             
-            <!-- Similar sections for plots, settings, and scenes -->
-            <!-- ... -->
-            
+            <!-- Plots Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Plots</h5>
+                </div>
+                <div class="card-body">
+                    {% if plots %}
+                        <div class="row">
+                            {% for plot in plots %}
+                                <div class="col-md-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="card-title">{{ plot.name }}</h6>
+                                                    <span class="badge bg-secondary mb-2">{{ plot.get_plot_type_display }}</span>
+                                                    {% if plot.description %}
+                                                        <p class="card-text">{{ plot.description }}</p>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">{{ plot.scenes.count }} scenes</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No plots in this story.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Settings/Locations Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Settings & Locations</h5>
+                </div>
+                <div class="card-body">
+                    {% if settings %}
+                        <div class="row">
+                            {% for setting in settings %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <i class="fas fa-map-marker-alt fa-2x text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ setting.name }}</h6>
+                                                    {% if setting.description %}
+                                                        <small class="text-muted">{{ setting.description|truncatewords:15 }}</small>
+                                                    {% endif %}
+                                                    {% if setting.attributes.geography %}
+                                                        <br><small><strong>Geography:</strong> {{ setting.attributes.geography }}</small>
+                                                    {% endif %}
+                                                    {% if setting.attributes.time_period %}
+                                                        <br><small><strong>Time Period:</strong> {{ setting.attributes.time_period }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No settings in this story.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Scenes Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Scenes</h5>
+                </div>
+                <div class="card-body">
+                    {% if scenes %}
+                        <div class="row">
+                            {% for scene in scenes %}
+                                <div class="col-md-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="card-title">
+                                                        <span class="badge bg-primary me-2">{{ scene.sequence_number }}</span>
+                                                        {{ scene.name }}
+                                                    </h6>
+                                                    <span class="badge bg-info text-dark me-2">{{ scene.get_status_display }}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if scene.description %}
+                                                <p class="card-text">{{ scene.description }}</p>
+                                            {% endif %}
+                                            
+                                            <div class="row mt-2">
+                                                <div class="col-md-4">
+                                                    <small><strong>Setting:</strong> {{ scene.setting.name }}</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small><strong>Plot:</strong> {{ scene.plot.name }}</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small><strong>Characters:</strong> 
+                                                        {% for character in scene.characters.all %}
+                                                            {{ character.name }}{% if not forloop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Show scene content based on permission level -->
+                                            {% if permission == 'EDIT' or permission == 'ADMIN' or scene.status != 'draft' %}
+                                                {% if scene.content %}
+                                                    <div class="mt-3">
+                                                        <strong>Content:</strong>
+                                                        <div class="bg-light p-3 rounded">
+                                                            {{ scene.content|linebreaks|truncatewords:50 }}
+                                                            {% if scene.content|wordcount > 50 %}
+                                                                <em>... (content truncated)</em>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="mt-3">
+                                                    <small class="text-muted"><em>Scene content not available (draft status)</em></small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No scenes in this story.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Character Relationships Section -->
+            {% if relationships %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Character Relationships</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for relationship in relationships %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <span class="fw-bold">{{ relationship.source.name }}</span>
+                                            <i class="fas fa-arrow-right mx-2 text-primary"></i>
+                                            <span class="fw-bold">{{ relationship.target.name }}</span>
+                                        </div>
+                                        <div class="text-center mt-2">
+                                            <span class="badge bg-success">{{ relationship.relationship }}</span>
+                                        </div>
+                                        {% if relationship.description %}
+                                            <p class="text-center mt-2 mb-0">{{ relationship.description|truncatewords:15 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             <!-- Extra footer for shared content -->
             <div class="mt-5 pt-3 border-top">
                 <div class="d-flex justify-content-between align-items-center">

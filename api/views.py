@@ -1,14 +1,25 @@
 import os
 import random
+import requests
+import math
+import time
+import logging
+
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
-# Import the Storycraft models
+from typing import List, Dict, Tuple
 from storycraft.models import Story, Character, Setting, Plot, Scene, CharacterRelationship
+from .decorators import api_access_required
+from .models import PlacesSearchCache, APIUsageLog
+
+logger = logging.getLogger(__name__)
+
 
 # Existing image API endpoints
 @api_view(['GET'])
@@ -972,3 +983,269 @@ def user_apps_api(request):
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_access_required('find_places')
+@api_view(['POST'])
+def find_places(request):
+    """
+    Find places using Google Places API (New) with caching
+    """
+    try:
+        # Validate input
+        lat = request.data.get('latitude')
+        lon = request.data.get('longitude')
+        radius = request.data.get('radius_meters', 1000)
+        category = request.data.get('category', 'all')
+        place_types = request.data.get('place_types', [])
+        limit = request.data.get('limit', 20)
+        
+        # Validation (same as before)
+        if lat is None or lon is None:
+            return Response({'error': 'latitude and longitude are required'}, status=400)
+            
+        try:
+            lat = float(lat)
+            lon = float(lon)
+            radius = int(radius)
+            limit = int(limit)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid numeric values'}, status=400)
+        
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+            return Response({'error': 'Invalid coordinates'}, status=400)
+            
+        if radius > 5000:
+            return Response({'error': 'Radius cannot exceed 5000 meters'}, status=400)
+            
+        if limit > 50:
+            return Response({'error': 'Limit cannot exceed 50 results'}, status=400)
+            
+        if category not in ['commercial', 'residential', 'all']:
+            return Response({'error': 'Category must be commercial, residential, or all'}, status=400)
+        
+        # Try to get cached results first
+        cache_data = PlacesSearchCache.get_cached_results(
+            latitude=lat,
+            longitude=lon,
+            radius_meters=radius,
+            category=category,
+            place_types=place_types,
+            max_age_hours=2  # Cache for 2 hours
+        )
+        
+        # Use cache only if:
+        # 1. Cache exists AND
+        # 2. Cache has actual results (not an empty search)
+        # OR cache is very recent (< 1 minute) even if empty (to avoid repeated API calls for truly empty areas)
+        use_cache = False
+        if cache_data is not None:
+            cache_age_minutes = (timezone.now() - cache_data['created_at']).total_seconds() / 60
+            use_cache = (cache_data['has_results'] or cache_age_minutes < 5)
+        
+        if use_cache:
+            # Return cached results
+            places = cache_data['results'][:limit]  # Apply limit to cached results
+            
+            # Get current usage counts
+            today = timezone.now().date()
+            daily_count = APIUsageLog.objects.filter(
+                user=request.user,
+                endpoint='find_places',
+                timestamp__date=today,
+                success=True
+            ).count()
+            
+            cache_age_minutes = (timezone.now() - cache_data['created_at']).total_seconds() / 60
+            
+            return Response({
+                'total_found': len(places),
+                'places': places,
+                'from_cache': True,
+                'cache_age_minutes': round(cache_age_minutes, 1),
+                'user_daily_usage': daily_count + 1,
+                'user_daily_limit': request.user.profile.api_daily_limit
+            })
+        
+        # No cached results, call Google API
+        places_finder = GooglePlacesFinder()
+        places = places_finder.find_places_nearby(
+            latitude=lat,
+            longitude=lon,
+            radius_meters=radius,
+            category=category,
+            place_types=place_types,
+            limit=limit
+        )
+        
+        # Cache the results for future use
+        PlacesSearchCache.cache_results(
+            latitude=lat,
+            longitude=lon,
+            radius_meters=radius,
+            category=category,
+            place_types=place_types,
+            results=places
+        )
+        
+        # Get current usage counts
+        today = timezone.now().date()
+        daily_count = APIUsageLog.objects.filter(
+            user=request.user,
+            endpoint='find_places',
+            timestamp__date=today,
+            success=True
+        ).count()
+        
+        return Response({
+            'total_found': len(places),
+            'places': places,
+            'from_cache': False,
+            'user_daily_usage': daily_count + 1,
+            'user_daily_limit': request.user.profile.api_daily_limit
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in find_places: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=500)
+
+
+class GooglePlacesFinder:
+    """
+    Google Places API (New) integration for finding nearby places
+    """
+    
+    def __init__(self):
+        self.api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', None)
+        if not self.api_key:
+            raise ValueError("GOOGLE_MAPS_API_KEY not found in settings")
+        
+        self.base_url = "https://places.googleapis.com/v1/places:searchNearby"
+        self.session = requests.Session()
+    
+    def find_places_nearby(self, latitude, longitude, radius_meters, category, place_types, limit):
+        """
+        Find places near a location using Google Places API (New)
+        """
+        all_places = []
+        next_page_token = None
+        
+        # Define place types based on category
+        search_types = self._get_place_types_for_category(category, place_types)
+        
+        # Handle pagination
+        while len(all_places) < limit:
+            batch_limit = min(20, limit - len(all_places))  # Google max is 20 per request
+            
+            places_batch, next_token = self._search_places_batch(
+                latitude=latitude,
+                longitude=longitude,
+                radius_meters=radius_meters,
+                place_types=search_types,
+                limit=batch_limit,
+                page_token=next_page_token
+            )
+            
+            all_places.extend(places_batch)
+            
+            # Check if we have more pages and haven't hit our limit
+            if not next_token or len(all_places) >= limit:
+                break
+                
+            next_page_token = next_token
+        
+        return all_places[:limit]
+    
+    def _get_place_types_for_category(self, category, custom_types):
+        """
+        Get Google Places types based on category
+        """
+        if custom_types:
+            return custom_types
+        
+        if category == 'commercial':
+            return [
+                'store', 'restaurant', 'gas_station', 'bank', 'hospital',
+                'pharmacy', 'grocery_store', 'clothing_store', 'electronics_store',
+                'shopping_mall', 'cafe', 'bar', 'gym', 'beauty_salon'
+            ]
+        elif category == 'residential':
+            # return ['premise', 'subpremise', 'neighborhood']
+            return ['apartment_building','apartment_complex','condominium_complex','housing_complex']
+        else:  # 'all'
+            return []  # Empty list means search all types
+    
+    def _search_places_batch(self, latitude, longitude, radius_meters, place_types, limit, page_token=None):
+        """
+        Search a single batch of places
+        """
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': self.api_key,
+            'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.types'
+        }
+        
+        payload = {
+            'locationRestriction': {
+                'circle': {
+                    'center': {
+                        'latitude': latitude,
+                        'longitude': longitude
+                    },
+                    'radius': radius_meters
+                }
+            },
+            'maxResultCount': limit
+        }
+        
+        # Add place types if specified
+        if place_types:
+            payload['includedTypes'] = place_types
+        
+        # Add page token if continuing pagination
+        if page_token:
+            payload['pageToken'] = page_token
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                json=payload,
+                headers=headers,
+                timeout=10
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            places = []
+            next_token = data.get('nextPageToken')
+            
+            for place in data.get('places', []):
+                processed_place = self._process_place_result(place)
+                if processed_place:
+                    places.append(processed_place)
+            
+            return places, next_token
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Google Places API error: {str(e)}")
+            return [], None
+    
+    def _process_place_result(self, place):
+        """
+        Process a single place result from Google Places API
+        """
+        try:
+            name = place.get('displayName', {}).get('text', 'Unnamed Place')
+            address = place.get('formattedAddress', 'Address not available')
+            location = place.get('location', {})
+            place_types = place.get('types', [])
+            
+            return {
+                'name': name,
+                'address': address,
+                'latitude': location.get('latitude'),
+                'longitude': location.get('longitude'),
+                'types': place_types
+            }
+        except (KeyError, TypeError):
+            return None

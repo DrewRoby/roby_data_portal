@@ -1,0 +1,17 @@
+"""
+{% load share_tags %}
+
+<div class="col-md-6 col-lg-4 mb-3">
+    <div class="card h-100" style="background-color: {{ app.background_color }}10;">
+        <div class="card-color-bar" style="background-color: {{ app.background_color }};"></div>
+        <div class="card-content">
+            <div class="app-icon" style="background-color: {{ app.background_color }};">
+                <i class="{{ app.icon }}"></i>
+            </div>
+            <h3 class="app-title">{{ app.name }}</h3>
+            <p class="app-description">{{ app.description }}</p>
+            <a href="{{ app.link }}" class="app-link">Launch {{ app.name }}</a>
+        </div>
+    </div>
+</div>
+"""

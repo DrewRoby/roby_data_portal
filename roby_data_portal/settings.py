@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'todo',
     'inventory',
     'shares',
+    'events.apps.EventsConfig',
 
 ]
 
@@ -113,6 +114,7 @@ TEMPLATES = [
                 'filter':'templatetags.filters',
                 'inventory_filters':'templatetags.inventory_filters',
                 'share_tags':'shares.templatetags.share_tags',
+                'share_filters':'templatetags.share_filters'
             }
         },
     },
@@ -232,3 +234,16 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 # CORS_ALLOW_ALL_ORIGINS = True
+
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_table',
+    }
+}
+
+# Cache settings for API results
+API_CACHE_DURATION = 3600  # 1 hour in seconds
+PLACES_CACHE_DURATION = 7200  # 2 hours for places (they don't change often)
