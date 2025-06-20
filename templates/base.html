@@ -121,14 +121,11 @@
                     {% endif %}
                     
                 </div>
-                <div class="navbar-nav">
-                    <!-- Removed old navbar structure since links moved to logo area -->
-                </div>
-                {% if user.is_authenticated %}
-                <div class="user-actions">
-                    <a href="{% url 'portal:logout' %}" class="logout-link">Logout</a>
-                </div>
-                {% endif %}
+                    {% if user.is_authenticated %}
+                    <div class="user-actions">
+                        <a href="{% url 'portal:logout' %}" class="logout-link">Logout</a>
+                    </div>
+                    {% endif %}
             </div>
         </div>
     </header>
@@ -140,6 +137,7 @@
         <!-- Main content with margin to account for sidebar -->
         <div class="container">
             <div class="main-content">
+                {% include 'components/messages.html' %}
                 {% block content %}{% endblock %}            
             </div>
         </div>

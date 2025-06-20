@@ -529,3 +529,12 @@ footer {
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
 }
+
+.messages-container {
+    margin: 1rem 0;
+    z-index: 1000;
+}
+
+.messages-container .alert {
+    margin-bottom: 0.5rem;
+}

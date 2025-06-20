@@ -32,8 +32,10 @@ def login_view(request):
             if user is not None:
                 # Check if email is verified
                 if hasattr(user, 'profile') and user.profile.is_email_verified:
+                    print("HEY YOU GOT HERE")
                     login(request, user)
-                    return redirect('portal:home')  # Changed from 'dashboard' to 'home'
+                    next_url = request.GET.get('next', 'portal:home')
+                    return redirect(next_url)
                 else:
                     messages.error(request, 'Please verify your email address before logging in.')
             else:
@@ -46,7 +48,8 @@ def login_view(request):
     
     return render(request, 'portal/login.html', {
         'form': form, 
-        'register_form': register_form
+        'register_form': register_form,
+        'next': request.GET.get('next', '')
     })
 
 def register(request):

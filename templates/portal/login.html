@@ -53,6 +53,7 @@
         <div id="login-form" class="auth-form active">
             <form method="post" action="{% url 'portal:login' %}">
                 {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
                 
                 <div class="form-group">
                     {{ form.username }}
