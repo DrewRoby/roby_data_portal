@@ -4,16 +4,15 @@
 {% block storycraft_title %}Edit Scene - {{ story.title }}{% endblock %}
 
 {% block extra_head %}
-<script src="{% static 'storycraft/js/character-motivations.js' %}" defer></script>
 <style>
     .character-motivation-container {
         margin-top: 20px;
         border-left: 3px solid #3498db;
-        padding-left: 15px;
-        background-color: #f8f9fa;
         padding: 15px;
         margin-bottom: 15px;
         border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
     }
     
     .character-motivation-header {
@@ -23,8 +22,8 @@
     }
     
     .character-avatar {
-        width: 40px;
-        height: 40px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         display: flex;
         justify-content: center;
@@ -54,11 +53,10 @@
         display: block;
         margin-bottom: 5px;
         font-weight: 600;
-        color: #333;
     }
     
     #character-motivation-section {
-        margin-top: 30px;
+        margin-top: 20px;
         border-top: 1px solid #e1e4e8;
         padding-top: 20px;
     }
@@ -68,7 +66,7 @@
 {% block storycraft_content %}
 <div class="form-container">
     <div class="story-header">
-        <h1>{% if scene %}Edit{% else %}New{% endif %} Scene</h1>
+        <h1>Edit Scene</h1>
         <div class="story-actions">
             <a href="{% if scene %}{% url 'storycraft:scene_detail' scene.id %}{% else %}{% url 'storycraft:story_detail' story.id %}{% endif %}" class="story-action-btn">
                 <i class="fas fa-times"></i> Cancel
@@ -119,16 +117,11 @@
             {{ form.description.errors }}
         </div>
         
+        <!-- Characters in Scene - now using multiple select like create_scene -->
         <div class="form-group">
-            <label>Characters in Scene:</label>
-            <div class="character-selection" id="character-selection">
-                {% for character_choice in form.characters %}
-                <div class="character-choice">
-                    {{ character_choice }}
-<!--                     <label for="{{ character_choice.id_for_label }}" class="character-label">{{ character_choice.choice_label }}</label>
-  -->               </div>
-                {% endfor %}
-            </div>
+            <label for="{{ form.characters.id_for_label }}">Characters in Scene</label>
+            {{ form.characters }}
+            <small class="form-text">Hold Ctrl/Cmd to select multiple characters</small>
             {{ form.characters.errors }}
         </div>
         
@@ -150,19 +143,18 @@
         
         <div class="form-actions">
             <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i> {% if scene %}Update{% else %}Create{% endif %} Scene
+                <i class="fas fa-save"></i> Update Scene
             </button>
         </div>
     </form>
 </div>
 
+<script src="{% static 'storycraft/js/character_motivation.js' %}"></script>
 <script>
+// Initialize character motivation handler when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    const characterCheckboxes = document.querySelectorAll('#character-selection input[type="checkbox"]');
-    const motivationsContainer = document.getElementById('character-motivations-container');
-    
-    // Character motivation data from the server
-    const characterMotivations = {
+    // Prepare existing motivation data for edit mode
+    const existingMotivations = {
         {% if character_motivations %}
             {% for char_id, motivation in character_motivations.items %}
                 {{ char_id }}: {
@@ -174,76 +166,13 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endif %}
     };
     
-    // Function to create motivation fields for a character
-    function createMotivationFields(characterId, characterName) {
-        const motivation = characterMotivations[characterId] || { desire: '', obstacle: '', action: '' };
-        
-        const colorChoices = ['#FFD3B6', '#A8E6CF', '#DCEDC2', '#FFD3B4', '#FF8C94'];
-        const colorIndex = Math.floor(Math.random() * colorChoices.length);
-        const backgroundColor = colorChoices[colorIndex];
-        
-        const container = document.createElement('div');
-        container.className = 'character-motivation-container';
-        container.id = `motivation-${characterId}`;
-        
-        container.innerHTML = `
-            <div class="character-motivation-header">
-                <div class="character-avatar" style="background-color: ${backgroundColor}">
-                    <span>${characterName.charAt(0)}</span>
-                </div>
-                <h4>${characterName}</h4>
-            </div>
-            <div class="motivation-fields">
-                <div class="motivation-field">
-                    <label for="desire_${characterId}">What do they want? (Desire)</label>
-                    <textarea name="desire_${characterId}" id="desire_${characterId}" rows="3" placeholder="What does the character want?">${motivation.desire}</textarea>
-                </div>
-                <div class="motivation-field">
-                    <label for="obstacle_${characterId}">Why can't they have it? (Obstacle)</label>
-                    <textarea name="obstacle_${characterId}" id="obstacle_${characterId}" rows="3" placeholder="Why can't they have it?">${motivation.obstacle}</textarea>
-                </div>
-                <div class="motivation-field">
-                    <label for="action_${characterId}">What do they do about it? (Action)</label>
-                    <textarea name="action_${characterId}" id="action_${characterId}" rows="3" placeholder="What do they do about it?">${motivation.action}</textarea>
-                </div>
-            </div>
-        `;
-        
-        return container;
-    }
-    
-    // Function to update motivation fields based on selected characters
-    function updateMotivationFields() {
-        // Clear the container
-        motivationsContainer.innerHTML = '';
-        
-        // Add fields for each selected character
-        characterCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                const characterId = checkbox.value;
-                const characterName = checkbox.nextElementSibling.textContent.trim();
-                
-                const motivationFields = createMotivationFields(characterId, characterName);
-                motivationsContainer.appendChild(motivationFields);
-            }
-        });
-        
-        // Show/hide the motivation section based on whether any characters are selected
-        const motivationSection = document.getElementById('character-motivation-section');
-        if (motivationsContainer.children.length > 0) {
-            motivationSection.style.display = 'block';
-        } else {
-            motivationSection.style.display = 'none';
-        }
-    }
-    
-    // Add event listeners to checkboxes
-    characterCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateMotivationFields);
+    // Initialize the character motivation handler
+    const motivationHandler = initCharacterMotivations({
+        characterSelectId: '{{ form.characters.id_for_label }}',
+        motivationsContainerId: 'character-motivations-container',
+        motivationSectionId: 'character-motivation-section',
+        existingMotivations: existingMotivations
     });
-    
-    // Initialize on page load
-    updateMotivationFields();
 });
 </script>
 {% endblock %}

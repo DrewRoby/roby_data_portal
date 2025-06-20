@@ -85,24 +85,13 @@
         {% endif %}
         
         <div class="form-group">
-            <label for="{{ form.name.id_for_label }}">Scene Title</label>
+            <label for="{{ form.name.id_for_label }}">Scene Name</label>
             {{ form.name }}
         </div>
         
         <div class="form-group">
-            <label for="{{ form.description.id_for_label }}">Short Description</label>
+            <label for="{{ form.description.id_for_label }}">Description</label>
             {{ form.description }}
-        </div>
-        
-        <div class="form-row">
-            <div class="form-group half-width">
-                <label for="{{ form.plot.id_for_label }}">Related Plot</label>
-                {{ form.plot }}
-            </div>
-            <div class="form-group half-width">
-                <label for="{{ form.setting.id_for_label }}">Scene Setting</label>
-                {{ form.setting }}
-            </div>
         </div>
         
         <div class="form-row">
@@ -111,8 +100,19 @@
                 {{ form.sequence_number }}
             </div>
             <div class="form-group half-width">
-                <label for="{{ form.status.id_for_label }}">Scene Status</label>
+                <label for="{{ form.status.id_for_label }}">Status</label>
                 {{ form.status }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.plot.id_for_label }}">Plot</label>
+                {{ form.plot }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.setting.id_for_label }}">Setting</label>
+                {{ form.setting }}
             </div>
         </div>
         
@@ -166,79 +166,17 @@
     </form>
 </div>
 
+<script src="{% static 'storycraft/js/character_motivation.js' %}"></script>
 <script>
+// Initialize character motivation handler when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    const characterSelect = document.getElementById('{{ form.characters.id_for_label }}');
-    const motivationsContainer = document.getElementById('character-motivations-container');
-    const motivationSection = document.getElementById('character-motivation-section');
-    
-    // Function to create motivation fields for a character
-    function createMotivationFields(characterId, characterName) {
-        const colorChoices = ['#FFD3B6', '#A8E6CF', '#DCEDC2', '#FFD3B4', '#FF8C94'];
-        const colorIndex = Math.floor(Math.random() * colorChoices.length);
-        const backgroundColor = colorChoices[colorIndex];
-        
-        const container = document.createElement('div');
-        container.className = 'character-motivation-container';
-        container.id = `motivation-${characterId}`;
-        container.style.display = 'block';
-        
-        container.innerHTML = `
-            <div class="character-motivation-header">
-                <div class="character-avatar" style="background-color: ${backgroundColor}">
-                    <span>${characterName.charAt(0)}</span>
-                </div>
-                <h4>${characterName}</h4>
-            </div>
-            <div class="motivation-fields">
-                <div class="motivation-field">
-                    <label for="desire_${characterId}">What do they want? (Desire)</label>
-                    <textarea name="desire_${characterId}" id="desire_${characterId}" rows="3" placeholder="What does the character want?"></textarea>
-                </div>
-                <div class="motivation-field">
-                    <label for="obstacle_${characterId}">Why can't they have it? (Obstacle)</label>
-                    <textarea name="obstacle_${characterId}" id="obstacle_${characterId}" rows="3" placeholder="Why can't they have it?"></textarea>
-                </div>
-                <div class="motivation-field">
-                    <label for="action_${characterId}">What do they do about it? (Action)</label>
-                    <textarea name="action_${characterId}" id="action_${characterId}" rows="3" placeholder="What do they do about it?"></textarea>
-                </div>
-            </div>
-        `;
-        
-        return container;
-    }
-    
-    // Function to update motivation fields based on selected characters
-    function updateMotivationFields() {
-        // Clear the container
-        motivationsContainer.innerHTML = '';
-        
-        // Get all selected options
-        const selectedOptions = Array.from(characterSelect.selectedOptions);
-        
-        // Add fields for each selected character
-        selectedOptions.forEach(option => {
-            const characterId = option.value;
-            const characterName = option.text;
-            
-            const motivationFields = createMotivationFields(characterId, characterName);
-            motivationsContainer.appendChild(motivationFields);
-        });
-        
-        // Show/hide the motivation section based on whether any characters are selected
-        if (selectedOptions.length > 0) {
-            motivationSection.style.display = 'block';
-        } else {
-            motivationSection.style.display = 'none';
-        }
-    }
-    
-    // Add event listener to the character select
-    characterSelect.addEventListener('change', updateMotivationFields);
-    
-    // Initialize on page load
-    updateMotivationFields();
+    // Initialize the character motivation handler
+    const motivationHandler = initCharacterMotivations({
+        characterSelectId: '{{ form.characters.id_for_label }}',
+        motivationsContainerId: 'character-motivations-container',
+        motivationSectionId: 'character-motivation-section',
+        existingMotivations: {} // No existing motivations for create form
+    });
 });
 </script>
 {% endblock %}
