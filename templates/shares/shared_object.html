@@ -1,33 +1,52 @@
-<!-- templates/shares/shared_object.html -->
-{% extends 'base.html' %}
+{% extends 'shares/public_base.html' %}
 {% load static %}
 {% load share_filters %}
 
 {% block title %}Shared Content - {{ share.name|default:"Shared Item" }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h2 class="card-title mb-0">{{ object.get_share_title }}</h2>
+<!-- Share Banner -->
+<div class="share-banner">
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fas fa-share-alt fa-2x text-primary"></i>
         </div>
-        <div class="card-body">
-            {% if share.description %}
-                <div class="mb-4">
-                    <h5>Description</h5>
-                    <p>{{ share.description }}</p>
-                </div>
-            {% endif %}
-            
-            <div class="alert alert-info">
-                <p class="mb-0">
-                    <strong>Note:</strong> This is a generic shared object view. The application that created this object 
-                    should provide a more specific template for viewing shared content.
-                </p>
+        <div>
+            <h5 class="mb-1">Shared Content</h5>
+            <div class="share-info">
+                Shared by <strong>{{ share.created_by.get_full_name|default:share.created_by.username }}</strong>
+                {% if share.is_public %}
+                    with <strong>public</strong> access
+                {% else %}
+                    with <strong>{{ share.shared_with.username }}</strong>
+                {% endif %}
+                ({{ permission }} permission)
             </div>
-            
-            <div class="mb-4">
-                <h5>Details</h5>
+        </div>
+    </div>
+</div>
+
+<div class="public-content">
+    <h2 class="mb-4">{{ object.get_share_title }}</h2>
+    
+    {% if share.description %}
+        <div class="mb-4">
+            <h5>Description</h5>
+            <p>{{ share.description }}</p>
+        </div>
+    {% endif %}
+    
+    <div class="alert alert-info">
+        <p class="mb-0">
+            <strong>Note:</strong> This is a generic shared object view. The application that created this object 
+            should provide a more specific template for viewing shared content.
+        </p>
+    </div>
+    
+    <div class="mb-4">
+        <h5>Details</h5>
+        <div class="row">
+            <div class="col-md-6">
                 <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         Type
@@ -37,10 +56,10 @@
                         Permission
                         <span class="badge bg-success rounded-pill">{{ permission }}</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Shared by
-                        <span>{{ share.created_by.get_full_name|default:share.created_by.username }}</span>
-                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         Shared on
                         <span>{{ share.created_at|date:"F j, Y" }}</span>
@@ -53,13 +72,13 @@
                     {% endif %}
                 </ul>
             </div>
-            
-            {% if error %}
-                <div class="alert alert-danger">
-                    <p>Error rendering the shared content: {{ error }}</p>
-                </div>
-            {% endif %}
         </div>
     </div>
+    
+    {% if error %}
+        <div class="alert alert-danger">
+            <p>Error rendering the shared content: {{ error }}</p>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

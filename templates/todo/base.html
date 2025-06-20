@@ -8,15 +8,6 @@
 
 {% block content %}
 <div class="container">
-    <!-- Include the app header component -->
-    {% include 'components/app_header.html' with 
-        app_name="Task Manager" 
-        app_home_url="todo:board_list" 
-        app_icon="fa-tasks" 
-        tabs=nav_tabs 
-        active_tab=active_tab 
-    %}
-    
     <div class="app-content">
         {% block todo_content %}{% endblock %}
     </div>
