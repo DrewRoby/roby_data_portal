@@ -42,6 +42,9 @@ def story_detail(request, story_id):
     relationships = CharacterRelationship.objects.filter(
         source__story=story, target__story=story
     )
+
+    #TODO: replace hard-coded content_type_id with query to django_content_type for a given app label (...maybe)
+    created_shares = Share.objects.filter(created_by=request.user, content_type_id=30, object_id=story.id)
     
     context = {
         'story': story,
@@ -50,6 +53,7 @@ def story_detail(request, story_id):
         'plots': plots,
         'scenes': scenes,
         'relationships': relationships,
+        'created_shares': created_shares,
     }
     
     return render(request, 'storycraft/story_detail.html', context)

@@ -49,7 +49,7 @@ def access_share(request, share_id):
         else:
             # Check if password is already verified via session
             verified_shares = request.session.get('verified_shares', [])
-            if str(share.id) not in verified_shares:
+            if str(share.id) not in verified_shares and not share.is_public:
                 # Show password form
                 return render(request, 'shares/password_form.html', {
                     'share': share,
