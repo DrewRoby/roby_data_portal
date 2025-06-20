@@ -31,6 +31,18 @@ header {
     width: 90%;
     max-width: 1200px;
     margin: 0 auto;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.header-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 0;
+    width: 100%;
 }
 
 .logo {
@@ -501,7 +513,7 @@ footer {
 }
 
 .main-content {
-    margin-right: 250px;
+/*    margin-right: 50px;*/
     min-height: 100vh;
     transition: margin 0.3s ease;
 }

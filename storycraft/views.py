@@ -311,14 +311,14 @@ def create_setting(request, story_id):
     story = get_object_or_404(Story, id=story_id, user=request.user)
     
     if request.method == 'POST':
-        form = SettingForm(request.POST)
+        form = SettingForm(request.POST, story=story)
         if form.is_valid():
             setting = form.save(commit=False)
             setting.story = story
             setting.save()
             return redirect('storycraft:story_detail', story_id=story.id)
     else:
-        form = SettingForm()
+        form = SettingForm(story=story)
     
     return render(request, 'storycraft/create_setting.html', {
         'form': form,

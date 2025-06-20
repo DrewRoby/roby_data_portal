@@ -64,6 +64,7 @@ class SettingForm(forms.ModelForm):
         fields = ['name', 'description', 'parent', 'attributes']
     
     def __init__(self, *args, **kwargs):
+        # First: Handle the story parameter for parent queryset filtering
         self.story = kwargs.pop('story', None)
         super().__init__(*args, **kwargs)
         
@@ -77,14 +78,14 @@ class SettingForm(forms.ModelForm):
             else:
                 self.fields['parent'].queryset = Setting.objects.filter(story=self.story)
         
-    # Similar custom handling for attributes as in CharacterForm
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        # Second: Handle attributes custom fields (like CharacterForm does)
         self.fields['attributes'].widget = forms.HiddenInput()
         
+        # Get existing attributes if this is an edit
         instance = kwargs.get('instance')
         attrs = instance.attributes if instance else {}
         
+        # Add custom fields for setting attributes
         self.fields['geography'] = forms.CharField(
             required=False, 
             widget=forms.TextInput(attrs={'class': 'form-control'}),
@@ -112,7 +113,7 @@ class SettingForm(forms.ModelForm):
                 
         cleaned_data['attributes'] = attributes
         return cleaned_data
-
+        
 class PlotForm(forms.ModelForm):
     class Meta:
         model = Plot
