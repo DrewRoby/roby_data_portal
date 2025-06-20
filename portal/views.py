@@ -32,7 +32,6 @@ def login_view(request):
             if user is not None:
                 # Check if email is verified
                 if hasattr(user, 'profile') and user.profile.is_email_verified:
-                    print("HEY YOU GOT HERE")
                     login(request, user)
                     next_url = request.GET.get('next', 'portal:home')
                     return redirect(next_url)
