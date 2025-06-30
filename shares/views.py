@@ -21,7 +21,8 @@ def access_share(request, share_id):
     # Check if the share has expired
     if share.is_expired():
         return render(request, 'shares/error.html', {
-            'error_message': 'This share has expired.'
+            'error_message': 'This share has expired.',
+            'share': share,
         })
     
     # Check if the user has access (bypass password check for the owner)
@@ -114,11 +115,27 @@ def my_shares(request):
     """
     View for displaying all shares created by the current user.
     """
-    created_shares = Share.objects.filter(created_by=request.user)
-    received_shares = Share.objects.filter(shared_with=request.user, is_public=False)
+    now = timezone.now()
+    
+    # Get all shares created by the user
+    all_created_shares = Share.objects.filter(created_by=request.user)
+    
+    # Separate active and expired shares
+    created_shares = all_created_shares.filter(
+        Q(expires_at__gt=now) | Q(expires_at__isnull=True)
+    )
+    expired_shares = all_created_shares.filter(expires_at__lte=now)
+    
+    # Get shares received by the user (keeping existing filtering)
+    received_shares = Share.objects.filter(
+        shared_with=request.user, 
+        is_public=False,
+        expires_at__gt=now
+    )
     
     return render(request, 'shares/my_shares.html', {
         'created_shares': created_shares,
+        'expired_shares': expired_shares,
         'received_shares': received_shares,
     })
 

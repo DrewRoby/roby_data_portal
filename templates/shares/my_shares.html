@@ -18,7 +18,7 @@
     
     <div class="tab-content">
         <div class="tab-pane fade show active" id="created">
-            {% if created_shares %}
+            {% if created_shares or expired_shares %}
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
@@ -75,32 +75,67 @@
                                             <a href="{% url 'shares:edit_share' share_id=share.id %}" class="btn btn-outline-secondary">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ share.id }}">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <form method="post" action="{% url 'shares:delete_share' share_id=share.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this share?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
-                                        
-                                        <!-- Delete Modal -->
-                                        <div class="modal fade" id="deleteModal{{ share.id }}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Confirm Delete</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p>Are you sure you want to delete this share?</p>
-                                                        <p><strong>{{ share.name|default:share.get_object_name }}</strong></p>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <form method="post" action="{% url 'shares:delete_share' share_id=share.id %}">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            
+                            {% for share in expired_shares %}
+                                <tr class="table-secondary">
+                                    <td>
+                                        <a href="{% url 'shares:access_share' share_id=share.id %}" target="_blank" class="text-muted">
+                                            {{ share.name|default:share.get_object_name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if share.is_public %}
+                                            <span class="badge bg-secondary">Public</span>
+                                        {% elif share.shared_with %}
+                                            <span class="text-muted">{{ share.shared_with.username }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if share.permission_type == 'VIEW' %}
+                                            <span class="badge bg-secondary">View Only</span>
+                                        {% elif share.permission_type == 'COMMENT' %}
+                                            <span class="badge bg-secondary">Comment</span>
+                                        {% elif share.permission_type == 'EDIT' %}
+                                            <span class="badge bg-secondary">Edit</span>
+                                        {% elif share.permission_type == 'ADMIN' %}
+                                            <span class="badge bg-secondary">Admin</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted">{{ share.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if share.expires_at %}
+                                            <i class="fas fa-exclamation-triangle text-warning me-1" title="This share has expired"></i>
+                                            <span class="text-muted">{{ share.expires_at|date:"M d, Y" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'shares:access_share' share_id=share.id %}" class="btn btn-outline-secondary disabled" target="_blank" title="Share expired">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                            <a href="{% url 'shares:edit_share' share_id=share.id %}" class="btn btn-outline-secondary" title="Renew share">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'shares:delete_share' share_id=share.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this share?')" title="Delete share">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -124,7 +159,7 @@
                                 <th>Name</th>
                                 <th>Shared By</th>
                                 <th>Permission</th>
-                                <th>Received</th>
+                                <th>Created</th>
                                 <th>Expires</th>
                                 <th>Actions</th>
                             </tr>
