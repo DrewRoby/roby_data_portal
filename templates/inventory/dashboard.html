@@ -34,7 +34,7 @@
                 </div>
             </div>
             <div class="card-footer d-flex align-items-center justify-content-between">
-                <a href="#" class="text-white">View Reports</a>
+                <a href="{% url 'inventory:report' %}" class="text-white">View Reports</a>
                 <i class="fa fa-angle-right text-white"></i>
             </div>
         </div>
@@ -52,7 +52,7 @@
                 </div>
             </div>
             <div class="card-footer d-flex align-items-center justify-content-between">
-                <a href="#" class="text-dark">View Low Stock</a>
+                <a href="{% url 'inventory:low-stock' %}" class="text-dark">View Low Stock</a>
                 <i class="fa fa-angle-right text-dark"></i>
             </div>
         </div>
@@ -118,8 +118,8 @@
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="card mb-4">
+
+<!-- <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">Quick Actions</h5>
     </div>
@@ -152,4 +152,5 @@
         </div>
     </div>
 </div>
+ -->
 {% endblock %}
