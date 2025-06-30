@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, F
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.urls import reverse
@@ -16,12 +16,15 @@ from .forms import (
     ItemTransferForm, RestockForm, SearchForm, DispositionForm,
     StockAdditionForm
 )
+from . import utils
 
 # Dashboard
 def dashboard(request):
     """
     Display the inventory dashboard with key metrics and recent activity.
     """
+    from .utils import get_activity_summary
+    
     warehouse_count = Warehouse.objects.filter(user=request.user).count()
     
     item_count = Item.objects.filter(
@@ -35,30 +38,21 @@ def dashboard(request):
     # Define what "low stock" means - items with quantity < 5 for this example
     low_stock_count = Item.objects.filter(
         bin__shelf__rack__warehouse__user=request.user,
-        quantity__lt=5
+        min_stock_level__gt=0  # Only count items with a minimum set
+    ).filter(
+        quantity__lt=F('min_stock_level')  # Current quantity < minimum
     ).count()
     
-    # Get recent activities (this would be from a hypothetical ActivityLog model)
-    # We'll mock this for the example
-    recent_activities = [
-        {
-            'item_name': 'Example Item',
-            'location': 'Warehouse A > Rack 1 > Shelf 2 > Bin 3',
-            'action': 'Updated quantity',
-            'timestamp': timezone.now(),
-            'detail_url': '#'
-        }
-    ]
-    
-    recent_activity_count = len(recent_activities)
+    # Get real recent activity using our utility function
+    activity_summary = get_activity_summary(request.user, hours_limit=24)
     
     context = {
         'warehouse_count': warehouse_count,
         'item_count': item_count,
         'total_quantity': total_quantity,
         'low_stock_count': low_stock_count,
-        'recent_activities': recent_activities,
-        'recent_activity_count': recent_activity_count,
+        'recent_activities': activity_summary['recent_activities'],
+        'recent_activity_count': activity_summary['total_count'],
     }
     
     return render(request, 'inventory/dashboard.html', context)
@@ -836,19 +830,26 @@ def search(request):
         # If no query, show the search form
         return render(request, 'inventory/search.html')
 
+# Update the low_stock view in inventory/views.py
+
+@login_required
 def low_stock(request):
     """
-    Display items with low stock levels.
+    Display items that are below their minimum stock levels.
     """
-    # Define what "low stock" means - items with quantity < 5 for this example
-    # In a real application, this could be a configurable threshold or defined per item
+    # Get items where current quantity is less than minimum stock level
+    # AND minimum stock level is greater than 0 (items with no minimum set are excluded)
     low_stock_items = Item.objects.filter(
         bin__shelf__rack__warehouse__user=request.user,
-        quantity__lt=5
+        min_stock_level__gt=0  # Only items with a minimum set
+    ).filter(
+        quantity__lt=F('min_stock_level')  # Current quantity < minimum
+    ).select_related(
+        'bin__shelf__rack__warehouse'
     ).order_by('quantity')
     
     context = {
-        'low_stock_items': low_stock_items
+        'low_stock_items': low_stock_items,
     }
     
     return render(request, 'inventory/low_stock.html', context)
@@ -909,9 +910,9 @@ def report(request):
     """
     report_type = request.GET.get('report_type')
     warehouse_id = request.GET.get('warehouse')
-    timeframe = request.GET.get('timeframe', 'all')  # New parameter for time filtering
-    low_stock_threshold = request.GET.get('threshold', 5)  # New parameter for low stock threshold
-    sort_by = request.GET.get('sort_by', 'name')  # New parameter for sorting
+    timeframe = request.GET.get('timeframe', 'all') 
+    low_stock_threshold = request.GET.get('threshold', 5) 
+    sort_by = request.GET.get('sort_by', 'name') 
     
     try:
         low_stock_threshold = int(low_stock_threshold)
@@ -1770,3 +1771,218 @@ def item_add_stock(request, warehouse_id, rack_id, shelf_id, bin_id, item_id):
     }
     
     return render(request, 'inventory/item_add_stock.html', context)
+
+# Add this new view to inventory/views.py
+
+@login_required
+def activity_list(request):
+    """
+    Display all activity with filtering options.
+    """
+    from .utils import get_activity_data
+    
+    # Get filter parameters from GET request
+    time_filter = request.GET.get('time_filter', '24_hours')
+    warehouse_id = request.GET.get('warehouse')
+    activity_type = request.GET.get('activity_type')
+    
+    # Convert time filter to hours
+    time_mapping = {
+        '24_hours': 24,
+        '7_days': 24 * 7,
+        '30_days': 24 * 30,
+        '90_days': 24 * 90,
+        'all_time': None
+    }
+    hours_limit = time_mapping.get(time_filter, 24)
+    
+    # Handle warehouse filter
+    if warehouse_id == 'all' or not warehouse_id:
+        warehouse_id = None
+    else:
+        try:
+            warehouse_id = int(warehouse_id)
+        except (ValueError, TypeError):
+            warehouse_id = None
+    
+    # Handle activity type filter
+    if activity_type == 'all' or not activity_type:
+        activity_type = None
+    
+    # Get filtered activities
+    activities = get_activity_data(
+        user=request.user,
+        hours_limit=hours_limit,
+        warehouse_id=warehouse_id,
+        activity_type=activity_type
+    )
+    
+    # Get warehouses for filter dropdown
+    warehouses = Warehouse.objects.filter(user=request.user).order_by('name')
+    
+    # Prepare filter context
+    filter_context = {
+        'current_time_filter': time_filter,
+        'current_warehouse': warehouse_id,
+        'current_activity_type': activity_type,
+        'warehouses': warehouses,
+        'time_choices': [
+            ('24_hours', 'Last 24 Hours'),
+            ('7_days', 'Last 7 Days'),
+            ('30_days', 'Last 30 Days'),
+            ('90_days', 'Last 90 Days'),
+            ('all_time', 'All Time'),
+        ],
+        'activity_type_choices': [
+            ('all', 'All Types'),
+            ('addition', 'Stock Additions'),
+            ('disposition', 'Stock Dispositions'),
+        ]
+    }
+
+    addition_count = len([a for a in activities if a['type'] == 'addition'])
+    disposition_count = len([a for a in activities if a['type'] == 'disposition'])
+    
+    context = {
+        'activities': activities,
+        'activity_count': len(activities),
+        'addition_count': addition_count,
+        'disposition_count': disposition_count,
+        **filter_context
+    }
+    
+    return render(request, 'inventory/activity_list.html', context)
+
+# Add these new views to inventory/views.py
+
+@login_required
+def export_activity_csv(request):
+    """
+    Export activity data to CSV respecting current filters.
+    """
+    from .utils import export_activity_csv
+    
+    # Get the same filter parameters as activity_list view
+    time_filter = request.GET.get('time_filter', '24_hours')
+    warehouse_id = request.GET.get('warehouse')
+    activity_type = request.GET.get('activity_type')
+    
+    # Convert time filter to hours
+    time_mapping = {
+        '24_hours': 24,
+        '7_days': 24 * 7,
+        '30_days': 24 * 30,
+        '90_days': 24 * 90,
+        'all_time': None
+    }
+    hours_limit = time_mapping.get(time_filter, 24)
+    
+    # Handle warehouse filter
+    if warehouse_id == 'all' or not warehouse_id:
+        warehouse_id = None
+    else:
+        try:
+            warehouse_id = int(warehouse_id)
+        except (ValueError, TypeError):
+            warehouse_id = None
+    
+    # Handle activity type filter
+    if activity_type == 'all' or not activity_type:
+        activity_type = None
+    
+    # Generate and return CSV
+    return export_activity_csv(
+        user=request.user,
+        hours_limit=hours_limit,
+        warehouse_id=warehouse_id,
+        activity_type=activity_type
+    )
+
+
+@login_required  
+def export_report_csv(request):
+    """
+    Export current report data to CSV.
+    """
+    from .utils import export_report_csv
+    
+    # Get the same parameters as the report view
+    report_type = request.GET.get('report_type')
+    warehouse_id = request.GET.get('warehouse')
+    timeframe = request.GET.get('timeframe', 'all')
+    low_stock_threshold = request.GET.get('threshold', 5)
+    sort_by = request.GET.get('sort_by', 'name')
+    
+    try:
+        low_stock_threshold = int(low_stock_threshold)
+    except (ValueError, TypeError):
+        low_stock_threshold = 5
+    
+    # We need to replicate the report logic to get the data for export
+    # This is a simplified version - you might want to extract the report 
+    # generation logic into a separate function to avoid duplication
+    
+    if report_type == 'low_stock':
+        # Get low stock data
+        if warehouse_id and warehouse_id != 'all':
+            warehouse_filter = Q(bin__shelf__rack__warehouse__id=warehouse_id)
+        else:
+            warehouse_filter = Q(bin__shelf__rack__warehouse__user=request.user)
+        
+        low_stock_items_query = Item.objects.filter(
+            warehouse_filter,
+            quantity__lt=low_stock_threshold
+        ).order_by('quantity')
+        
+        # Format for CSV export
+        export_data = []
+        for item in low_stock_items_query:
+            bin_obj = item.bin
+            shelf = bin_obj.shelf
+            rack = shelf.rack
+            warehouse = rack.warehouse
+            
+            days_in_stock = (timezone.now() - item.created_at).days
+            
+            export_data.append({
+                'name': item.name,
+                'sku': item.sku or 'N/A',
+                'quantity': item.quantity,
+                'days_in_stock': days_in_stock,
+                'warehouse': warehouse.name,
+                'location': f"{warehouse.name} > {rack.name} > {shelf.name} > {bin_obj.name}",
+            })
+            
+    elif report_type == 'inventory_summary':
+        # Get all items for summary
+        if warehouse_id and warehouse_id != 'all':
+            warehouse_filter = Q(bin__shelf__rack__warehouse__id=warehouse_id)
+        else:
+            warehouse_filter = Q(bin__shelf__rack__warehouse__user=request.user)
+            
+        items_query = Item.objects.filter(warehouse_filter)
+        
+        export_data = []
+        for item in items_query:
+            bin_obj = item.bin
+            shelf = bin_obj.shelf
+            rack = shelf.rack
+            warehouse = rack.warehouse
+            
+            days_in_stock = (timezone.now() - item.created_at).days
+            
+            export_data.append({
+                'name': item.name,
+                'sku': item.sku or 'N/A',
+                'quantity': item.quantity,
+                'warehouse': warehouse.name,
+                'location': f"{warehouse.name} > {rack.name} > {shelf.name} > {bin_obj.name}",
+                'days_in_stock': days_in_stock,
+            })
+    else:
+        # Fallback for unknown report types
+        export_data = []
+        messages.error(request, f"Export not available for report type: {report_type}")
+        return redirect('inventory:report')
+    
+    return export_report_csv(export_data, report_type)

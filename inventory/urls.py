@@ -7,6 +7,13 @@ app_name = 'inventory'
 urlpatterns = [
     # Dashboard
     path('', views.dashboard, name='dashboard'),
+
+    # Activity
+    path('activity/', views.activity_list, name='activity-list'),
+    
+    # CSV Exports
+    path('export/activity/', views.export_activity_csv, name='export-activity-csv'),
+    path('export/report/', views.export_report_csv, name='export-report-csv'),
     
     # Warehouse URLs
     path('warehouses/', views.warehouse_list, name='warehouse-list'),

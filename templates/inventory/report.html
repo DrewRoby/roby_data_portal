@@ -99,9 +99,9 @@
                    <button class="btn btn-outline-secondary" id="btn-print">
                        <i class="fa fa-print"></i> Print Report
                    </button>
-                   <a href="#" onclick="window.location.href=window.location.pathname+'?'+getExportParams()" class="btn btn-outline-secondary">
-                       <i class="fa fa-file-csv"></i> Export as CSV
-                   </a>
+                    <a href="{% url 'inventory:export-report-csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">
+                        <i class="fa fa-file-csv"></i> Export as CSV
+                    </a>
                </div>
            </div>
        </div>
