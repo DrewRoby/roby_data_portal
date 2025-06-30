@@ -16,6 +16,7 @@
                     {% endblock %}
                 </ol>
             </nav>
+
             <div class="mb-4">
                 <nav class="nav nav-pills">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'inventory:dashboard' %}">
@@ -23,6 +24,9 @@
                     </a>
                     <a class="nav-link {% if request.resolver_match.url_name == 'warehouse-list' %}active{% endif %}" href="{% url 'inventory:warehouse-list' %}">
                         <i class="fa fa-warehouse"></i> Warehouses
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'activity-list' %}active{% endif %}" href="{% url 'inventory:activity-list' %}">
+                        <i class="fa fa-history"></i> Activity
                     </a>
                     <a class="nav-link {% if request.resolver_match.url_name == 'search' or request.resolver_match.url_name == 'search_results' %}active{% endif %}" href="{% url 'inventory:search' %}">
                         <i class="fa fa-search"></i> Search
@@ -34,7 +38,7 @@
                         <i class="fa fa-chart-bar"></i> Reports
                     </a>
                 </nav>
-            </div>            
+            </div>        
             {% block inventory_content %}{% endblock %}
         </div>
     </div>

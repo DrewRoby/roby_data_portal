@@ -58,6 +58,9 @@
         </div>
     </div>
     
+<!-- Updated section for templates/inventory/dashboard.html -->
+<!-- Replace the "View Activity" link and recent updates section -->
+
     <div class="col-md-6 col-lg-3 mb-4">
         <div class="card bg-info text-white h-100">
             <div class="card-body">
@@ -70,7 +73,7 @@
                 </div>
             </div>
             <div class="card-footer d-flex align-items-center justify-content-between">
-                <a href="#" class="text-white">View Activity</a>
+                <a href="{% url 'inventory:activity-list' %}" class="text-white">View All Activity</a>
                 <i class="fa fa-angle-right text-white"></i>
             </div>
         </div>
@@ -79,7 +82,7 @@
 
 <!-- Recent Updates -->
 <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Recent Updates</h5>
     </div>
     <div class="card-body">
@@ -89,8 +92,10 @@
                     <thead>
                         <tr>
                             <th>Item</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Reason</th>
                             <th>Location</th>
-                            <th>Action</th>
                             <th>Date</th>
                             <th></th>
                         </tr>
@@ -98,12 +103,34 @@
                     <tbody>
                         {% for activity in recent_activities %}
                         <tr>
-                            <td>{{ activity.item_name }}</td>
-                            <td>{{ activity.location }}</td>
-                            <td>{{ activity.action }}</td>
-                            <td>{{ activity.timestamp|date:"M d, Y" }}</td>
                             <td>
-                                <a href="{{ activity.detail_url }}" class="btn btn-sm btn-info">View</a>
+                                <strong>{{ activity.item_name }}</strong><br>
+                                <small class="text-muted">{{ activity.item_sku }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {{ activity.badge_class }}">
+                                    {{ activity.type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="{% if activity.type == 'addition' %}text-success{% else %}text-danger{% endif %}">
+                                    {{ activity.quantity_display }}
+                                </span>
+                            </td>
+                            <td>{{ activity.reason }}</td>
+                            <td>
+                                <small class="text-muted">{{ activity.warehouse_name }}</small>
+                            </td>
+                            <td>
+                                <small>
+                                    {{ activity.timestamp|date:"M d" }}<br>
+                                    {{ activity.timestamp|time:"g:i A" }}
+                                </small>
+                            </td>
+                            <td>
+                                <a href="{{ activity.item_url }}" class="btn btn-sm btn-info" title="View Item">
+                                    <i class="fa fa-eye"></i>
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -112,12 +139,12 @@
             </div>
         {% else %}
             <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i>
                 No recent activity. Start managing your inventory!
             </div>
         {% endif %}
     </div>
 </div>
-
 
 <!-- <div class="card mb-4">
     <div class="card-header">

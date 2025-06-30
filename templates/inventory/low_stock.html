@@ -27,8 +27,70 @@
                 <i class="fa fa-exclamation-triangle"></i> 
                 There are <strong>{{ low_stock_items|length }}</strong> items with stock levels below the minimum threshold.
             </div>
-            
-            <div class="table-responsive">
+     
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>SKU</th>
+                        <th>Current Quantity</th>
+                        <th>Minimum Required</th>
+                        <th>Shortage</th>
+                        <th>Location</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in low_stock_items %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.name }}</strong>
+                            {% if item.quantity == 0 %}
+                                <br><small class="text-danger">⚠️ Out of Stock</small>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ item.sku|default:'N/A' }}</code></td>
+                        <td>
+                            <span class="badge {% if item.quantity == 0 %}bg-dark{% else %}bg-danger{% endif %}">
+                                {{ item.quantity }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ item.min_stock_level }}</span>
+                        </td>
+                        <td>
+                            <span class="text-danger">
+                                <strong>{{ item.min_stock_level|add:item.quantity|add:"-"|add:item.min_stock_level }}</strong>
+                                {% with shortage=item.min_stock_level|add:"-"|add:item.quantity %}
+                                    {{ shortage }} needed
+                                {% endwith %}
+                            </span>
+                        </td>
+                        <td>
+                            <small>
+                                <a href="{% url 'inventory:warehouse-detail' item.bin.shelf.rack.warehouse.id %}" class="text-decoration-none">
+                                    {{ item.bin.shelf.rack.warehouse.name }}
+                                </a><br>
+                                {{ item.bin.shelf.rack.name }} > {{ item.bin.shelf.name }} > {{ item.bin.name }}
+                            </small>
+                        </td>
+                        <td>
+                            <a href="{% url 'inventory:item-detail' item.bin.shelf.rack.warehouse.id item.bin.shelf.rack.id item.bin.shelf.id item.bin.id item.id %}" 
+                               class="btn btn-sm btn-primary" title="View Details">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                            <a href="{% url 'inventory:item-add-stock' item.bin.shelf.rack.warehouse.id item.bin.shelf.rack.id item.bin.shelf.id item.bin.id item.id %}" 
+                               class="btn btn-sm btn-success" title="Add Stock">
+                                <i class="fa fa-plus"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>            
+<!--             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -80,7 +142,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
+            </div> -->
         {% else %}
             <div class="alert alert-success">
                 <i class="fa fa-check-circle"></i> Great! All items are above their minimum stock levels.

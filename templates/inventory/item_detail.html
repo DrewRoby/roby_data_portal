@@ -31,6 +31,62 @@
                 <p><strong>Name:</strong> {{ item.name }}</p>
                 <p><strong>SKU:</strong> {{ item.sku|default:'N/A' }}</p>
                 <p><strong>Description:</strong> {{ item.description }}</p>
+                <p><strong>Current Quantity:</strong> 
+                    <span class="badge {% if item.is_low_stock %}bg-danger{% elif item.quantity == 0 %}bg-dark{% else %}bg-success{% endif %}">
+                        {{ item.quantity }}
+                    </span>
+                </p>
+                <p><strong>Minimum Stock Level:</strong> 
+                    {{ item.min_stock_level }}
+                    {% if item.min_stock_level > 0 %}
+                        <small class="text-muted">(low stock alerts enabled)</small>
+                    {% else %}
+                        <small class="text-muted">(no minimum set)</small>
+                    {% endif %}
+                </p>
+                <p><strong>Stock Status:</strong> 
+                    <span class="badge {% if item.stock_status == 'Out of Stock' %}bg-dark{% elif item.stock_status == 'Low Stock' %}bg-warning{% else %}bg-success{% endif %}">
+                        {{ item.stock_status }}
+                    </span>
+                    {% if item.is_low_stock and item.min_stock_level > 0 %}
+                        <br><small class="text-warning">⚠️ Below minimum stock level</small>
+                    {% endif %}
+                </p>
+                <p><strong>Created:</strong> {{ item.created_at|date:"F d, Y" }}</p>
+                <p><strong>Last Updated:</strong> {{ item.updated_at|date:"F d, Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'inventory:item-add-stock' warehouse.id rack.id shelf.id bin.id item.id %}" 
+                               class="btn btn-success btn-sm">
+                                <i class="fa fa-plus"></i> Add Stock
+                            </a>
+                            <a href="{% url 'inventory:item-disposition' warehouse.id rack.id shelf.id bin.id item.id %}" 
+                               class="btn btn-warning btn-sm">
+                                <i class="fa fa-minus"></i> Record Disposition
+                            </a>
+                            <a href="{% url 'inventory:item-transfer' warehouse.id rack.id shelf.id bin.id item.id %}" 
+                               class="btn btn-info btn-sm">
+                                <i class="fa fa-arrows-alt"></i> Transfer Item
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ item.name }}</p>
+                <p><strong>SKU:</strong> {{ item.sku|default:'N/A' }}</p>
+                <p><strong>Description:</strong> {{ item.description }}</p>
                 <p><strong>Quantity:</strong> {{ item.quantity }}</p>
                 <p><strong>Created:</strong> {{ item.created_at|date:"F d, Y" }}</p>
                 <p><strong>Last Updated:</strong> {{ item.updated_at|date:"F d, Y" }}</p>
@@ -60,6 +116,7 @@
             </div>
         </div>
     </div>
+ -->
 </div>
 
 <!-- Quick Actions -->

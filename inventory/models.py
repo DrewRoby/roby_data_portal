@@ -41,17 +41,43 @@ class Bin(models.Model):
     def __str__(self):
         return f"{self.shelf.rack.warehouse.name} - {self.shelf.rack.name} - {self.shelf.name} - {self.name}"
 
+# Add this field to the Item model in inventory/models.py
+
 class Item(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
     bin = models.ForeignKey(Bin, on_delete=models.CASCADE, related_name='items')
+    name = models.CharField(max_length=200)
+    sku = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=0)
-    sku = models.CharField(max_length=50, blank=True)
+    min_stock_level = models.PositiveIntegerField(
+        default=0, 
+        help_text='Minimum stock level before item is considered low stock'
+    )
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
+    class Meta:
+        unique_together = ['bin', 'name']
+        ordering = ['name']
+    
     def __str__(self):
-        return f"{self.name} ({self.quantity}) in {self.bin}"
+        return f"{self.name} ({self.bin})"
+    
+    @property 
+    def is_low_stock(self):
+        """Return True if current quantity is below minimum stock level."""
+        return self.quantity < self.min_stock_level
+    
+    @property
+    def stock_status(self):
+        """Return descriptive stock status."""
+        if self.quantity == 0:
+            return "Out of Stock"
+        elif self.is_low_stock:
+            return "Low Stock"
+        else:
+            return "In Stock"
 
 class Disposition(models.Model):
     DISPOSITION_TYPES = [

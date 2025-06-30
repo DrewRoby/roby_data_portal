@@ -65,6 +65,24 @@
                 {% endif %}
             </div>
             
+            <div class="mb-3">
+                <label for="id_min_stock_level" class="form-label">Minimum Stock Level</label>
+                <input type="number" class="form-control" id="id_min_stock_level" name="min_stock_level" 
+                       value="{{ item.min_stock_level|default:0 }}" min="0" 
+                       placeholder="Enter minimum stock level (0 = no minimum)">
+                <div class="form-text">
+                    Set the minimum stock level for low stock alerts. Use 0 for no minimum.
+                    {% if item.min_stock_level %}
+                        Current minimum: {{ item.min_stock_level }}
+                    {% endif %}
+                </div>
+                {% if form.min_stock_level.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.min_stock_level.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
             <!-- Hidden field to indicate if we should redirect to add another item -->
             <input type="hidden" name="add_another" id="add_another" value="0">
             

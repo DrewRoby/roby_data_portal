@@ -40,16 +40,27 @@ class BinForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+# Update the ItemForm in inventory/forms.py
+
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['name', 'description', 'quantity', 'sku']
+        fields = ['name', 'description', 'quantity', 'sku', 'min_stock_level']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'sku': forms.TextInput(attrs={'class': 'form-control'}),
+            'min_stock_level': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'min': 0,
+                'placeholder': 'Enter minimum stock level (0 = no minimum)'
+            }),
         }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['min_stock_level'].help_text = 'Set the minimum stock level for low stock alerts. Use 0 for no minimum.'
 
 class ItemTransferForm(forms.Form):
     warehouse = forms.ChoiceField(
