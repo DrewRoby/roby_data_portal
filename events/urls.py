@@ -22,6 +22,7 @@ urlpatterns = [
     path('spaces/<int:space_pk>/items/create/', views.agenda_item_create, name='agenda_item_create'),
     path('items/<int:pk>/', views.agenda_item_detail, name='agenda_item_detail'),
     path('items/<int:pk>/edit/', views.agenda_item_edit, name='agenda_item_edit'),
+    path('items/<int:pk>/delete/', views.agenda_item_delete, name='agenda_item_delete'),
     path('items/<int:pk>/move/', views.agenda_item_move, name='agenda_item_move'),
     
     # Comments

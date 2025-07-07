@@ -112,10 +112,9 @@ def rsvp_update(request, pk):
     
     return redirect('events:event_detail', pk=pk)
 
-
 @owner_or_permission_required('VIEW')
 def rsvp_summary(request, pk):
-    """Display RSVP summary for event organizers."""
+    """Display RSVP summary for event organizers with email notification tracking."""
     event = get_object_or_404(Event, pk=pk)
     
     # Only event creator or users with ADMIN permission can see full RSVP summary
@@ -123,6 +122,7 @@ def rsvp_summary(request, pk):
     if user_permission not in ['ADMIN']:
         raise Http404("You don't have permission to view RSVP details.")
     
+    # Existing RSVP functionality
     invitations = event.invitations.select_related('invitee', 'share').all()
     
     # Group by RSVP status
@@ -136,14 +136,55 @@ def rsvp_summary(request, pk):
     for invitation in invitations:
         rsvp_groups[invitation.rsvp_status].append(invitation)
     
+    # NEW: Email notification tracking
+    from django.contrib.contenttypes.models import ContentType
+    from shares.models import Share, ShareEmailNotification
+    
+    # Get content type for this event
+    content_type = ContentType.objects.get_for_model(Event)
+    
+    # Get all shares for this event
+    event_shares = Share.objects.filter(
+        content_type=content_type,
+        object_id=event.id,
+        created_by=request.user
+    ).order_by('-created_at')
+    
+    # Get email notification statistics
+    email_notifications = ShareEmailNotification.objects.filter(
+        share__in=event_shares
+    ).order_by('-sent_at')
+    
+    # Get unique email addresses that have been notified
+    unique_notified_emails = email_notifications.values_list('email_address', flat=True).distinct()
+    
+    # Get public shares with email notifications for detailed view
+    public_shares_with_emails = []
+    for share in event_shares.filter(is_public=True):
+        share_notifications = email_notifications.filter(share=share)
+        if share_notifications.exists():
+            public_shares_with_emails.append({
+                'share': share,
+                'notifications': share_notifications[:5],  # Show last 5
+                'notification_count': share_notifications.count()
+            })
+    
     context = {
+        # Existing RSVP data
         'event': event,
         'rsvp_groups': rsvp_groups,
         'total_invitations': invitations.count(),
+        
+        # NEW: Email notification data
+        'event_shares': event_shares,
+        'email_notifications': email_notifications[:10],  # Recent 10 for activity feed
+        'total_email_notifications': email_notifications.count(),
+        'unique_notified_count': len(unique_notified_emails),
+        'unique_notified_emails': list(unique_notified_emails),
+        'public_shares_with_emails': public_shares_with_emails,
     }
     
     return render(request, 'events/rsvp_summary.html', context)
-
 
 @owner_or_permission_required('EDIT')
 def space_create(request, event_pk):
@@ -390,7 +431,6 @@ def add_comment(request, item_pk):
     return JsonResponse({'error': 'Invalid comment data.'}, status=400)
         
 
-
 def event_detail(request, pk):
     """
     Display event details. Public events can be viewed by anyone,
@@ -430,3 +470,23 @@ def event_detail(request, pk):
     }
     
     return render(request, 'events/event_detail.html', context)
+
+
+@owner_or_permission_required('EDIT')
+@require_POST
+def agenda_item_delete(request, pk):
+    """Delete an existing agenda item."""
+    agenda_item = get_object_or_404(AgendaItem, pk=pk)
+    event = agenda_item.space.event
+    space = agenda_item.space
+    
+    # Store the title for the success message
+    item_title = agenda_item.title
+    
+    # Delete the agenda item (this will also delete all associated comments due to CASCADE)
+    agenda_item.delete()
+    
+    messages.success(request, f'Agenda item "{item_title}" has been deleted successfully.')
+    
+    # Redirect back to the event detail page
+    return redirect('events:event_detail', pk=event.pk)

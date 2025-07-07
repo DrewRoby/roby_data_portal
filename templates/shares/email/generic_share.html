@@ -1,0 +1,20 @@
+{% extends 'shares/email/base_email.html' %}
+
+{% block email_title %}Shared Content - {{ object.get_share_title }}{% endblock %}
+
+{% block object_details %}
+<div class="details">
+    <h3>{{ object.get_share_title }}</h3>
+    
+    {% if share.description %}
+        <p><strong>Description:</strong> {{ share.description }}</p>
+    {% endif %}
+    
+    <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <p><strong>Content Type:</strong> {{ object|verbose_name|title }}</p>
+        <p><strong>Shared by:</strong> {{ share.created_by.get_full_name|default:share.created_by.username }}</p>
+        <p><strong>Permission Level:</strong> {{ share.permission_type|title }}</p>
+        <p><strong>Shared on:</strong> {{ share.created_at|date:"F j, Y" }}</p>
+    </div>
+</div>
+{% endblock %}

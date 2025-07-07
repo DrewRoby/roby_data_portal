@@ -1,6 +1,7 @@
 # events/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
 from shares.models import ShareableInterface, Share
@@ -117,6 +118,23 @@ class Event(models.Model, ShareableInterface):
         """
         permission = self.get_user_permission(user)
         return permission == 'ADMIN'
+
+    def get_content_type(self):
+        """Helper method to get ContentType for this model - useful in templates."""
+        return ContentType.objects.get_for_model(self.__class__)
+    
+    def get_shareable_context(self, request, share):
+        """
+        Override the shareable context to provide event-specific data.
+        This is used when rendering the shared event view.
+        """
+        context = {
+            'object': self,
+            'share': share,
+            'permission': share.permission_type,
+            'event': self,  # Alias for event-specific templates
+        }
+        return context
 
 class EventInvitation(models.Model):
     """

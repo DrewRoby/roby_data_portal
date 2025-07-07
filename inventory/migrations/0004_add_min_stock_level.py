@@ -1,7 +1,3 @@
-# Create a new migration file: inventory/migrations/0004_add_min_stock_level.py
-# Run: python manage.py makemigrations inventory --name add_min_stock_level
-# Then: python manage.py migrate
-
 from django.db import migrations, models
 
 class Migration(migrations.Migration):

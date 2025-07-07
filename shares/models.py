@@ -200,3 +200,40 @@ class AccessLog(models.Model):
     def __str__(self):
         user_str = self.user.username if self.user else 'Anonymous'
         return f"Access by {user_str} at {self.accessed_at}"
+
+
+class ShareEmailNotification(models.Model):
+    """
+    Tracks email notifications sent for shares.
+    Allows tracking of who was notified and when, with resend capability.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    share = models.ForeignKey(Share, on_delete=models.CASCADE, related_name='email_notifications')
+    email_address = models.EmailField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications')
+    
+    # Optional tracking fields for future use
+    email_subject = models.CharField(max_length=255, blank=True)
+    delivery_attempted = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = "Share Email Notification"
+        verbose_name_plural = "Share Email Notifications"
+        # Prevent duplicate notifications to same email for same share
+        unique_together = [['share', 'email_address']]
+        indexes = [
+            models.Index(fields=['share', 'email_address']),
+            models.Index(fields=['sent_at']),
+        ]
+        ordering = ['-sent_at']
+    
+    def __str__(self):
+        return f"Email to {self.email_address} for share {self.share.get_object_name()}"
+    
+    def can_resend(self):
+        """
+        Determine if this notification can be resent.
+        Currently always True, but can add logic like time delays if needed.
+        """
+        return True
