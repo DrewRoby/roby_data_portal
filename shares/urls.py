@@ -13,4 +13,7 @@ urlpatterns = [
     path('create/<int:content_type_id>/<int:object_id>/', views.create_share, name='create_share'),
     path('edit/<uuid:share_id>/', views.edit_share, name='edit_share'),
     path('delete/<uuid:share_id>/', views.delete_share, name='delete_share'),
+   
+    # Email notification management
+    path('resend-email/<uuid:share_id>/', views.resend_email, name='resend_email'),
 ]

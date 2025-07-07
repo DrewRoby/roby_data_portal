@@ -1,16 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.urls import reverse
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
-from .models import Share, AccessLog, ShareableInterface
-from .forms import ShareForm, SharePasswordForm
+from .models import Share, ShareEmailNotification, ShareableInterface, AccessLog
+from .forms import ShareForm, ResendEmailForm
+from .services import ShareEmailService
+import logging
+
+logger = logging.getLogger(__name__)
 
 def access_share(request, share_id):
     """
@@ -142,7 +145,7 @@ def my_shares(request):
 @login_required
 def create_share(request, content_type_id, object_id):
     """
-    View for creating a new share.
+    View for creating a new share with email notification support.
     """
     # Get the content type and check it exists
     content_type = get_object_or_404(ContentType, id=content_type_id)
@@ -161,9 +164,7 @@ def create_share(request, content_type_id, object_id):
         raise Http404("Object not found.")
     
     # Check if the user has permission to share this object
-    # Typically would check if the user is the owner or has admin permissions
     if hasattr(obj, 'user') and obj.user != request.user:
-        # Check for existing shares that give admin permission
         if obj.get_share_permissions(request.user) != 'ADMIN':
             raise PermissionDenied("You don't have permission to share this object.")
     
@@ -178,16 +179,42 @@ def create_share(request, content_type_id, object_id):
             # Set expiration date from form
             if form.cleaned_data['duration']:
                 if form.cleaned_data['duration'] == 'custom':
-                    # Use the custom date from the form
                     share.expires_at = form.cleaned_data['custom_expiry']
                 else:
-                    # Convert duration value (in days) to timedelta
                     days = int(form.cleaned_data['duration'])
                     share.expires_at = timezone.now() + timezone.timedelta(days=days)
             
             share.save()
             
-            messages.success(request, "Share created successfully.")
+            # Handle email notifications for public shares
+            if share.is_public and form.cleaned_data.get('email_recipients'):
+                email_list = form.get_email_list()
+                if email_list:
+                    results = ShareEmailService.send_multiple_notifications(
+                        share, email_list, request.user, request
+                    )
+                    
+                    # Provide feedback to user
+                    if results['success_count'] > 0:
+                        messages.success(
+                            request, 
+                            f"Share created successfully! Email notifications sent to {results['success_count']} recipient(s)."
+                        )
+                    
+                    if results['duplicate_count'] > 0:
+                        messages.info(
+                            request,
+                            f"{results['duplicate_count']} recipient(s) were already notified about this share."
+                        )
+                    
+                    if results['failure_count'] > 0:
+                        messages.warning(
+                            request,
+                            f"Failed to send {results['failure_count']} email notification(s). Please check the email addresses and try again."
+                        )
+            else:
+                messages.success(request, "Share created successfully.")
+            
             return redirect('shares:my_shares')
     else:
         # Initialize form with default values
@@ -204,6 +231,96 @@ def create_share(request, content_type_id, object_id):
     })
 
 @login_required
+def edit_share(request, share_id):
+    """
+    View for editing an existing share with email management.
+    """
+    share = get_object_or_404(Share, id=share_id, created_by=request.user)
+    
+    # Get existing email notifications
+    email_notifications = ShareEmailNotification.objects.filter(share=share).order_by('-sent_at')
+    
+    if request.method == 'POST':
+        form = ShareForm(request.POST, instance=share)
+        if form.is_valid():
+            updated_share = form.save()
+            
+            # Handle new email notifications for public shares
+            if updated_share.is_public and form.cleaned_data.get('email_recipients'):
+                email_list = form.get_email_list()
+                if email_list:
+                    results = ShareEmailService.send_multiple_notifications(
+                        updated_share, email_list, request.user, request
+                    )
+                    
+                    # Provide feedback to user
+                    if results['success_count'] > 0:
+                        messages.success(
+                            request, 
+                            f"Share updated! Email notifications sent to {results['success_count']} new recipient(s)."
+                        )
+                    
+                    if results['duplicate_count'] > 0:
+                        messages.info(
+                            request,
+                            f"{results['duplicate_count']} recipient(s) were already notified about this share."
+                        )
+                    
+                    if results['failure_count'] > 0:
+                        messages.warning(
+                            request,
+                            f"Failed to send {results['failure_count']} email notification(s)."
+                        )
+            else:
+                messages.success(request, "Share updated successfully.")
+            
+            return redirect('shares:edit_share', share_id=share.id)
+    else:
+        # Initialize form with current share data
+        initial_data = {}
+        if share.shared_with:
+            initial_data['shared_with_username'] = share.shared_with.username
+        
+        form = ShareForm(instance=share, initial=initial_data)
+    
+    context = {
+        'form': form,
+        'share': share,
+        'email_notifications': email_notifications,
+    }
+    
+    return render(request, 'shares/edit_share.html', context)
+
+@login_required
+@require_POST
+def resend_email(request, share_id):
+    """
+    View for resending an email notification to a specific address.
+    """
+    share = get_object_or_404(Share, id=share_id, created_by=request.user)
+    
+    if not share.is_public:
+        messages.error(request, "Email notifications are only available for public shares.")
+        return redirect('shares:edit_share', share_id=share.id)
+    
+    email_address = request.POST.get('email_address')
+    if not email_address:
+        messages.error(request, "Email address is required.")
+        return redirect('shares:edit_share', share_id=share.id)
+    
+    # Resend the notification
+    success, notification = ShareEmailService.resend_notification(
+        share, email_address, request.user, request
+    )
+    
+    if success:
+        messages.success(request, f"Email notification resent to {email_address}.")
+    else:
+        messages.error(request, f"Failed to resend email notification to {email_address}.")
+    
+    return redirect('shares:edit_share', share_id=share.id)
+
+@login_required
 @require_POST
 def delete_share(request, share_id):
     """
@@ -213,54 +330,6 @@ def delete_share(request, share_id):
     share.delete()
     messages.success(request, "Share deleted successfully.")
     return redirect('shares:my_shares')
-
-@login_required
-def edit_share(request, share_id):
-    """
-    View for editing an existing share.
-    """
-    share = get_object_or_404(Share, id=share_id, created_by=request.user)
-    
-    if request.method == 'POST':
-        form = ShareForm(request.POST, instance=share)
-        if form.is_valid():
-            updated_share = form.save(commit=False)
-            
-            # Set expiration date from form
-            if form.cleaned_data['duration']:
-                if form.cleaned_data['duration'] == 'custom':
-                    # Use the custom date from the form
-                    updated_share.expires_at = form.cleaned_data['custom_expiry']
-                else:
-                    # Convert duration value (in days) to timedelta
-                    days = int(form.cleaned_data['duration'])
-                    updated_share.expires_at = timezone.now() + timezone.timedelta(days=days)
-            
-            updated_share.save()
-            
-            messages.success(request, "Share updated successfully.")
-            return redirect('shares:my_shares')
-    else:
-        # Determine the duration setting based on current expiry
-        if share.expires_at:
-            days_diff = (share.expires_at - timezone.now()).days
-            if days_diff in [1, 7, 30, 90, 365]:
-                initial_duration = str(days_diff)
-            else:
-                initial_duration = 'custom'
-        else:
-            initial_duration = None
-            
-        initial_data = {
-            'duration': initial_duration,
-            'custom_expiry': share.expires_at,
-        }
-        form = ShareForm(instance=share, initial=initial_data)
-    
-    return render(request, 'shares/edit_share.html', {
-        'form': form,
-        'share': share,
-    })
 
 def shared_with_me(request):
     """
