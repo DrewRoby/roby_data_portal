@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-print(DEBUG)
+print('DEBUG status: ',DEBUG)
 print("yummy pringles can oooh yum yum HELP ME IVE POPPED AND I CANT STOP")
 
 if not DEBUG:
