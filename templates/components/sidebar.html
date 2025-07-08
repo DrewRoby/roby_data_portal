@@ -32,7 +32,8 @@
                 {{ request.user.first_name|first }}{{ request.user.last_name|first }}
             </div>
             <div>
-                <div class="fw-bold">{{ request.user.get_full_name }}</div>
+                <div class="fw-bold">{{ request.user.username }}</div>
+                <small class="text-gray">{{ request.user.get_full_name }}</small>
                 <small class="text-gray">{{ request.user.email }}</small>
             </div>
         </div>

@@ -283,9 +283,12 @@ def edit_share(request, share_id):
         
         form = ShareForm(instance=share, initial=initial_data)
     
+    share_url = request.build_absolute_uri(share.get_absolute_url())
+
     context = {
         'form': form,
         'share': share,
+        'share_url':share_url,
         'email_notifications': email_notifications,
     }
     
