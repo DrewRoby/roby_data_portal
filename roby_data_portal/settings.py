@@ -29,12 +29,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# print(DEBUG)
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 ALLOWED_HOSTS = [
     'robydataservices-dev-ed9t6.ondigitalocean.app',
     'dev.robydata.com',
     '127.0.0.1',
+    'robydata.com',
+    'www.robydata.com'
 ]
 
 INSTALLED_APPS = [
@@ -247,3 +258,29 @@ CACHES = {
 # Cache settings for API results
 API_CACHE_DURATION = 3600  # 1 hour in seconds
 PLACES_CACHE_DURATION = 7200  # 2 hours for places (they don't change often)
+
+
+# DigitalOcean Spaces Configuration
+AWS_ACCESS_KEY_ID = os.getenv('DO_SPACES_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.getenv('DO_SPACES_SECRET_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('DO_SPACES_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = os.getenv('DO_SPACES_ENDPOINT_URL')  # e.g., 'https://nyc3.digitaloceanspaces.com'
+AWS_S3_REGION_NAME = os.getenv('DO_SPACES_REGION', 'nyc3')  # Your DO region
+
+# Storage settings
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_S3_FILE_OVERWRITE = False
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.digitaloceanspaces.com'
+
+# Use different storage backends for media vs static files
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# Update your media settings
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+
+# Keep static files local for now (since WhiteNoise is working well)
+# STATIC_URL = '/static/'  # Keep existing
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Keep existing
