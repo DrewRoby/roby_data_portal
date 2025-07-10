@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load event_tags %}
 
 {% block title %}Edit Agenda Item - {{ agenda_item.title }}{% endblock %}
 
@@ -132,6 +133,13 @@
                             <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
                                 <i class="fas fa-trash"></i> Delete Item
                             </button>
+                        </div>
+                        <div>
+                            {% if agenda_item|can_move_agenda_item:user and event|has_moveable_spaces:agenda_item.space %}
+                                <a href="{% url 'events:agenda_item_move' pk=agenda_item.pk %}" class="btn btn-outline-success">
+                                    <i class="fas fa-arrows-alt"></i> Move to Different Space
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

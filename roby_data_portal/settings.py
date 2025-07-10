@@ -31,10 +31,11 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-print('DEBUG status: ',DEBUG)
-print("yummy pringles can oooh yum yum HELP ME IVE POPPED AND I CANT STOP")
+if DEBUG:
+    print("yummy pringles can oooh yum yum HELP ME IVE POPPED AND I CANT STOP")
 
 if not DEBUG:
+    print("I ain't see no pringles here, pal")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

@@ -130,7 +130,7 @@ class SpaceForm(forms.ModelForm):
 
 
 class MoveAgendaItemForm(forms.Form):
-    """Form for moving agenda items between spaces."""
+    """Form for moving agenda items between any spaces."""
     
     target_space = forms.ModelChoiceField(
         queryset=Space.objects.none(),
@@ -138,17 +138,29 @@ class MoveAgendaItemForm(forms.Form):
         empty_label="Select target space..."
     )
     
-    def __init__(self, event, exclude_space=None, *args, **kwargs):
+    def __init__(self, event, current_space=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Only show normal spaces (not suggestion boxes) as targets
-        queryset = event.spaces.filter(space_type='normal')
+        # Show all spaces in the event except the current one
+        queryset = event.spaces.all()
         
         # Exclude current space if specified
-        if exclude_space:
-            queryset = queryset.exclude(pk=exclude_space.pk)
+        if current_space:
+            queryset = queryset.exclude(pk=current_space.pk)
         
         self.fields['target_space'].queryset = queryset
+        
+        # Update label based on spaces available
+        if queryset.exists():
+            space_types = list(queryset.values_list('space_type', flat=True).distinct())
+            if len(space_types) == 1 and 'suggestion_box' in space_types:
+                self.fields['target_space'].empty_label = "Select suggestion box..."
+            elif len(space_types) == 1 and 'normal' in space_types:
+                self.fields['target_space'].empty_label = "Select agenda space..."
+        
+        # Add helper text
+        self.fields['target_space'].help_text = "Choose which space to move this item to"
+
 
 
 class BulkRSVPForm(forms.Form):

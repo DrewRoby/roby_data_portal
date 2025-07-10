@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load event_tags %}
+
+{% block title %}Move Agenda Item - {{ agenda_item.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:event_detail' pk=event.pk %}">{{ event.title }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:agenda_item_detail' pk=agenda_item.pk %}">{{ agenda_item.title }}</a></li>
+            <li class="breadcrumb-item active">Move</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-arrows-alt"></i> Move Agenda Item
+                    </h3>
+                    <small>{{ event.title }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Current Item Info -->
+                    <div class="alert alert-light border">
+                        <h5 class="mb-2">
+                            <i class="fas fa-file-alt"></i> {{ agenda_item.title }}
+                        </h5>
+                        <p class="mb-2">
+                            <strong>Currently in:</strong> 
+                            <span class="badge bg-primary">{{ agenda_item.space.name }}</span>
+                            {% if agenda_item.space.space_type == 'suggestion_box' %}
+                                <span class="badge bg-warning text-dark ms-1">Suggestion</span>
+                            {% endif %}
+                        </p>
+                        {% if agenda_item.description %}
+                            <p class="mb-0 text-muted">{{ agenda_item.description|truncatewords:20 }}</p>
+                        {% endif %}
+                    </div>
+
+                    {% if available_spaces %}
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mb-4">
+                                <label for="{{ form.target_space.id_for_label }}" class="form-label">
+                                    <i class="fas fa-crosshairs"></i> Move to Space
+                                </label>
+                                {{ form.target_space }}
+                                {% if form.target_space.help_text %}
+                                    <div class="form-text">{{ form.target_space.help_text }}</div>
+                                {% endif %}
+                                {% if form.target_space.errors %}
+                                    <div class="text-danger">{{ form.target_space.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Available Spaces Preview -->
+                            <div class="mb-4">
+                                <h6 class="text-muted">Available Spaces:</h6>
+                                <div class="row">
+                                    {% for space in available_spaces %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="card card-body py-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ space.name }}</strong>
+                                                        {% if space.space_type == 'suggestion_box' %}
+                                                            <span class="badge bg-warning text-dark ms-1">Suggestions</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        {{ space.agenda_items.count }} item{{ space.agenda_items.count|pluralize }}
+                                                    </small>
+                                                </div>
+                                                {% if space.description %}
+                                                    <small class="text-muted">{{ space.description|truncatewords:10 }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Move Rules Info -->
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Move Rules</h6>
+                                <ul class="mb-0">
+                                    <li>The item will be placed at the end of the target space</li>
+                                    {% if agenda_item.space.space_type == 'suggestion_box' %}
+                                        <li>Moving from suggestions to agenda will clear the "suggested by" attribution</li>
+                                    {% endif %}
+                                    <li>You can reorder items within spaces on the main event page</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="d-flex gap-2 justify-content-between">
+                                <a href="{% url 'events:agenda_item_detail' pk=agenda_item.pk %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-arrow-right"></i> Move Item
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> No Spaces Available</h6>
+                            <p class="mb-0">There are no other spaces in this event to move this item to.</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="{% url 'events:agenda_item_detail' pk=agenda_item.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Item
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

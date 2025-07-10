@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import json
+import io
 # from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -131,14 +132,13 @@ def upload(request):
     return render(request, 'schemascope/upload.html', context) 
 
 
-
-
 def process_file(datasource):
     """
     Process the uploaded file, detect schema, and identify primary keys
+    Updated to work with S3 storage
     """
-    file_path = datasource.file.path
-    _, file_extension = os.path.splitext(file_path)
+    file_name = datasource.original_filename
+    _, file_extension = os.path.splitext(file_name)
 
     # Read the file based on its type
     try:
@@ -154,6 +154,104 @@ def process_file(datasource):
     except Exception as e:
         # Log the error and continue
         print(f"Error processing file: {e}")
+        return False
+
+
+def process_csv_file(datasource, delimiter=',', encoding='utf-8'):
+    """Process a CSV file with specific delimiter and encoding - S3 compatible"""
+    try:
+        print(f"Processing CSV file: {datasource.original_filename}")
+        print(f"Using delimiter: '{delimiter}' and encoding: {encoding}")
+
+        # Read file content from S3
+        with datasource.file.open('rb') as f:
+            content = f.read()
+        
+        # Create a StringIO object for pandas
+        csv_data = io.StringIO(content.decode(encoding))
+        
+        # Try to read with pandas
+        df = pd.read_csv(csv_data, delimiter=delimiter, engine='python')
+        print(f"CSV read successful. Columns: {df.columns.tolist()}")
+        print(f"Found {len(df)} rows")
+
+        return create_schema_from_dataframe(df, datasource)
+    except Exception as e:
+        print(f"Error processing CSV file: {e}")
+        # Try with different engine as fallback
+        try:
+            print("Trying with C engine instead...")
+            # Reset the file pointer and try again
+            with datasource.file.open('rb') as f:
+                content = f.read()
+            csv_data = io.StringIO(content.decode(encoding))
+            df = pd.read_csv(csv_data, delimiter=delimiter, engine='c')
+            return create_schema_from_dataframe(df, datasource)
+        except Exception as e2:
+            print(f"Second attempt failed: {e2}")
+            return False
+
+
+def process_excel_file(datasource, sheet_name=0):
+    """Process an Excel file with specific sheet - S3 compatible"""
+    try:
+        print(f"Processing Excel file: {datasource.original_filename}")
+        
+        # Read file content from S3
+        with datasource.file.open('rb') as f:
+            content = f.read()
+        
+        # Create a BytesIO object for pandas
+        excel_data = io.BytesIO(content)
+        df = pd.read_excel(excel_data, sheet_name=sheet_name)
+        
+        print(f"Excel read successful. Columns: {df.columns.tolist()}")
+        print(f"Found {len(df)} rows")
+        
+        return create_schema_from_dataframe(df, datasource)
+    except Exception as e:
+        print(f"Error processing Excel file: {e}")
+        return False
+
+
+def process_json_file(datasource, encoding='utf-8'):
+    """Process a JSON file - S3 compatible"""
+    try:
+        print(f"Processing JSON file: {datasource.original_filename}")
+        
+        # Read file content from S3
+        with datasource.file.open('r', encoding=encoding) as f:
+            data = json.load(f)
+
+        # Convert to dataframe - this handles different JSON structures
+        if isinstance(data, list):
+            # List of records
+            df = pd.DataFrame(data)
+        elif isinstance(data, dict):
+            # Try to convert dictionary to dataframe
+            if all(isinstance(data[key], (list, dict)) for key in data):
+                # Nested structure - flatten first level
+                flattened = {}
+                for key, value in data.items():
+                    if isinstance(value, list):
+                        flattened[key] = value
+                    elif isinstance(value, dict):
+                        for subkey, subvalue in value.items():
+                            flattened[f"{key}_{subkey}"] = subvalue
+                df = pd.DataFrame(flattened)
+            else:
+                # Simple dict
+                df = pd.DataFrame([data])
+        else:
+            # Unsupported JSON structure
+            return False
+
+        print(f"JSON read successful. Columns: {df.columns.tolist()}")
+        print(f"Found {len(df)} rows")
+        
+        return create_schema_from_dataframe(df, datasource)
+    except Exception as e:
+        print(f"Error processing JSON file: {e}")
         return False
 
 
@@ -372,78 +470,6 @@ def retry_detection(request, pk):
     return redirect('schemascope:datasource_detail', pk=datasource.pk)
 
 
-def process_csv_file(datasource, delimiter=',', encoding='utf-8'):
-    """Process a CSV file with specific delimiter and encoding"""
-    try:
-        file_path = datasource.file.path
-        print(f"Processing CSV file: {file_path}")
-        print(f"Using delimiter: '{delimiter}' and encoding: {encoding}")
-
-        # Try to read with pandas
-        df = pd.read_csv(file_path, delimiter=delimiter, encoding=encoding, engine='python')
-        print(f"CSV read successful. Columns: {df.columns.tolist()}")
-        print(f"Found {len(df)} rows")
-
-        return create_schema_from_dataframe(df, datasource)
-    except Exception as e:
-        print(f"Error processing CSV file: {e}")
-        # Try with different engine as fallback
-        try:
-            print("Trying with C engine instead...")
-            df = pd.read_csv(file_path, delimiter=delimiter, encoding=encoding, engine='c')
-            return create_schema_from_dataframe(df, datasource)
-        except Exception as e2:
-            print(f"Second attempt failed: {e2}")
-            return False
-
-
-def process_excel_file(datasource, sheet_name=0):
-    """Process an Excel file with specific sheet"""
-    try:
-        file_path = datasource.file.path
-        df = pd.read_excel(file_path, sheet_name=sheet_name)
-        return create_schema_from_dataframe(df, datasource)
-    except Exception as e:
-        print(f"Error processing Excel file: {e}")
-        return False
-
-
-def process_json_file(datasource, encoding='utf-8'):
-    """Process a JSON file"""
-    try:
-        file_path = datasource.file.path
-        with open(file_path, 'r', encoding=encoding) as f:
-            data = json.load(f)
-
-        # Convert to dataframe - this handles different JSON structures
-        if isinstance(data, list):
-            # List of records
-            df = pd.DataFrame(data)
-        elif isinstance(data, dict):
-            # Try to convert dictionary to dataframe
-            if all(isinstance(data[key], (list, dict)) for key in data):
-                # Nested structure - flatten first level
-                flattened = {}
-                for key, value in data.items():
-                    if isinstance(value, list):
-                        flattened[key] = value
-                    elif isinstance(value, dict):
-                        for subkey, subvalue in value.items():
-                            flattened[f"{key}_{subkey}"] = subvalue
-                df = pd.DataFrame(flattened)
-            else:
-                # Simple dict
-                df = pd.DataFrame([data])
-        else:
-            # Unsupported JSON structure
-            return False
-
-        return create_schema_from_dataframe(df, datasource)
-    except Exception as e:
-        print(f"Error processing JSON file: {e}")
-        return False
-
-
 def create_schema_from_dataframe(df, datasource):
     """Create schema definition from a pandas DataFrame"""
     try:
@@ -515,10 +541,8 @@ def create_schema_from_dataframe(df, datasource):
 
 
 def file_preview(request, pk):
-    """Get a preview of the file content with specified encoding and options"""
+    """Generate file preview - S3 compatible"""
     datasource = get_object_or_404(DataSource, pk=pk)
-
-    # Get parameters from request
     file_type = request.GET.get('file_type', datasource.source_type)
     encoding = request.GET.get('encoding', 'utf-8')
     delimiter = request.GET.get('delimiter', ',')
@@ -532,20 +556,22 @@ def file_preview(request, pk):
     response_data = {'preview': preview_text}
 
     try:
-        file_path = datasource.file.path
-
         if file_type == 'csv':
-            # Read as text file for preview
-            with open(file_path, 'r', encoding=encoding) as f:
-                lines = [line.strip() for line in f.readlines()[:10]]
-                preview_text = '\n'.join(lines)
+            # Read file content from S3
+            with datasource.file.open('rb') as f:
+                content = f.read()
+            
+            # Get first 10 lines for preview
+            lines = content.decode(encoding).split('\n')[:10]
+            preview_text = '\n'.join(lines)
 
             # Also provide the delimiter used for the client-side parser
             response_data['delimiter'] = delimiter
 
             # Try to also parse as a DataFrame for table data
             try:
-                df = pd.read_csv(file_path, delimiter=delimiter, encoding=encoding, nrows=10, engine='python')
+                csv_data = io.StringIO(content.decode(encoding))
+                df = pd.read_csv(csv_data, delimiter=delimiter, encoding=encoding, nrows=10, engine='python')
                 # Convert DataFrame to a simple format for the table view
                 response_data['table_data'] = {
                     'headers': df.columns.tolist(),
@@ -556,16 +582,20 @@ def file_preview(request, pk):
                 # If DataFrame parsing fails, the raw preview will still be available
 
         elif file_type == 'excel':
-            # Use pandas to read Excel file
+            # Use pandas to read Excel file from S3
             try:
                 # Convert sheet_name to int if it's a digit
-                if sheet_name and sheet_name.isdigit():
+                if sheet_name and str(sheet_name).isdigit():
                     sheet_name = int(sheet_name)
                 # If empty, set to 0 (first sheet)
                 elif not sheet_name:
                     sheet_name = 0
 
-                df = pd.read_excel(file_path, sheet_name=sheet_name, nrows=10)
+                with datasource.file.open('rb') as f:
+                    content = f.read()
+                
+                excel_data = io.BytesIO(content)
+                df = pd.read_excel(excel_data, sheet_name=sheet_name, nrows=10)
                 preview_text = df.to_string(index=False)
 
                 # Also provide table data - strictly limit to 10 rows total (including header)
@@ -579,31 +609,33 @@ def file_preview(request, pk):
         elif file_type == 'json':
             # Read JSON and format nicely
             try:
-                with open(file_path, 'r', encoding=encoding) as f:
+                with datasource.file.open('r', encoding=encoding) as f:
                     data = json.load(f)
-                    # Format JSON with indentation for readability
-                    preview_text = json.dumps(data, indent=2)
-                    # Limit to reasonable size for preview
-                    if len(preview_text) > 2000:
-                        preview_text = preview_text[:2000] + "...\n[truncated]"
+                
+                # Format JSON with indentation for readability
+                preview_text = json.dumps(data, indent=2)
+                # Limit to reasonable size for preview
+                if len(preview_text) > 2000:
+                    preview_text = preview_text[:2000] + "...\n[truncated]"
 
-                    # Try to convert to DataFrame if it's a list of objects
-                    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-                        try:
-                            df = pd.DataFrame(data[:10])  # Limit to 10 rows
-                            response_data['table_data'] = {
-                                'headers': df.columns.tolist(),
-                                'rows': df.head(9).values.tolist()  # 9 data rows + header = 10 total rows
-                            }
-                        except Exception as json_df_e:
-                            print(f"Error converting JSON to DataFrame: {str(json_df_e)}")
+                # Try to convert to DataFrame if it's a list of objects
+                if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                    try:
+                        df = pd.DataFrame(data[:10])  # Limit to 10 rows
+                        response_data['table_data'] = {
+                            'headers': df.columns.tolist(),
+                            'rows': df.head(9).values.tolist()  # 9 data rows + header = 10 total rows
+                        }
+                    except Exception as json_df_e:
+                        print(f"Error converting JSON to DataFrame: {str(json_df_e)}")
             except Exception as e:
                 preview_text = f"Error reading JSON file: {str(e)}"
 
         else:
             # Generic text preview
-            with open(file_path, 'r', encoding=encoding) as f:
-                lines = [line.strip() for line in f.readlines()[:10]]
+            with datasource.file.open('r', encoding=encoding) as f:
+                content = f.read()
+                lines = content.split('\n')[:10]
                 preview_text = '\n'.join(lines)
 
     except Exception as e:

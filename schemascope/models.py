@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 import json
+# from roby_data_portal.settings import DEFAULT_FILE_STORAGE
 
 class DataSource(models.Model):
     """
@@ -8,7 +9,8 @@ class DataSource(models.Model):
     """
     original_filename = models.CharField(max_length=255)
     upload_date = models.DateTimeField(auto_now_add=True)
-    file = models.FileField(upload_to='uploads/%Y/%m/%d/', null=True, blank=True)
+    # file = models.FileField(upload_to=DEFAULT_FILE_STORAGE)
+    file = models.FileField(upload_to='schemascope/uploads/%Y/%m/%d/', null=True, blank=True)
     canonical_name = models.CharField(max_length=255)  # The "concept" name
     schema_version = models.IntegerField(default=1)
     source_type = models.CharField(max_length=20, choices=[

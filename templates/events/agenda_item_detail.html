@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load event_tags %}
 
 {% block title %}{{ agenda_item.title }}{% endblock %}
 
@@ -55,13 +56,14 @@
                                 <i class="fas fa-edit"></i> Edit
                             </a>
                             
-                            {% if agenda_item.space.space_type == 'suggestion_box' and event.can_user_move_suggestions:user %}
+                            <!-- General move button for any agenda item -->
+                            {% if agenda_item|can_move_agenda_item:user and event|has_moveable_spaces:agenda_item.space %}
                                 <a href="{% url 'events:agenda_item_move' pk=agenda_item.pk %}" class="btn btn-outline-success">
-                                    <i class="fas fa-arrow-right"></i> Move to Agenda
+                                    <i class="fas fa-arrows-alt"></i> Move to Different Space
                                 </a>
                             {% endif %}
                             
-                            <!-- NEW: Delete button -->
+                            <!-- Delete button -->
                             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                                 <i class="fas fa-trash"></i> Delete
                             </button>

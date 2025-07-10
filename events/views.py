@@ -360,23 +360,39 @@ def agenda_item_edit(request, pk):
 
 @login_required
 def agenda_item_move(request, pk):
-    """Move an agenda item from suggestion box to a space."""
+    """Move an agenda item between any spaces."""
     agenda_item = get_object_or_404(AgendaItem, pk=pk)
     event = agenda_item.space.event
     
-    # Only users with ADMIN permission can move suggestions
-    if not event.can_user_move_suggestions(request.user):
-        raise Http404("You don't have permission to move suggestions.")
+    # Check permissions based on current space and target
+    user_permission = event.get_user_permission(request.user)
     
-    # Only items in suggestion box can be moved
-    if agenda_item.space.space_type != 'suggestion_box':
-        messages.error(request, "Only suggested items can be moved.")
-        return redirect('events:event_detail', pk=event.pk)
+    # Special case: Moving FROM suggestion box requires ADMIN permission
+    if agenda_item.space.space_type == 'suggestion_box':
+        if not event.can_user_move_suggestions(request.user):
+            raise Http404("You don't have permission to move suggestions.")
+    else:
+        # Moving between normal spaces requires EDIT permission
+        if user_permission not in ['EDIT', 'ADMIN']:
+            raise Http404("You don't have permission to move agenda items.")
+    
+    # Check if there are any spaces to move to
+    available_spaces = event.spaces.exclude(pk=agenda_item.space.pk)
+    if not available_spaces.exists():
+        messages.error(request, "No other spaces available to move this item to.")
+        return redirect('events:agenda_item_detail', pk=agenda_item.pk)
     
     if request.method == 'POST':
         form = MoveAgendaItemForm(event, agenda_item.space, request.POST)
         if form.is_valid():
             target_space = form.cleaned_data['target_space']
+            original_space = agenda_item.space
+            
+            # Additional permission check for target space
+            # Moving TO suggestion box requires special permission
+            if target_space.space_type == 'suggestion_box' and user_permission != 'ADMIN':
+                messages.error(request, "Only event admins can move items to the suggestion box.")
+                return redirect('events:agenda_item_detail', pk=agenda_item.pk)
             
             # Move the item
             agenda_item.space = target_space
@@ -387,17 +403,33 @@ def agenda_item_move(request, pk):
             )['max_order'] or 0
             agenda_item.order = max_order + 1
             
+            # Clear suggested_by if moving out of suggestion box
+            if original_space.space_type == 'suggestion_box' and target_space.space_type != 'suggestion_box':
+                agenda_item.suggested_by = None
+            
+            # Set suggested_by if moving into suggestion box
+            elif original_space.space_type != 'suggestion_box' and target_space.space_type == 'suggestion_box':
+                agenda_item.suggested_by = request.user
+            
             agenda_item.save()
             
-            messages.success(request, f'Moved "{agenda_item.title}" to {target_space.name}!')
-            return redirect('events:event_detail', pk=event.pk)
+            # Success message based on movement type
+            if original_space.space_type == 'suggestion_box' and target_space.space_type == 'normal':
+                messages.success(request, f'Moved suggestion "{agenda_item.title}" to agenda space "{target_space.name}"!')
+            elif original_space.space_type == 'normal' and target_space.space_type == 'suggestion_box':
+                messages.success(request, f'Moved "{agenda_item.title}" back to suggestions.')
+            else:
+                messages.success(request, f'Moved "{agenda_item.title}" from "{original_space.name}" to "{target_space.name}"!')
+            
+            return redirect('events:agenda_item_detail', pk=agenda_item.pk)
     else:
         form = MoveAgendaItemForm(event, agenda_item.space)
     
     return render(request, 'events/agenda_item_move.html', {
         'form': form,
         'agenda_item': agenda_item,
-        'event': event
+        'event': event,
+        'available_spaces': available_spaces,
     })
 
 
