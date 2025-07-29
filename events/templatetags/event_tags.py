@@ -1,7 +1,19 @@
 from django import template
+from events.models import EventInvitation
 from django.contrib.contenttypes.models import ContentType
 
 register = template.Library()
+
+@register.simple_tag
+def get_user_invitation(event, user):
+    """Get the user's invitation for an event, if it exists."""
+    if not user or not user.is_authenticated:
+        return None
+    
+    try:
+        return EventInvitation.objects.get(event=event, invitee=user)
+    except EventInvitation.DoesNotExist:
+        return None
 
 @register.filter
 def can_suggest_agenda(event, user):

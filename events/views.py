@@ -93,22 +93,63 @@ def event_edit(request, pk):
 @login_required
 @require_POST
 def rsvp_update(request, pk):
-    """Update RSVP status for an event invitation."""
+    """Update RSVP status for an event - handles both invited users and public RSVPs."""
     event = get_object_or_404(Event, pk=pk)
     
+    # First, try to get existing invitation
     try:
         invitation = EventInvitation.objects.get(event=event, invitee=request.user)
     except EventInvitation.DoesNotExist:
-        messages.error(request, "You don't have an invitation to this event.")
-        return redirect('events:event_detail', pk=pk)
+        # Check if this is a public event - if so, create an invitation
+        if event.is_public:
+            # For public events, we create an invitation without a share
+            # First, check if there's a share the user came through
+            share = None
+            if 'HTTP_REFERER' in request.META:
+                # Try to extract share UUID from referrer if they came from shared view
+                referer = request.META['HTTP_REFERER']
+                if 'shares' in referer:
+                    # This is a basic extraction - might need refinement based on your URL structure
+                    try:
+                        from shares.models import Share
+                        # Extract UUID from URL path
+                        import re
+                        match = re.search(r'/shares/([a-f0-9-]+)/', referer)
+                        if match:
+                            share_uuid = match.group(1)
+                            share = Share.objects.filter(uuid=share_uuid).first()
+                    except:
+                        pass
+            
+            # Create the invitation
+            invitation = EventInvitation.objects.create(
+                event=event,
+                invitee=request.user,
+                share=share  # This will be None for direct public access
+            )
+        else:
+            messages.error(request, "You need an invitation to RSVP to this event.")
+            return redirect('events:event_detail', pk=pk)
     
-    form = RSVPForm(request.POST, instance=invitation)
-    if form.is_valid():
-        form.save()
+    # Update RSVP status
+    rsvp_status = request.POST.get('rsvp_status')
+    if rsvp_status in ['yes', 'no', 'tentative']:
+        invitation.rsvp_status = rsvp_status
+        invitation.save()
+        
         status_display = dict(EventInvitation.RSVP_CHOICES)[invitation.rsvp_status]
         messages.success(request, f'RSVP updated to: {status_display}')
     else:
-        messages.error(request, 'Error updating RSVP. Please try again.')
+        messages.error(request, 'Invalid RSVP status. Please try again.')
+    
+    # Redirect back to where they came from
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    
+    # Check referrer to see if they came from shared view
+    if 'HTTP_REFERER' in request.META and 'shares' in request.META['HTTP_REFERER']:
+        return redirect(request.META['HTTP_REFERER'])
     
     return redirect('events:event_detail', pk=pk)
 

@@ -155,6 +155,8 @@ class EventInvitation(models.Model):
         Share, 
         on_delete=models.CASCADE, 
         related_name='event_invitation',
+        blank=True,
+        null=True,
         help_text="References the share that created this invitation"
     )
     
