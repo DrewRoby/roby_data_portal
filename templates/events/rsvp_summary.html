@@ -1,0 +1,298 @@
+<!-- templates/events/rsvp_summary.html - Enhanced version of your existing template -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}RSVP Summary - {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:event_detail' pk=event.pk %}">{{ event.title }}</a></li>
+            <li class="breadcrumb-item active">RSVP Summary</li>
+        </ol>
+    </nav>
+
+    <!-- NEW: Email Invitations Summary (added above existing RSVP summary) -->
+    {% if total_email_notifications > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-envelope me-2"></i>
+                        Email Invitation Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary mb-1">{{ total_email_notifications }}</h3>
+                            <small class="text-muted">Total Emails Sent</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success mb-1">{{ unique_notified_count }}</h3>
+                            <small class="text-muted">Unique Recipients</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info mb-1">{{ public_shares_with_emails|length }}</h3>
+                            <small class="text-muted">Active Share Links</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-grid">
+                                <a href="{% url 'shares:create_share' event.get_content_type.id event.id %}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-plus me-1"></i>
+                                    Send More Invitations
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if unique_notified_emails %}
+                    <div class="mt-3">
+                        <h6>Email Recipients:</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for email in unique_notified_emails %}
+                                <span class="badge bg-light text-dark">{{ email }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- EXISTING: Traditional RSVP Summary (your current functionality) -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">
+                                <i class="fas fa-users"></i> RSVP Summary
+                            </h3>
+                            <small>{{ event.title }} - {{ event.date|date:"F j, Y" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <h4 class="mb-0">{{ total_invitations }}</h4>
+                            <small>Total Invitations</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- RSVP Statistics -->
+                <div class="card-body border-bottom">
+                    <div class="row text-center">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card bg-success bg-opacity-10 border-success">
+                                <div class="card-body py-2">
+                                    <h3 class="text-success mb-0">{{ rsvp_groups.yes|length }}</h3>
+                                    <small class="text-success">Attending</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card bg-warning bg-opacity-10 border-warning">
+                                <div class="card-body py-2">
+                                    <h3 class="text-warning mb-0">{{ rsvp_groups.tentative|length }}</h3>
+                                    <small class="text-warning">Tentative</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card bg-danger bg-opacity-10 border-danger">
+                                <div class="card-body py-2">
+                                    <h3 class="text-danger mb-0">{{ rsvp_groups.no|length }}</h3>
+                                    <small class="text-danger">Not Attending</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card bg-secondary bg-opacity-10 border-secondary">
+                                <div class="card-body py-2">
+                                    <h3 class="text-secondary mb-0">{{ rsvp_groups.pending|length }}</h3>
+                                    <small class="text-secondary">Pending</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXISTING: RSVP Details by Status (your current detailed breakdown) -->
+    <div class="row mt-4">
+        <!-- Attending -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle"></i> 
+                        Attending ({{ rsvp_groups.yes|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if rsvp_groups.yes %}
+                        <div class="list-group list-group-flush">
+                            {% for invitation in rsvp_groups.yes %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ invitation.invitee.get_full_name|default:invitation.invitee.username }}</strong>
+                                        <br><small class="text-muted">{{ invitation.invitee.email }}</small>
+                                        {% if invitation.rsvp_date %}
+                                            <br><small class="text-success">RSVP'd {{ invitation.rsvp_date|date:"M j, Y" }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-primary">{{ invitation.share.permission_type }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No confirmations yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tentative -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle"></i> 
+                        Tentative ({{ rsvp_groups.tentative|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if rsvp_groups.tentative %}
+                        <div class="list-group list-group-flush">
+                            {% for invitation in rsvp_groups.tentative %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ invitation.invitee.get_full_name|default:invitation.invitee.username }}</strong>
+                                        <br><small class="text-muted">{{ invitation.invitee.email }}</small>
+                                        {% if invitation.rsvp_date %}
+                                            <br><small class="text-warning">RSVP'd {{ invitation.rsvp_date|date:"M j, Y" }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-primary">{{ invitation.share.permission_type }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No tentative responses.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Not Attending -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-times-circle"></i> 
+                        Not Attending ({{ rsvp_groups.no|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if rsvp_groups.no %}
+                        <div class="list-group list-group-flush">
+                            {% for invitation in rsvp_groups.no %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ invitation.invitee.get_full_name|default:invitation.invitee.username }}</strong>
+                                        <br><small class="text-muted">{{ invitation.invitee.email }}</small>
+                                        {% if invitation.rsvp_date %}
+                                            <br><small class="text-danger">RSVP'd {{ invitation.rsvp_date|date:"M j, Y" }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-primary">{{ invitation.share.permission_type }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No declined responses.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> 
+                        Pending ({{ rsvp_groups.pending|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if rsvp_groups.pending %}
+                        <div class="list-group list-group-flush">
+                            {% for invitation in rsvp_groups.pending %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ invitation.invitee.get_full_name|default:invitation.invitee.username }}</strong>
+                                        <br><small class="text-muted">{{ invitation.invitee.email }}</small>
+                                        <br><small class="text-muted">Invited {{ invitation.share.created_at|date:"M j, Y" }}</small>
+                                    </div>
+                                    <span class="badge bg-primary">{{ invitation.share.permission_type }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No pending invitations.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Recent Email Activity (if there are email notifications) -->
+    {% if email_notifications %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Recent Email Activity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for notification in email_notifications %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ notification.email_address }}</strong>
+                                        <br><small class="text-muted">{{ notification.email_subject }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ notification.sent_at|timesince }} ago</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if event_shares %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'shares:my_shares' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-cog me-1"></i>
+                            Manage All Shares
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

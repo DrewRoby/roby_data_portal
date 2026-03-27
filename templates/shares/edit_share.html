@@ -1,0 +1,294 @@
+<!-- templates/shares/edit_share.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Share{% endblock %}
+
+{% block extra_head %}
+<style>
+    .email-notification-card {
+        transition: all 0.3s ease;
+    }
+    .email-notification-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .email-container {
+        display: none;
+        transition: all 0.3s ease;
+    }
+    .email-container.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .resend-btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Edit Share: {{ share.get_object_name }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="shareForm">
+                        {% csrf_token %}
+                        
+                        <!-- Share Details -->
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Share Name</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.permission_type.id_for_label }}" class="form-label">Permission Level</label>
+                            {{ form.permission_type }}
+                            {% if form.permission_type.errors %}
+                                <div class="text-danger">{{ form.permission_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Share Type Display -->
+                        <div class="mb-4">
+                            <label class="form-label">Share Type</label>
+                            {% if share.is_public %}
+                                <div class="form-check">
+                                    {{ form.is_public }}
+                                    <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                                        Make this share publicly accessible
+                                    </label>
+                                </div>
+                                <div class="form-text">Anyone with the link will be able to access this content.</div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-user me-1"></i>
+                                    This share is currently shared with <strong>{{ share.shared_with.username }}</strong>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="{{ form.shared_with_username.id_for_label }}" class="form-label">Username</label>
+                                    {{ form.shared_with_username }}
+                                    {% if form.shared_with_username.errors %}
+                                        <div class="text-danger">{{ form.shared_with_username.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Email Notifications Section (only for public shares) -->
+                        {% if share.is_public %}
+                            <div class="email-container show">
+                                <div class="card bg-light mb-4">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-envelope me-1"></i>
+                                            Email Notifications
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- New Email Recipients -->
+                                        <label for="{{ form.email_recipients.id_for_label }}" class="form-label">
+                                            Add New Email Recipients
+                                        </label>
+                                        {{ form.email_recipients }}
+                                        {% if form.email_recipients.errors %}
+                                            <div class="text-danger">{{ form.email_recipients.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">{{ form.email_recipients.help_text }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Password Protection -->
+                        {% if share.is_public %}
+                            <div class="mb-3">
+                                <label for="{{ form.password.id_for_label }}" class="form-label">Password Protection (Optional)</label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                    <div class="text-danger">{{ form.password.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Leave blank for no password protection.</div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Expiration Settings -->
+                        <div class="mb-3">
+                            <label for="{{ form.duration.id_for_label }}" class="form-label">Expiration</label>
+                            {{ form.duration }}
+                            {% if form.duration.errors %}
+                                <div class="text-danger">{{ form.duration.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="custom_expiry_container" class="mb-3 d-none">
+                            <label for="{{ form.custom_expiry.id_for_label }}" class="form-label">Custom Expiry Date</label>
+                            {{ form.custom_expiry }}
+                            {% if form.custom_expiry.errors %}
+                                <div class="text-danger">{{ form.custom_expiry.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                Update Share
+                            </button>
+                            <a href="{% url 'shares:my_shares' %}" class="btn btn-secondary">Cancel</a>
+                            <a href="{% url 'shares:delete_share' share.id %}" 
+                               class="btn btn-danger ms-auto"
+                               onclick="return confirm('Are you sure you want to delete this share?')">
+                                <i class="fas fa-trash me-1"></i>
+                                Delete Share
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Email Notifications Sidebar (only for public shares) -->
+        {% if share.is_public %}
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Sent Notifications
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if email_notifications %}
+                        <p class="text-muted mb-3">
+                            {{ email_notifications|length }} notification{{ email_notifications|length|pluralize }} sent
+                        </p>
+                        
+                        {% for notification in email_notifications %}
+                            <div class="email-notification-card card mb-2">
+                                <div class="card-body py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="fw-bold text-truncate" style="max-width: 150px;">
+                                                {{ notification.email_address }}
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ notification.sent_at|date:"M j, Y g:i A" }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            {% if notification.can_resend %}
+                                                <form method="post" action="{% url 'shares:resend_email' share.id %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="email_address" value="{{ notification.email_address }}">
+                                                    <button type="submit" class="btn btn-outline-primary resend-btn" 
+                                                            title="Resend notification">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-envelope-open-text fa-2x mb-2 d-block"></i>
+                            <p class="mb-0">No email notifications sent yet</p>
+                            <small>Add email addresses above to send notifications</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Share URL Card -->
+            <div class="card shadow mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-link me-1"></i>
+                        Share URL
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" 
+                               value="{{ share_url }}" 
+                               readonly id="shareUrl">
+                        <button class="btn btn-outline-secondary" type="button" 
+                                onclick="copyToClipboard()" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">Anyone with this link can access the shared content</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const durationSelect = document.getElementById('{{ form.duration.id_for_label }}');
+    const customExpiryContainer = document.getElementById('custom_expiry_container');
+
+    function toggleCustomExpiry() {
+        if (durationSelect.value === 'custom') {
+            customExpiryContainer.classList.remove('d-none');
+        } else {
+            customExpiryContainer.classList.add('d-none');
+        }
+    }
+
+    if (durationSelect) {
+        durationSelect.addEventListener('change', toggleCustomExpiry);
+        toggleCustomExpiry(); // Initialize state
+    }
+});
+
+function copyToClipboard() {
+    const shareUrl = document.getElementById('shareUrl');
+    shareUrl.select();
+    shareUrl.setSelectionRange(0, 99999); // For mobile devices
+    
+    navigator.clipboard.writeText(shareUrl.value).then(function() {
+        // Show success feedback
+        const button = event.target.closest('button');
+        const originalIcon = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check text-success"></i>';
+        
+        setTimeout(() => {
+            button.innerHTML = originalIcon;
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Could not copy text: ', err);
+    });
+}
+</script>
+{% endblock %}

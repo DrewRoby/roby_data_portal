@@ -1,0 +1,211 @@
+<!-- templates/shares/create_share.html - Updated with email notifications -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Share{% endblock %}
+
+{% block extra_head %}
+<style>
+    .email-container {
+        display: none;
+        transition: all 0.3s ease;
+    }
+    .email-container.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-share-alt me-2"></i>
+                        Create Share for {{ object.get_share_title }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="shareForm">
+                        {% csrf_token %}
+                        
+                        <!-- Share Details -->
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Share Name</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.permission_type.id_for_label }}" class="form-label">Permission Level</label>
+                            {{ form.permission_type }}
+                            {% if form.permission_type.errors %}
+                                <div class="text-danger">{{ form.permission_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Share Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label">Share Type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="share_type" id="user_share" value="user" checked>
+                                <label class="form-check-label" for="user_share">
+                                    Share with Specific User
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="share_type" id="public_share" value="public">
+                                <label class="form-check-label" for="public_share">
+                                    Make Public
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- User Sharing Container -->
+                        <div id="user_sharing_container" class="mt-3">
+                            <label for="{{ form.shared_with_username.id_for_label }}" class="form-label">Username</label>
+                            {{ form.shared_with_username }}
+                            {% if form.shared_with_username.errors %}
+                                <div class="text-danger">{{ form.shared_with_username.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Enter the username of the person you want to share with.</div>
+                        </div>
+                        
+                        <!-- Public Sharing Container -->
+                        <div id="public_sharing_container" class="mt-3 d-none">
+                            <div class="form-check">
+                                {{ form.is_public }}
+                                <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                                    Make this share publicly accessible
+                                </label>
+                            </div>
+                            <div class="form-text">Anyone with the link will be able to access this content.</div>
+                            
+                            <!-- Email Notifications Container -->
+                            <div id="email_notifications_container" class="email-container mt-4">
+                                <div class="card bg-light">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-envelope me-1"></i>
+                                            Email Notifications
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <label for="{{ form.email_recipients.id_for_label }}" class="form-label">
+                                            Email Recipients
+                                        </label>
+                                        {{ form.email_recipients }}
+                                        {% if form.email_recipients.errors %}
+                                            <div class="text-danger">{{ form.email_recipients.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">{{ form.email_recipients.help_text }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Password Protection -->
+                            <div class="mt-3">
+                                <label for="{{ form.password.id_for_label }}" class="form-label">Password Protection (Optional)</label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                    <div class="text-danger">{{ form.password.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Leave blank for no password protection.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Expiration Settings -->
+                        <div class="mt-4">
+                            <label for="{{ form.duration.id_for_label }}" class="form-label">Expiration</label>
+                            {{ form.duration }}
+                            {% if form.duration.errors %}
+                                <div class="text-danger">{{ form.duration.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="custom_expiry_container" class="mt-3 d-none">
+                            <label for="{{ form.custom_expiry.id_for_label }}" class="form-label">Custom Expiry Date</label>
+                            {{ form.custom_expiry }}
+                            {% if form.custom_expiry.errors %}
+                                <div class="text-danger">{{ form.custom_expiry.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-share-alt me-1"></i>
+                                Create Share
+                            </button>
+                            <a href="{% url 'shares:my_shares' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userShare = document.getElementById('user_share');
+    const publicShare = document.getElementById('public_share');
+    const userContainer = document.getElementById('user_sharing_container');
+    const publicContainer = document.getElementById('public_sharing_container');
+    const emailContainer = document.getElementById('email_notifications_container');
+    const isPublicCheckbox = document.getElementById('{{ form.is_public.id_for_label }}');
+    const durationSelect = document.getElementById('{{ form.duration.id_for_label }}');
+    const customExpiryContainer = document.getElementById('custom_expiry_container');
+
+    function toggleShareType() {
+        if (publicShare.checked) {
+            userContainer.classList.add('d-none');
+            publicContainer.classList.remove('d-none');
+            isPublicCheckbox.checked = true;
+            emailContainer.classList.add('show');
+        } else {
+            userContainer.classList.remove('d-none');
+            publicContainer.classList.add('d-none');
+            isPublicCheckbox.checked = false;
+            emailContainer.classList.remove('show');
+        }
+    }
+
+    function toggleCustomExpiry() {
+        if (durationSelect.value === 'custom') {
+            customExpiryContainer.classList.remove('d-none');
+        } else {
+            customExpiryContainer.classList.add('d-none');
+        }
+    }
+
+    // Event listeners
+    userShare.addEventListener('change', toggleShareType);
+    publicShare.addEventListener('change', toggleShareType);
+    durationSelect.addEventListener('change', toggleCustomExpiry);
+
+    // Initialize state
+    toggleShareType();
+    toggleCustomExpiry();
+});
+</script>
+{% endblock %}

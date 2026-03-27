@@ -1,0 +1,49 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Notes for {{ object }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="entity-list-container">
+    <div class="entity-list-header">
+        <h2>Notes for {{ object }}</h2>
+        <a href="{% url 'storycraft:create_note' model_name object.id %}" class="btn-primary">
+            <i class="fas fa-plus"></i> Add Note
+        </a>
+    </div>
+    
+    {% if notes %}
+    <div class="notes-list">
+        {% for note in notes %}
+        <div class="note-card">
+            <div class="note-header">
+                <span class="note-date">{{ note.created_at|date:"M d, Y H:i" }}</span>
+                <div class="note-actions">
+                    <a href="{% url 'storycraft:edit_note' note.id %}" class="btn-icon" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'storycraft:delete_note' note.id %}" class="btn-icon btn-icon-danger" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="note-content">
+                {{ note.text|linebreaks }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No notes have been added yet.</p>
+        <a href="{% url 'storycraft:create_note' model_name object.id %}" class="btn-primary">Add Your First Note</a>
+    </div>
+    {% endif %}
+    
+    <div class="entity-actions-bottom">
+        <a href="javascript:history.back()" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+{% endblock %}

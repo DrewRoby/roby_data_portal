@@ -1,0 +1,38 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Add Note{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Add Note</h2>
+        <p>for {{ object }}</p>
+    </div>
+    
+    <form method="post" class="storycraft-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.text.id_for_label }}">Note</label>
+            {{ form.text }}
+        </div>
+        
+        <div class="form-actions">
+            <a href="javascript:history.back()" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Save Note</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

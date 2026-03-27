@@ -1,0 +1,178 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Edit Scene - {{ story.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .character-motivation-container {
+        margin-top: 20px;
+        border-left: 3px solid #3498db;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    
+    .character-motivation-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .character-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .motivation-fields {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    @media (min-width: 768px) {
+        .motivation-fields {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    .motivation-field {
+        margin-bottom: 10px;
+    }
+    
+    .motivation-field label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+    
+    #character-motivation-section {
+        margin-top: 20px;
+        border-top: 1px solid #e1e4e8;
+        padding-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="story-header">
+        <h1>Edit Scene</h1>
+        <div class="story-actions">
+            <a href="{% if scene %}{% url 'storycraft:scene_detail' scene.id %}{% else %}{% url 'storycraft:story_detail' story.id %}{% endif %}" class="story-action-btn">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </div>
+    
+    <form method="post" class="form-main">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Scene Name:</label>
+            {{ form.name }}
+            {{ form.name.errors }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="{{ form.sequence_number.id_for_label }}">Sequence Number:</label>
+                {{ form.sequence_number }}
+                {{ form.sequence_number.errors }}
+            </div>
+            
+            <div class="form-group form-group-half">
+                <label for="{{ form.status.id_for_label }}">Status:</label>
+                {{ form.status }}
+                {{ form.status.errors }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="{{ form.plot.id_for_label }}">Plot:</label>
+                {{ form.plot }}
+                {{ form.plot.errors }}
+            </div>
+            
+            <div class="form-group form-group-half">
+                <label for="{{ form.setting.id_for_label }}">Setting:</label>
+                {{ form.setting }}
+                {{ form.setting.errors }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description:</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+        
+        <!-- Characters in Scene - now using multiple select like create_scene -->
+        <div class="form-group">
+            <label for="{{ form.characters.id_for_label }}">Characters in Scene</label>
+            {{ form.characters }}
+            <small class="form-text">Hold Ctrl/Cmd to select multiple characters</small>
+            {{ form.characters.errors }}
+        </div>
+        
+        <!-- Character Motivations Section -->
+        <div id="character-motivation-section">
+            <h3>Character Motivations</h3>
+            <p class="help-text">Select characters above to add their motivations for this scene.</p>
+            
+            <div id="character-motivations-container">
+                <!-- This will be populated by JavaScript when characters are selected -->
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}">Scene Content:</label>
+            {{ form.content }}
+            {{ form.content.errors }}
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Update Scene
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="{% static 'storycraft/js/character_motivation.js' %}"></script>
+<script>
+// Initialize character motivation handler when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Prepare existing motivation data for edit mode
+    const existingMotivations = {
+        {% if character_motivations %}
+            {% for char_id, motivation in character_motivations.items %}
+                {{ char_id }}: {
+                    'desire': `{{ motivation.desire|escapejs }}`,
+                    'obstacle': `{{ motivation.obstacle|escapejs }}`,
+                    'action': `{{ motivation.action|escapejs }}`
+                },
+            {% endfor %}
+        {% endif %}
+    };
+    
+    // Initialize the character motivation handler
+    const motivationHandler = initCharacterMotivations({
+        characterSelectId: '{{ form.characters.id_for_label }}',
+        motivationsContainerId: 'character-motivations-container',
+        motivationSectionId: 'character-motivation-section',
+        existingMotivations: existingMotivations
+    });
+});
+</script>
+{% endblock %}

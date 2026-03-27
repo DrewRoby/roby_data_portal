@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - Roby Data Services</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            max-width: 150px;
+            height: auto;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 20px 0;
+            background-color: #1976D2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="cid:logo" alt="Roby Data Services Logo" class="logo">
+            <h1>Verify Your Email</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hi {{ user.first_name }},</p>
+            
+            <p>Thank you for registering with Roby Data Services. To complete your registration and activate your account, please click the button below:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ verification_url }}" class="button">Verify My Email</a>
+            </div>
+            
+            <p>This link will expire in {{ expiry_hours }} hours.</p>
+            
+            <p>If you're having trouble with the button above, copy and paste the URL below into your web browser:</p>
+            
+            <p style="word-break: break-all; font-size: 12px;">{{ verification_url }}</p>
+            
+            <p>If you didn't register for an account, please ignore this email.</p>
+            
+            <p>Best regards,<br>
+            The Roby Data Services Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {% now "Y" %} Roby Data Services. All rights reserved.</p>
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>

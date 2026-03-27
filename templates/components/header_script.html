@@ -1,0 +1,68 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const header = document.querySelector('header');
+    const logo = document.querySelector('.logo');
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const closeBtn = document.querySelector('.close-btn');
+    
+    // Get authentication status from data attribute
+    const isAuthenticated = document.body.dataset.authenticated === 'true';
+    
+    // Function to toggle the side menu and change header colors
+    function toggleMenu(e) {
+        // Skip if required elements don't exist
+        if (!sidebar || !header || !mainContent) {
+            console.log("Hey, no sidebar, header, or mainContent! header_script.html")
+            return;
+        }
+        
+        // If user is not authenticated, redirect to login page
+        if (!isAuthenticated) {
+            // Don't prevent default - let the link navigate normally
+            return;
+        }
+        
+        // For authenticated users, toggle the menu
+        e.preventDefault();
+        
+        // Toggle the sidebar active class
+        sidebar.classList.toggle('active');
+        
+        // Toggle header gradient
+        header.classList.toggle('menu-active');
+    }
+    
+    // Toggle sidebar when logo is clicked - only if elements exist
+    if (logo && isAuthenticated) {
+        logo.addEventListener('click', toggleMenu);
+    }
+    
+    // Close sidebar when close button is clicked
+    if (closeBtn && sidebar && header) {
+        closeBtn.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+            header.classList.remove('menu-active');
+        });
+    }
+    
+    // Close sidebar when clicking outside
+    if (sidebar && logo) {
+        document.addEventListener('click', function(e) {
+            if (sidebar.classList.contains('active') && 
+                !sidebar.contains(e.target) && 
+                !logo.contains(e.target)) {
+                
+                sidebar.classList.remove('active');
+                
+                if (header) {
+                    header.classList.remove('menu-active');
+                }
+            }
+        });
+    }
+    
+    // Initialize sidebar to be invisible by default
+    if (sidebar) {
+        sidebar.classList.remove('active');
+    }
+});

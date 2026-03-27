@@ -1,0 +1,120 @@
+{% extends "inventory/base.html" %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'portal:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'inventory:warehouse-list' %}">Warehouses</a></li>
+<li class="breadcrumb-item active">{{ warehouse.name }}</li>
+{% endblock %}
+
+{% block inventory_title %}{{ warehouse.name }}{% endblock %}
+
+{% block inventory_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Warehouse Details</h5>
+        <div>
+            <a href="{% url 'inventory:warehouse-update' warehouse.id %}" class="btn btn-warning btn-sm">
+                <i class="fa fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'inventory:warehouse-delete' warehouse.id %}" class="btn btn-danger btn-sm delete-btn">
+                <i class="fa fa-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ warehouse.name }}</p>
+                <p><strong>Description:</strong> {{ warehouse.description }}</p>
+                <p><strong>Created:</strong> {{ warehouse.created_at|date:"F d, Y" }}</p>
+                <p><strong>Last Updated:</strong> {{ warehouse.updated_at|date:"F d, Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Racks
+                                <span class="badge bg-primary rounded-pill">{{ warehouse.racks.count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Shelves
+                                <span class="badge bg-primary rounded-pill">{{ shelves_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Bins
+                                <span class="badge bg-primary rounded-pill">{{ bins_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Items
+                                <span class="badge bg-primary rounded-pill">{{ items_count }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Racks Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Racks</h5>
+        <a href="{% url 'inventory:rack-create' warehouse.id %}" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus"></i> Add Rack
+        </a>
+    </div>
+    <div class="card-body">
+        {% if warehouse.racks.all %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Shelves</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rack in warehouse.racks.all %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}">
+                                    {{ rack.name }}
+                                </a>
+                            </td>
+                            <td>{{ rack.description|truncatechars:50 }}</td>
+                            <td>{{ rack.shelves.count }}</td>
+                            <td>{{ rack.updated_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'inventory:rack-detail' warehouse.id rack.id %}" class="btn btn-info btn-sm">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:rack-update' warehouse.id rack.id %}" class="btn btn-warning btn-sm">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'inventory:rack-delete' warehouse.id rack.id %}" class="btn btn-danger btn-sm delete-btn">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No racks found. <a href="{% url 'inventory:rack-create' warehouse.id %}">Add your first rack</a>.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

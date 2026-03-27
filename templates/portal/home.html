@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Roby Data Services - Home{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold text-primary">Hey, {{ request.user.first_name }}</h1>
+            <p class="lead">Let's get to work.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for app in apps %}
+            {% include 'components/app_card.html' with app=app %}
+        {% empty %}
+            <div class="col-12 text-center py-5">
+                <div class="alert alert-info">
+                    <h4>No applications are available</h4>
+                    <p>Contact your administrator to request access to applications.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

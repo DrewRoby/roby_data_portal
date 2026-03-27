@@ -1,0 +1,27 @@
+{% extends 'shares/email/base_email.html' %}
+
+{% block email_title %}Story Shared - {{ object.title }}{% endblock %}
+
+{% block header_title %}Someone shared a story with you!{% endblock %}
+
+{% block object_details %}
+<div class="details">
+    <h3>📚 {{ object.title }}</h3>
+    
+    {% if share.description %}
+        <p><strong>Message:</strong> {{ share.description }}</p>
+    {% endif %}
+    
+    <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        {% if object.description %}
+            <p><strong>Story Description:</strong> {{ object.description|truncatewords:30 }}</p>
+        {% endif %}
+        <p><strong>Shared by:</strong> {{ share.created_by.get_full_name|default:share.created_by.username }}</p>
+        <p><strong>Permission Level:</strong> {{ share.permission_type|title }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_info %}
+<p><em>Click the link above to read the full story.</em></p>
+{% endblock %}

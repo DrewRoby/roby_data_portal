@@ -1,0 +1,103 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Settings - {{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="entity-list-container">
+    <div class="entity-list-header">
+        <h2>Settings for {{ story.title }}</h2>
+        <a href="{% url 'storycraft:create_setting' story.id %}" class="btn-primary">
+            <i class="fas fa-plus"></i> New Setting
+        </a>
+    </div>
+    
+    {% if settings %}
+    <div class="settings-hierarchy">
+        <h3>Settings Hierarchy</h3>
+        
+        <!-- Top-level settings -->
+        <ul class="settings-tree">
+            {% for setting in settings %}
+            {% if not setting.parent %}
+            <li class="top-setting">
+                <div class="setting-info">
+                    <a href="{% url 'storycraft:setting_detail' setting.id %}" class="setting-name">{{ setting.name }}</a>
+                    {% if setting.description %}
+                    <p class="description-snippet">{{ setting.description|truncatewords:15 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Subsettings (children) -->
+                {% if setting.children.exists %}
+                <ul class="subsettings">
+                    {% for child in setting.children.all %}
+                    <li class="subsetting">
+                        <div class="setting-info">
+                            <a href="{% url 'storycraft:setting_detail' child.id %}" class="setting-name">{{ child.name }}</a>
+                            {% if child.description %}
+                            <p class="description-snippet">{{ child.description|truncatewords:15 }}</p>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="entity-list">
+        <h3>All Settings</h3>
+        <table class="entity-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Parent</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for setting in settings %}
+                <tr>
+                    <td>
+                        <a href="{% url 'storycraft:setting_detail' setting.id %}">{{ setting.name }}</a>
+                    </td>
+                    <td>
+                        {% if setting.parent %}
+                        <a href="{% url 'storycraft:setting_detail' setting.parent.id %}">{{ setting.parent.name }}</a>
+                        {% else %}
+                        <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ setting.description|truncatewords:10 }}</td>
+                    <td class="actions">
+                        <a href="{% url 'storycraft:edit_setting' setting.id %}" class="btn-icon" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'storycraft:delete_setting' setting.id %}" class="btn-icon btn-icon-danger" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No settings have been created for this story yet.</p>
+        <a href="{% url 'storycraft:create_setting' story.id %}" class="btn-primary">Create Your First Setting</a>
+    </div>
+    {% endif %}
+    
+    <div class="entity-actions-bottom">
+        <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Story
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+"""
+{% extends 'base.html' %}
+{% load static %}
+{% load share_tags %}
+
+{% block title %}{{ object.title }} (Shared){% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="alert alert-info">
+        <i class="fas fa-share"></i> 
+        This event was shared with you by {{ share.created_by.get_full_name|default:share.created_by.username }}.
+        You have <strong>{{ permission }}</strong> access.
+    </div>
+    
+    <!-- Include the regular event detail content -->
+    {% include 'events/event_detail_content.html' %}
+</div>
+{% endblock %}
+"""

@@ -1,0 +1,415 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+{% load share_tags %}
+{% debug %}
+{% block storycraft_title %}{{ story.title }}{% endblock %}
+
+{% block storycraft_content %}
+<div class="story-detail-container">
+    <div class="story-header">
+        <div class="story-title-section">
+            <h1>{{ story.title }}</h1>
+            {% if story.description %}
+            <p class="story-description">{{ story.description }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="story-actions">
+<!--             <a href="{% url 'storycraft:story_network' story.id %}" class="story-action-btn">
+                <i class="fas fa-project-diagram"></i> Network View
+             </a>
+            <a href="{% url 'storycraft:story_timeline' story.id %}" class="story-action-btn">
+                <i class="fas fa-stream"></i> Timeline
+            </a>  -->
+        {% if request.user == story.user %}
+            <a href="{% url 'storycraft:story_list'  %}" class="btn btn-sm btn-outline-tertiary me-2">
+                <i class="fas fa-stream"></i> Back To My Stories
+            </a>
+            <a href="{% url 'storycraft:edit_story' story_id=story.id %}" class="btn btn-sm btn-outline-primary me-2">
+                <i class="fas fa-edit"></i> Edit Story
+            </a>
+            
+            <!-- Share button using template tag -->
+            {% share_button story request.user "Share Story" "btn btn-sm btn-outline-success" %}
+        {% else %}
+            <!-- Show permission badge if the user is viewing via share -->
+            {% get_share_permission story request.user as permission %}
+            {% if permission %}
+                <div class="ms-2">
+                    {% permission_badge permission %}
+                </div>
+            {% endif %}
+        {% endif %}
+
+        </div>
+    </div>
+    
+    </div>
+</div>
+
+
+
+    <div class="story-content">
+        <div class="story-sidebar">
+            <div class="story-menu">
+                <a href="#characters" class="story-menu-item active" data-section="characters">
+                    <i class="fas fa-user"></i> Characters
+                </a>
+                <a href="#settings" class="story-menu-item" data-section="settings">
+                    <i class="fas fa-map-marker-alt"></i> Settings
+                </a>
+                <a href="#plots" class="story-menu-item" data-section="plots">
+                    <i class="fas fa-project-diagram"></i> Plots
+                </a>
+                <a href="#scenes" class="story-menu-item" data-section="scenes">
+                    <i class="fas fa-file-alt"></i> Scenes
+                </a>
+                <a href="#relationships" class="story-menu-item" data-section="relationships">
+                    <i class="fas fa-people-arrows"></i> Relationships
+                </a>
+                <a href="#notes" class="story-menu-item" data-section="notes">
+                    <i class="fas fa-list"></i> Notes
+                </a>
+            </div>
+        </div>
+        
+        <div class="story-main-content">
+            <!-- Characters Section -->
+            <div id="characters" class="story-section active">
+                <div class="section-header">
+                    <h2>Characters</h2>
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:create_character' story_id=story.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus"></i> Add Character
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if characters %}
+                <div class="characters-grid">
+                    {% for character in characters %}
+                    <div class="character-card">
+                        <div class="character-avatar" style="background-color: {% cycle '#FFD3B6' '#A8E6CF' '#DCEDC2' '#FFD3B4' '#FF8C94' %}">
+                            <span>{{ character.name|slice:":1" }}</span>
+                        </div>
+                        <div class="character-info">
+                            <h3>{{ character.name }}</h3>
+                            {% if character.archetype %}
+                            <span class="character-archetype">{{ character.archetype }}</span>
+                            {% endif %}
+                            <p class="character-description">{{ character.description|truncatechars:100 }}</p>
+                            
+                            <div class="character-actions">
+                                <a href="{% url 'storycraft:character_detail' character.id %}" class="view-btn">View</a>
+                                <a href="{% url 'storycraft:edit_character' character.id %}" class="edit-btn">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-section">
+                    <p>No characters yet. Add your first character to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Settings Section -->
+            <div id="settings" class="story-section">
+                <div class="section-header">
+                    <h2>Settings</h2>
+                        {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:create_setting' story.id %}" class="add-btn">
+                            <i class="fas fa-plus"></i> Add Setting
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if settings %}
+                <div class="settings-grid">
+                    {% for setting in settings %}
+                    <div class="setting-card">
+                        <div class="setting-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="setting-info">
+                            <h3>{{ setting.name }}</h3>
+                            <p class="setting-description">{{ setting.description|truncatechars:100 }}</p>
+                            
+                            <div class="setting-actions">
+                                <a href="{% url 'storycraft:setting_detail' setting.id %}" class="view-btn">View</a>
+                                <a href="{% url 'storycraft:edit_setting' setting.id %}" class="edit-btn">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-section">
+                    <p>No settings yet. Add your first setting to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Plots Section -->
+            <div id="plots" class="story-section">
+                <div class="section-header">
+                    <h2>Plots</h2>
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}                    
+                        <a href="{% url 'storycraft:create_plot' story.id %}" class="add-btn">
+                        <i class="fas fa-plus"></i> Add Plot
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if plots %}
+                <div class="plots-list">
+                    {% for plot in plots %}
+                    <div class="plot-card">
+                        <div class="plot-type-badge {{ plot.plot_type }}">{{ plot.get_plot_type_display }}</div>
+                        <h3>{{ plot.name }}</h3>
+                        <p class="plot-description">{{ plot.description|truncatechars:100 }}</p>
+                        
+                        <div class="plot-meta">
+                            <span>{{ plot.scenes.count }} scenes</span>
+                        </div>
+                        
+                        <div class="plot-actions">
+                            <a href="{% url 'storycraft:plot_detail' plot.id %}" class="view-btn">View</a>
+                            <a href="{% url 'storycraft:edit_plot' plot.id %}" class="edit-btn">Edit</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-section">
+                    <p>No plots yet. Add your first plot to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Scenes Section -->
+            <div id="scenes" class="story-section">
+                <div class="section-header">
+                    <h2>Scenes</h2>
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:create_scene' story.id %}" class="add-btn">
+                        <i class="fas fa-plus"></i> Add Scene
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if scenes %}
+                <div class="scenes-list">
+                    {% for scene in scenes %}
+                    <div class="scene-card">
+                        <div class="scene-number">{{ scene.sequence_number }}</div>
+                        <div class="scene-info">
+                            <h3>{{ scene.name }}</h3>
+                            <p class="scene-description">{{ scene.description|truncatechars:100 }}</p>
+                            
+                            <div class="scene-meta">
+                                <span class="scene-setting">
+                                    <i class="fas fa-map-marker-alt"></i> 
+                                    {{ scene.setting.name }}
+                                </span>
+                                <span class="scene-plot">
+                                    <i class="fas fa-project-diagram"></i> 
+                                    {{ scene.plot.name }}
+                                </span>
+                                <span class="scene-status {{ scene.status }}">
+                                    {{ scene.get_status_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="scene-characters">
+                                {% for character in scene.characters.all %}
+                                <span class="scene-character">{{ character.name }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="scene-actions">
+                                <a href="{% url 'storycraft:scene_detail' scene.id %}" class="view-btn">View</a>
+                                <a href="{% url 'storycraft:edit_scene' scene.id %}" class="edit-btn">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-section">
+                    <p>No scenes yet. Add your first scene to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Relationships Section -->
+            <div id="relationships" class="story-section">
+                <div class="section-header">
+                    <h2>Character Relationships</h2>
+                    {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                    <a href="{% url 'storycraft:create_relationship' story.id %}" class="add-btn">
+                        <i class="fas fa-plus"></i> Add Relationship
+                    </a>
+                    {% endif %}
+                </div>
+                
+                {% if relationships %}
+                <div class="relationships-list">
+                    {% for relationship in relationships %}
+                    <div class="relationship-card">
+                        <div class="relationship-characters">
+                            <span class="relationship-source">{{ relationship.source.name }}</span>
+                            <i class="fas fa-long-arrow-alt-right"></i>
+                            <span class="relationship-target">{{ relationship.target.name }}</span>
+                        </div>
+                        <div class="relationship-type">{{ relationship.relationship }}</div>
+                        <p class="relationship-description">{{ relationship.description|truncatechars:100 }}</p>
+                        
+                        <div class="relationship-actions">
+                            <a href="{% url 'storycraft:edit_relationship' relationship.id %}" class="edit-btn">Edit</a>
+                            <a href="{% url 'storycraft:delete_relationship' relationship.id %}" class="delete-btn">Delete</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-section">
+                    <p>No relationships yet. Add your first character relationship to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+
+
+            <div id='notes' class="story-section">
+                <div class="section-header">
+                    <h3>Notes</h3>
+                    <div class="section-actions">
+                        <a href="{% url 'storycraft:create_note' 'story' story.id %}" class="btn-sm" title="Add Note">
+                            <i class="fas fa-plus"></i> Add Note
+                        </a>
+                        {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                        <a href="{% url 'storycraft:note_list' 'story' story.id %}" class="btn-sm" title="View All Notes">
+                            <i class="fas fa-list"></i> View All
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if request.user == story.user or permission == 'EDIT' or permission == 'ADMIN' %}
+                <div class="notes-preview">
+                    {% for note in story.notes.all %}
+                    <div class="note-card">
+                        <div class="note-header">
+                            <span class="note-date">{{ note.created_at|date:"M d, Y" }}</span>
+                            <div class="note-actions">
+                                <a href="{% url 'storycraft:edit_note' note.id %}" class="btn-icon" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'storycraft:delete_note' note.id %}" class="btn-icon btn-icon-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="note-content">
+                            {{ note.text|truncatewords:30|linebreaks }}
+                            {% if note.text|wordcount > 30 %}
+                            <a href="{% url 'storycraft:edit_note' note.id %}" class="note-read-more">Read more</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="empty-field">No notes added yet. <a href="{% url 'storycraft:create_note' 'story' story.id %}">Add one now</a>.</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+<br><br>
+       <div class="col-md-4">
+            <!-- Sidebar for the owner -->
+            {% if request.user == story.user %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Story Shares</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if created_shares %}
+                            <ul class="list-group list-group-flush">
+                                {% for share in created_shares %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {% if share.is_public %}
+                                                <span class="badge bg-success">Public</span>
+                                            {% else %}
+                                                Shared with {{ share.shared_with.username }}
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">{{ share.permission_type }}</small>
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'shares:access_share' share_id=share.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                            <a href="{% url 'shares:edit_share' share_id=share.id %}" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            <!-- Create new share button -->
+                            {% get_content_type_id story as content_type_id %}
+                            <a href="{% url 'shares:create_share' content_type_id=content_type_id object_id=story.id %}" class="btn btn-sm btn-outline-success mt-3">
+                                <i class="fas fa-plus"></i> Create New Share
+                            </a>
+                        {% else %}
+                            <p class="text-muted">You haven't shared this story with anyone yet.</p>
+                            
+                            <!-- Create share button -->
+                            {% get_content_type_id story as content_type_id %}
+                            <a href="{% url 'shares:create_share' content_type_id=content_type_id object_id=story.id %}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-share-alt"></i> Share This Story
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Other sidebar elements -->
+            <!-- ... -->
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Section navigation
+        const menuItems = document.querySelectorAll('.story-menu-item');
+        const sections = document.querySelectorAll('.story-section');
+        
+        menuItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all menu items
+                menuItems.forEach(mi => mi.classList.remove('active'));
+                
+                // Add active class to clicked menu item
+                this.classList.add('active');
+                
+                // Hide all sections
+                sections.forEach(section => section.classList.remove('active'));
+                
+                // Show selected section
+                const sectionId = this.getAttribute('data-section');
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

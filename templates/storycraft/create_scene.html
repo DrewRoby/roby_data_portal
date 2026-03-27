@@ -1,0 +1,182 @@
+{% extends 'storycraft/base.html' %}
+{% load static %}
+
+{% block storycraft_title %}Create Scene - {{ story.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .character-motivation-container {
+        margin-top: 20px;
+        border-left: 3px solid #3498db;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    
+    .character-motivation-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .character-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .motivation-fields {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    @media (min-width: 768px) {
+        .motivation-fields {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    .motivation-field {
+        margin-bottom: 10px;
+    }
+    
+    .motivation-field label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+    
+    #character-motivation-section {
+        margin-top: 20px;
+        border-top: 1px solid #e1e4e8;
+        padding-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block storycraft_content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Create New Scene</h2>
+        <p>Story: {{ story.title }}</p>
+    </div>
+    
+    <form method="post" class="storycraft-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="error-message">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Scene Name</label>
+            {{ form.name }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.sequence_number.id_for_label }}">Sequence Number</label>
+                {{ form.sequence_number }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.status.id_for_label }}">Status</label>
+                {{ form.status }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="{{ form.plot.id_for_label }}">Plot</label>
+                {{ form.plot }}
+            </div>
+            <div class="form-group half-width">
+                <label for="{{ form.setting.id_for_label }}">Setting</label>
+                {{ form.setting }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.characters.id_for_label }}">Characters in Scene</label>
+            {{ form.characters }}
+            <small class="form-text">Hold Ctrl/Cmd to select multiple characters</small>
+        </div>
+        
+        <!-- Character Motivations Section -->
+        <div id="character-motivation-section">
+            <h3>Character Motivations</h3>
+            <p class="help-text">Select characters above to add their motivations for this scene.</p>
+            
+            <div id="character-motivations-container">
+                <!-- Populated by JavaScript when characters are selected -->
+            </div>
+        </div>
+        
+        <div class="scene-metadata">
+            <h3>Scene Details</h3>
+            
+            <div class="form-row">
+                <div class="form-group half-width">
+                    <label for="{{ form.time_of_day.id_for_label }}">Time of Day</label>
+                    {{ form.time_of_day }}
+                </div>
+                <div class="form-group half-width">
+                    <label for="{{ form.weather.id_for_label }}">Weather</label>
+                    {{ form.weather }}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.mood.id_for_label }}">Mood/Atmosphere</label>
+                {{ form.mood }}
+            </div>
+            
+            {{ form.metadata }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}">Scene Content</label>
+            {{ form.content }}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'storycraft:story_detail' story.id %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Create Scene</button>
+        </div>
+    </form>
+</div>
+
+<script src="{% static 'storycraft/js/character_motivation.js' %}"></script>
+<script>
+// Initialize character motivation handler when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the character motivation handler
+    const motivationHandler = initCharacterMotivations({
+        characterSelectId: '{{ form.characters.id_for_label }}',
+        motivationsContainerId: 'character-motivations-container',
+        motivationSectionId: 'character-motivation-section',
+        existingMotivations: {} // No existing motivations for create form
+    });
+});
+</script>
+{% endblock %}
