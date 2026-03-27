@@ -1,0 +1,170 @@
+# backend_api/migrations/0002_owner_user_id_fk_to_int.py
+#
+# Converts ForeignKey(AUTH_USER_MODEL) → IntegerField on all four models.
+#
+# THE NAMING TRAP:
+#   When Django sees `owner_user_id = ForeignKey(...)` it creates a DB column
+#   called `owner_user_id_id` (appends _id to whatever you named the field).
+#   The target column name in the new model is simply `owner_user_id`.
+#
+#   For each affected model this migration:
+#     1. Adds a temporary IntegerField `owner_user_id_new`
+#     2. Copies data from the old `owner_user_id_id` column
+#     3. Drops the old FK field (`owner_user_id`, i.e. column `owner_user_id_id`)
+#     4. Renames `owner_user_id_new` → `owner_user_id`
+#
+#   If your smolkraft DB has never been migrated yet (fresh install into
+#   roby_data_portal) you can skip straight to the initial migration instead
+#   and this file won't be needed. See note at bottom.
+
+from django.db import migrations, models
+
+
+def copy_user_ids(apps, schema_editor):
+    """Copy owner_user_id_id → owner_user_id_new for all affected models."""
+    db = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        for table in [
+            'backend_api_orderheader',
+            'backend_api_orderlineitem',
+            'backend_api_bomheader',
+            'backend_api_productionorder',
+            'backend_api_inventory',
+        ]:
+            cursor.execute(
+                f'UPDATE "{table}" SET "owner_user_id_new" = "owner_user_id_id"'
+            )
+
+
+def reverse_copy(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        for table in [
+            'backend_api_orderheader',
+            'backend_api_orderlineitem',
+            'backend_api_bomheader',
+            'backend_api_productionorder',
+            'backend_api_inventory',
+        ]:
+            cursor.execute(
+                f'UPDATE "{table}" SET "owner_user_id_id" = "owner_user_id_new"'
+            )
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('backend_api', '0001_initial'),
+    ]
+
+    operations = [
+
+        # ── OrderHeader ──────────────────────────────────────────────────────
+        migrations.AddField(
+            model_name='orderheader',
+            name='owner_user_id_new',
+            field=models.IntegerField(db_index=True, null=True),
+        ),
+        migrations.RunPython(copy_user_ids, reverse_copy),
+        migrations.RemoveField(model_name='orderheader', name='owner_user_id'),
+        migrations.RenameField(
+            model_name='orderheader',
+            old_name='owner_user_id_new',
+            new_name='owner_user_id',
+        ),
+        # The UniqueConstraint referenced owner_user_id; Django recreates it
+        # automatically because the constraint is declared on the model.
+
+        # ── OrderLineItem ────────────────────────────────────────────────────
+        migrations.AddField(
+            model_name='orderlineitem',
+            name='owner_user_id_new',
+            field=models.IntegerField(db_index=True, null=True),
+        ),
+        migrations.RunPython(copy_user_ids, reverse_copy),
+        migrations.RemoveField(model_name='orderlineitem', name='owner_user_id'),
+        migrations.RenameField(
+            model_name='orderlineitem',
+            old_name='owner_user_id_new',
+            new_name='owner_user_id',
+        ),
+
+        # ── BOMHeader ────────────────────────────────────────────────────────
+        migrations.AddField(
+            model_name='bomheader',
+            name='owner_user_id_new',
+            field=models.IntegerField(db_index=True, null=True),
+        ),
+        migrations.RunPython(copy_user_ids, reverse_copy),
+        migrations.RemoveField(model_name='bomheader', name='owner_user_id'),
+        migrations.RenameField(
+            model_name='bomheader',
+            old_name='owner_user_id_new',
+            new_name='owner_user_id',
+        ),
+
+        # ── ProductionOrder ──────────────────────────────────────────────────
+        migrations.AddField(
+            model_name='productionorder',
+            name='owner_user_id_new',
+            field=models.IntegerField(db_index=True, null=True),
+        ),
+        migrations.RunPython(copy_user_ids, reverse_copy),
+        migrations.RemoveField(model_name='productionorder', name='owner_user_id'),
+        migrations.RenameField(
+            model_name='productionorder',
+            old_name='owner_user_id_new',
+            new_name='owner_user_id',
+        ),
+
+        # ── Inventory ────────────────────────────────────────────────────────
+        migrations.AddField(
+            model_name='inventory',
+            name='owner_user_id_new',
+            field=models.IntegerField(db_index=True, null=True),
+        ),
+        migrations.RunPython(copy_user_ids, reverse_copy),
+        migrations.RemoveField(model_name='inventory', name='owner_user_id'),
+        migrations.RenameField(
+            model_name='inventory',
+            old_name='owner_user_id_new',
+            new_name='owner_user_id',
+        ),
+
+        # ── Make owner_user_id non-nullable now that data is migrated ────────
+        migrations.AlterField(
+            model_name='orderheader',
+            name='owner_user_id',
+            field=models.IntegerField(db_index=True),
+        ),
+        migrations.AlterField(
+            model_name='orderlineitem',
+            name='owner_user_id',
+            field=models.IntegerField(db_index=True),
+        ),
+        migrations.AlterField(
+            model_name='bomheader',
+            name='owner_user_id',
+            field=models.IntegerField(db_index=True),
+        ),
+        migrations.AlterField(
+            model_name='productionorder',
+            name='owner_user_id',
+            field=models.IntegerField(db_index=True),
+        ),
+        migrations.AlterField(
+            model_name='inventory',
+            name='owner_user_id',
+            field=models.IntegerField(db_index=True),
+        ),
+    ]
+
+# NOTE — fresh install path:
+# If you are migrating the smolkraft DB for the first time inside
+# roby_data_portal (i.e. there is no existing data and no prior migrations),
+# you can run:
+#
+#   python manage.py makemigrations backend_api
+#   python manage.py migrate backend_api --database=smolkraft
+#
+# Django will generate a clean 0001_initial from the updated models.py
+# and you won't need this file at all.

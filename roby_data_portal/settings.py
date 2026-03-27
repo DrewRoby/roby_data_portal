@@ -164,6 +164,12 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PORT = os.getenv('DB_PORT')
 
+SMOLKRAFT_DB_NAME = os.getenv('SMOLKRAFT_DB_NAME')
+SMOLKRAFT_DB_USER = os.getenv('SMOLKRAFT_DB_USER')
+SMOLKRAFT_DB_PASSWORD = os.getenv('SMOLKRAFT_DB_PASSWORD')
+SMOLKRAFT_DB_HOST = os.getenv('SMOLKRAFT_DB_HOST')
+SMOLKRAFT_DB_PORT = os.getenv('SMOLKRAFT_DB_PORT')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
