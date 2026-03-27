@@ -25,11 +25,11 @@ def copy_user_ids(apps, schema_editor):
     db = schema_editor.connection.alias
     with schema_editor.connection.cursor() as cursor:
         for table in [
-            'backend_api_orderheader',
-            'backend_api_orderlineitem',
-            'backend_api_bomheader',
-            'backend_api_productionorder',
-            'backend_api_inventory',
+            'sk_backend_api_orderheader',
+            'sk_backend_api_orderlineitem',
+            'sk_backend_api_bomheader',
+            'sk_backend_api_productionorder',
+            'sk_backend_api_inventory',
         ]:
             cursor.execute(
                 f'UPDATE "{table}" SET "owner_user_id_new" = "owner_user_id_id"'
@@ -39,11 +39,11 @@ def copy_user_ids(apps, schema_editor):
 def reverse_copy(apps, schema_editor):
     with schema_editor.connection.cursor() as cursor:
         for table in [
-            'backend_api_orderheader',
-            'backend_api_orderlineitem',
-            'backend_api_bomheader',
-            'backend_api_productionorder',
-            'backend_api_inventory',
+            'sk_backend_api_orderheader',
+            'sk_backend_api_orderlineitem',
+            'sk_backend_api_bomheader',
+            'sk_backend_api_productionorder',
+            'sk_backend_api_inventory',
         ]:
             cursor.execute(
                 f'UPDATE "{table}" SET "owner_user_id_id" = "owner_user_id_new"'
@@ -53,7 +53,7 @@ def reverse_copy(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend_api', '0001_initial'),
+        ('sk_backend_api', '0001_initial'),
     ]
 
     operations = [
@@ -163,8 +163,8 @@ class Migration(migrations.Migration):
 # roby_data_portal (i.e. there is no existing data and no prior migrations),
 # you can run:
 #
-#   python manage.py makemigrations backend_api
-#   python manage.py migrate backend_api --database=smolkraft
+#   python manage.py makemigrations sk_backend_api
+#   python manage.py migrate sk_backend_api --database=smolkraft
 #
 # Django will generate a clean 0001_initial from the updated models.py
 # and you won't need this file at all.

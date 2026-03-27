@@ -15,7 +15,8 @@ urlpatterns = [
     path('inventory/',include('inventory.urls')),
     path('shares/',include('shares.urls')),
     path('events/',include('events.urls')),
-    path('smolkraft/', include('backend_api.urls')), #TODO Replace backend_api and all refs with sk_backend_api
+    # path('sk_api/', include('sk_backend.urls')), #TODO Replace backend_api and all refs with sk_backend_api
+    path('smolkraft/', include('smolkraft.sk_backend.sk_backend.urls')),
 ]
 
 if settings.DEBUG:

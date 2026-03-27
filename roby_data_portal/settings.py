@@ -81,7 +81,7 @@ INSTALLED_APPS = [
 
     # Smolkraft backend
     #TODO Update this and all refs to sk_backend_api
-    'backend_api',
+    'smolkraft'
 ]
 
 # SHAREABLE_MODELS = {

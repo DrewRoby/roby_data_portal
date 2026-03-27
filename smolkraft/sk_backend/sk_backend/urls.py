@@ -11,7 +11,7 @@ from backend_api.views import (
     ProductionPossibilitiesView,
 )
 
-app_name = 'backend_api'
+app_name = 'smolkraft'
 
 router = DefaultRouter()
 router.register(r'materials', MaterialViewSet, basename='material')

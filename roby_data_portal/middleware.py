@@ -19,7 +19,7 @@ class LoginRequiredMiddleware:
             'admin:index',
             'admin:login',
             #TODO update this and all refs to sk_backend_api
-            #'backend_api:your_public_view_name', # In case Smolkraft needs an externally-facing endpoint e.g. webhooks & whatsits
+            #'sk_backend_api:your_public_view_name', # In case Smolkraft needs an externally-facing endpoint e.g. webhooks & whatsits
         ]
         
         # Paths that start with these prefixes will be exempt

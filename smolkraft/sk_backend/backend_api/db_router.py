@@ -2,14 +2,14 @@
 
 class SmolkraftRouter:
     """
-    Routes all smolkraft (backend_api) app database operations to the
+    Routes all smolkraft (sk_backend_api) app database operations to the
     'smolkraft' database, and keeps everything else on 'default'.
 
     To use, add to settings.py:
         DATABASE_ROUTERS = ['smolkraft.db_router.SmolkraftRouter']
     """
 
-    APP_LABEL = 'backend_api'
+    APP_LABEL = 'sk_backend_api'
     DB_ALIAS = 'smolkraft'
 
     def db_for_read(self, model, **hints):
