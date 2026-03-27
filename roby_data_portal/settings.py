@@ -79,6 +79,9 @@ INSTALLED_APPS = [
     'shares',
     'events.apps.EventsConfig',
 
+    # Smolkraft backend
+    #TODO Update this and all refs to sk_backend_api
+    'backend_api',
 ]
 
 # SHAREABLE_MODELS = {
@@ -169,9 +172,18 @@ DATABASES = {
         'PASSWORD': DB_PASSWORD,
         'HOST': DB_HOST,
         'PORT': DB_PORT,
-    }
+    },
+    'smolkraft': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': SMOLKRAFT_DB_NAME,
+        'USER': SMOLKRAFT_DB_USER,
+        'PASSWORD': SMOLKRAFT_DB_PASSWORD,
+        'HOST': SMOLKRAFT_DB_HOST,
+        'PORT': SMOLKRAFT_DB_PORT,
+    },
 }
 
+DATABASE_ROUTERS = ['backend_api.db_router.SmolkraftRouter']
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators

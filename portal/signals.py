@@ -4,16 +4,19 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from .models import UserProfile, App, UserAppAccess
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """Create a UserProfile instance when a new User is created."""
     if created:
         UserProfile.objects.create(user=instance)
 
+
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     """Save UserProfile when User is saved."""
     instance.profile.save()
+
 
 @receiver(post_save, sender=User)
 def assign_default_apps(sender, instance, created, **kwargs):
@@ -23,14 +26,5 @@ def assign_default_apps(sender, instance, created, **kwargs):
         for app in default_apps:
             UserAppAccess.objects.get_or_create(user=instance, app=app)
 
-@receiver(post_save, sender=App)
-def update_app_choices(sender, instance, **kwargs):
-    """Update the choices for ActivityLog.app_name when an App is saved."""
-    from .models import ActivityLog
-    # Get all apps
-    apps = App.objects.all()
-    # Update choices
-    if apps.exists():
-        ActivityLog._meta.get_field('app_name').choices = [
-            (app.app_id, app.name) for app in apps
-        ]
+# NOTE: update_app_choices signal removed. ActivityLog.app is now a proper
+# ForeignKey to App, so choices no longer need to be maintained manually.

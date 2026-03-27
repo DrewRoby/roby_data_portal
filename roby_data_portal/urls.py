@@ -14,7 +14,8 @@ urlpatterns = [
     path('storycraft/',include('storycraft.urls')),
     path('inventory/',include('inventory.urls')),
     path('shares/',include('shares.urls')),
-    path('events/',include('events.urls'))
+    path('events/',include('events.urls')),
+    path('smolkraft/', include('backend_api.urls')), #TODO Replace backend_api and all refs with sk_backend_api
 ]
 
 if settings.DEBUG:
