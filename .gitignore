@@ -5,3 +5,5 @@ xxfaffabout/
 static/dist/
 node_modules/
 media/
+*.zip
+venv*
