@@ -1,7 +1,7 @@
 # backend_api/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from backend_api.views import (
+from smolkraft.sk_backend.backend_api.views import (
     MaterialViewSet,
     BOMViewSet,
     ProductionOrderViewSet,
