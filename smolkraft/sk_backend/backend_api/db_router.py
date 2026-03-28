@@ -9,7 +9,7 @@ class SmolkraftRouter:
         DATABASE_ROUTERS = ['smolkraft.db_router.SmolkraftRouter']
     """
 
-    APP_LABEL = 'sk_backend_api'
+    APP_LABEL = 'backend_api'
     DB_ALIAS = 'smolkraft'
 
     def db_for_read(self, model, **hints):

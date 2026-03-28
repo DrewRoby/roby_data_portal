@@ -81,7 +81,7 @@ INSTALLED_APPS = [
 
     # Smolkraft backend
     #TODO Update this and all refs to sk_backend_api
-    'smolkraft'
+    'smolkraft.sk_backend.backend_api'
 ]
 
 # SHAREABLE_MODELS = {
@@ -189,7 +189,7 @@ DATABASES = {
     },
 }
 
-DATABASE_ROUTERS = ['backend_api.db_router.SmolkraftRouter']
+DATABASE_ROUTERS = ['smolkraft.sk_backend.backend_api.db_router.SmolkraftRouter']
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators

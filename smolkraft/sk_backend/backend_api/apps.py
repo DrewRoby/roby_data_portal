@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class BackendApiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'sk_backend_api'
+    name = 'smolkraft.sk_backend.backend_api'
