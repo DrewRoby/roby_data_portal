@@ -1,5 +1,6 @@
 # backend_api/urls.py
 from django.urls import path, include
+from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 from smolkraft.sk_backend.backend_api.views import (
     MaterialViewSet,
@@ -20,6 +21,7 @@ router.register(r'production-orders', ProductionOrderViewSet, basename='producti
 router.register(r'inventory', InventoryViewSet, basename='inventory')
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='api/', permanent=False), name='index'),
     path('api/', include(router.urls)),
     path('api/current-inventory/', CurrentInventoryView.as_view(), name='current-inventory'),
     path('api/inventory-shortfall/', InventoryShortfallView.as_view(), name='inventory-shortfall'),

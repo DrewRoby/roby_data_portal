@@ -1,11 +1,8 @@
 from rest_framework import viewsets, views, permissions
 from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import authenticate, login
 
 from .models import (
-    BOMHeader, BOMLine, BOOHeader, Operation, Material,
-    ProductionOrder, Inventory, OrderHeader, OrderLineItem
+    BOMHeader, Material, ProductionOrder, Inventory
 )
 from .serializers import (
     BOMDetailSerializer, ProductionOrderSerializer, ProductionOrderDetailSerializer,
@@ -13,41 +10,27 @@ from .serializers import (
     ProductionPossibilitySerializer, MaterialSerializer
 )
 
-class LoginView(views.APIView):
-    permission_classes = []
-
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-
-        if user:
-            login(request, user)
-            return Response({'message': 'Login succful'})
-        else:
-            return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
 # Basic viewsets for CRUD operations
 class MaterialViewSet(viewsets.ModelViewSet):
     serializer_class = MaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Material.objects.filter(insert_user=self.request.user)
+        return Material.objects.filter(insert_user=self.request.user.id)
 
 class BOMViewSet(viewsets.ModelViewSet):
     serializer_class = BOMDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return BOMHeader.objects.filter(owner_user_id=self.request.user)
+        return BOMHeader.objects.filter(owner_user_id=self.request.user.id)
 
 class ProductionOrderViewSet(viewsets.ModelViewSet):
     serializer_class = ProductionOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ProductionOrder.objects.filter(owner_user_id=self.request.user)
+        return ProductionOrder.objects.filter(owner_user_id=self.request.user.id)
 
     def retrieve(self, request, *args, **kwargs):
         """Override to use detailed serializer for single item view"""
@@ -60,7 +43,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Inventory.objects.filter(owner_user_id=self.request.user)
+        return Inventory.objects.filter(owner_user_id=self.request.user.id)
 
 # Specialized views for complex data requirements
 class CurrentInventoryView(views.APIView):
@@ -69,7 +52,7 @@ class CurrentInventoryView(views.APIView):
 
     def get(self, request):
         inventory = Inventory.objects.filter(
-            owner_user_id=request.user
+            owner_user_id=request.user.id
         ).select_related('material', 'production_order')
 
         serializer = CurrentInventorySerializer(inventory, many=True)
