@@ -83,7 +83,7 @@ INSTALLED_APPS = [
     #TODO Update this and all refs to sk_backend_api
     'smolkraft.sk_backend.backend_api'
 ]
-
+print("Loaded Installed Apps successfully")
 # SHAREABLE_MODELS = {
 #     'storycraft':{
 #         'story':'storycraft.models.Story',
@@ -107,7 +107,7 @@ MIDDLEWARE = [
     # 'django_plotly_dash.middleware.BaseMiddleware',
     'shares.middleware.SharePermissionMiddleware',
 ]
-
+print("Loaded Middleware successfully")
 ROOT_URLCONF = 'roby_data_portal.urls'
 
 TEMPLATES = [
@@ -135,7 +135,7 @@ TEMPLATES = [
         },
     },
 ]
-
+print("Loaded Templates successfully")
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -154,7 +154,7 @@ STATICFILES_FINDERS = [
 
 WSGI_APPLICATION = 'roby_data_portal.wsgi.application'
 ASGI_APPLICATION = 'roby_data_portal.routing.application'
-
+print("WSGI? ASGI? Loaded. How? Successfully.")
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
@@ -179,17 +179,17 @@ DATABASES = {
         'HOST': DB_HOST,
         'PORT': DB_PORT,
     },
-    'smolkraft': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': SMOLKRAFT_DB_NAME,
-        'USER': SMOLKRAFT_DB_USER,
-        'PASSWORD': SMOLKRAFT_DB_PASSWORD,
-        'HOST': SMOLKRAFT_DB_HOST,
-        'PORT': SMOLKRAFT_DB_PORT,
-    },
+    # 'smolkraft': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': SMOLKRAFT_DB_NAME,
+    #     'USER': SMOLKRAFT_DB_USER,
+    #     'PASSWORD': SMOLKRAFT_DB_PASSWORD,
+    #     'HOST': SMOLKRAFT_DB_HOST,
+    #     'PORT': SMOLKRAFT_DB_PORT,
+    # },
 }
 
-DATABASE_ROUTERS = ['smolkraft.sk_backend.backend_api.db_router.SmolkraftRouter']
+# DATABASE_ROUTERS = ['smolkraft.sk_backend.backend_api.db_router.SmolkraftRouter']
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -297,6 +297,10 @@ AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.digitalo
 
 # Use different storage backends for media vs static files
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# # settings.py — add near the bottom for dev
+# if DEBUG:
+#     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 
 # Update your media settings
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
@@ -304,3 +308,5 @@ MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 # Keep static files local for now (since WhiteNoise is working well)
 # STATIC_URL = '/static/'  # Keep existing
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Keep existing
+
+print("By gum I daresay we're out of settings to load. Bad luck, old bean.")
