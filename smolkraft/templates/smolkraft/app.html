@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Smolkraft — Roby Data Services{% endblock %}
+
+{% block content %}
+<div id="smolkraft-app">
+  <div class="d-flex justify-content-center align-items-center py-5">
+    <div class="spinner-border text-secondary" role="status">
+      <span class="visually-hidden">Loading…</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'smolkraft/assets/smolkraft.js' %}"></script>
+{% endblock %}

@@ -1,6 +1,4 @@
-# backend_api/urls.py
-from django.urls import path, include
-from django.views.generic import RedirectView
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from smolkraft.sk_backend.backend_api.views import (
     MaterialViewSet,
@@ -10,6 +8,7 @@ from smolkraft.sk_backend.backend_api.views import (
     CurrentInventoryView,
     InventoryShortfallView,
     ProductionPossibilitiesView,
+    SmolkraftAppView,
 )
 
 app_name = 'smolkraft'
@@ -21,11 +20,12 @@ router.register(r'production-orders', ProductionOrderViewSet, basename='producti
 router.register(r'inventory', InventoryViewSet, basename='inventory')
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='api/', permanent=False), name='index'),
+    # REST API — must come before the catch-all
     path('api/', include(router.urls)),
     path('api/current-inventory/', CurrentInventoryView.as_view(), name='current-inventory'),
     path('api/inventory-shortfall/', InventoryShortfallView.as_view(), name='inventory-shortfall'),
     path('api/production-possibilities/', ProductionPossibilitiesView.as_view(), name='production-possibilities'),
-    # obtain_auth_token removed — portal session auth handles all authentication
-    # LoginView removed — same reason
+
+    # Vue SPA — catches /, /materials/, /boms/, etc. for client-side routing
+    re_path(r'^(?!api/).*$', SmolkraftAppView.as_view(), name='app'),
 ]

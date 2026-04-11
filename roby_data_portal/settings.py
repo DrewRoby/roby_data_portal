@@ -138,6 +138,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
+    # Vite build output — run `npm run build` in smolkraft/frontend/ first
+    ('smolkraft', os.path.join(BASE_DIR, 'smolkraft', 'frontend', 'dist')),
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Add to your staticfiles finders

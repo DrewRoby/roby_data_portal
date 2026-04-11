@@ -1,5 +1,15 @@
+import os
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.views import View
 from rest_framework import viewsets, views, permissions
 from rest_framework.response import Response
+
+
+class SmolkraftAppView(View):
+    """Serves the compiled Vue SPA shell for all non-API smolkraft routes."""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'smolkraft/app.html')
 
 from .models import (
     BOMHeader, Material, ProductionOrder, Inventory
