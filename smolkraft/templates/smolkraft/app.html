@@ -13,6 +13,10 @@
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'smolkraft/assets/index.css' %}">
+{% endblock %}
+
 {% block extra_js %}
 <script type="module" src="{% static 'smolkraft/assets/smolkraft.js' %}"></script>
 {% endblock %}

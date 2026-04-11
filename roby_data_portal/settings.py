@@ -136,7 +136,7 @@ print("Loaded Templates successfully")
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
     # Vite build output — run `npm run build` in smolkraft/frontend/ first
