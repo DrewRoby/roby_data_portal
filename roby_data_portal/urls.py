@@ -10,12 +10,10 @@ urlpatterns = [
     path('api/', include('api.urls')),
     # path('auth/', include('auth_detector.urls')),
     path('todo/', include('todo.urls')),
-    # path('dasher/', include('dasher.urls')),
     path('storycraft/',include('storycraft.urls')),
     path('inventory/',include('inventory.urls')),
     path('shares/',include('shares.urls')),
     path('events/',include('events.urls')),
-    # path('sk_api/', include('sk_backend.urls')), #TODO Replace backend_api and all refs with sk_backend_api
     path('smolkraft/', include('smolkraft.sk_backend.sk_backend.urls')),
 ]
 
