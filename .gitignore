@@ -7,3 +7,4 @@ node_modules/
 media/
 *.zip
 venv*
+smolkraft/sk_backend/backend_api/static/

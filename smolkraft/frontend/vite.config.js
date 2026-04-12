@@ -1,14 +1,18 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [vue()],
 
-  // In production, assets are served from Django's static files at this path.
-  base: '/static/smolkraft/',
+  // Dev server: base is / so `npm run dev` works at localhost:5173/smolkraft/
+  // Production build: assets reference /static/smolkraft/ where Django serves them
+  base: command === 'serve' ? '/' : '/static/smolkraft/',
 
   build: {
-    outDir: 'dist',
+    // Output directly into the app's static directory so AppDirectoriesFinder
+    // picks up the files automatically — no STATICFILES_DIRS tuple needed.
+    outDir: '../sk_backend/backend_api/static/smolkraft',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         // Fixed filenames so Django templates can reference them without hashes.
@@ -21,7 +25,7 @@ export default defineConfig({
 
   server: {
     port: 5173,
-    // Proxy API calls to Django during local dev (vite dev server only).
+    // Proxy API and auth calls to Django during local dev.
     proxy: {
       '/smolkraft/api': {
         target: 'http://localhost:8000',
@@ -30,8 +34,8 @@ export default defineConfig({
           proxy.on('error', (err) => console.error('proxy error', err))
         },
       },
-      '/login': { target: 'http://localhost:8000', changeOrigin: true },
+      '/login':  { target: 'http://localhost:8000', changeOrigin: true },
       '/logout': { target: 'http://localhost:8000', changeOrigin: true },
     },
   },
-})
+}))
